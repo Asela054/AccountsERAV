@@ -375,6 +375,100 @@ class Pettycashexpenseinfo extends CI_Model{
 
         echo $html;
     }
+    // public function ConvertRupeeToText($amount) {
+    //     $ones = array(
+    //         0 => '',
+    //         1 => 'One',
+    //         2 => 'Two',
+    //         3 => 'Three',
+    //         4 => 'Four',
+    //         5 => 'Five',
+    //         6 => 'Six',
+    //         7 => 'Seven',
+    //         8 => 'Eight',
+    //         9 => 'Nine',
+    //         10 => 'Ten',
+    //         11 => 'Eleven',
+    //         12 => 'Twelve',
+    //         13 => 'Thirteen',
+    //         14 => 'Fourteen',
+    //         15 => 'Fifteen',
+    //         16 => 'Sixteen',
+    //         17 => 'Seventeen',
+    //         18 => 'Eighteen',
+    //         19 => 'Nineteen'
+    //     );
+    
+    //     $tens = array(
+    //         0 => '',
+    //         2 => 'Twenty',
+    //         3 => 'Thirty',
+    //         4 => 'Forty',
+    //         5 => 'Fifty',
+    //         6 => 'Sixty',
+    //         7 => 'Seventy',
+    //         8 => 'Eighty',
+    //         9 => 'Ninety'
+    //     );
+    
+    //     $amount = number_format($amount, 2, '.', '');
+    //     $rupees = intval($amount);
+    //     $paisa = intval(($amount - $rupees) * 100);
+    
+    //     $words = '';
+    
+    //     if ($rupees > 0) {
+    //         if ($rupees >= 10000000) {
+    //             $crore = intval($rupees / 10000000);
+    //             $words .= $ones[$crore] . ' Crore ';
+    //             $rupees %= 10000000;
+    //         }
+    
+    //         if ($rupees >= 100000) {
+    //             $lakh = intval($rupees / 100000);
+    //             $words .= $ones[$lakh] . ' Lakh ';
+    //             $rupees %= 100000;
+    //         }
+    
+    //         if ($rupees >= 1000) {
+    //             $thousand = intval($rupees / 1000);
+    //             $words .= $ones[$thousand] . ' Thousand ';
+    //             $rupees %= 1000;
+    //         }
+    
+    //         if ($rupees >= 100) {
+    //             $hundred = intval($rupees / 100);
+    //             $words .= $ones[$hundred] . ' Hundred ';
+    //             $rupees %= 100;
+    //         }
+    
+    //         if ($rupees > 0) {
+    //             if ($rupees < 20) {
+    //                 $words .= $ones[$rupees];
+    //             } else {
+    //                 $words .= $tens[intval($rupees / 10)];
+    //                 $words .= ' ' . $ones[$rupees % 10];
+    //             }
+    //         }
+    
+    //         $words .= ' Rupees ';
+    //     }
+    
+    //     if ($paisa > 0) {
+    //         if ($paisa < 20) {
+    //             $words .= $ones[$paisa];
+    //         } else {
+    //             $words .= $tens[intval($paisa / 10)];
+    //             $words .= ' ' . $ones[$paisa % 10];
+    //         }
+    
+    //         $words .= ' Paisa';
+    //     } else {
+    //         $words .= 'Only';
+    //     }
+    
+    //     return ucwords(strtolower(trim($words)));
+    // }   
     public function ConvertRupeeToText($amount) {
         $ones = array(
             0 => '',
@@ -398,7 +492,7 @@ class Pettycashexpenseinfo extends CI_Model{
             18 => 'Eighteen',
             19 => 'Nineteen'
         );
-    
+
         $tens = array(
             0 => '',
             2 => 'Twenty',
@@ -410,65 +504,78 @@ class Pettycashexpenseinfo extends CI_Model{
             8 => 'Eighty',
             9 => 'Ninety'
         );
-    
+
+        // Remove commas and format properly
+        $amount = str_replace(',', '', $amount);
         $amount = number_format($amount, 2, '.', '');
+        
         $rupees = intval($amount);
-        $paisa = intval(($amount - $rupees) * 100);
-    
+        $paisa = intval(round(($amount - $rupees) * 100));
+
         $words = '';
-    
+
         if ($rupees > 0) {
+            // Handle Crores
             if ($rupees >= 10000000) {
                 $crore = intval($rupees / 10000000);
-                $words .= $ones[$crore] . ' Crore ';
+                $words .= $this->convertTwoDigit($crore, $ones, $tens) . ' Crore ';
                 $rupees %= 10000000;
             }
-    
+
+            // Handle Lakhs
             if ($rupees >= 100000) {
                 $lakh = intval($rupees / 100000);
-                $words .= $ones[$lakh] . ' Lakh ';
+                $words .= $this->convertTwoDigit($lakh, $ones, $tens) . ' Lakh ';
                 $rupees %= 100000;
             }
-    
+
+            // Handle Thousands
             if ($rupees >= 1000) {
                 $thousand = intval($rupees / 1000);
-                $words .= $ones[$thousand] . ' Thousand ';
+                $words .= $this->convertTwoDigit($thousand, $ones, $tens) . ' Thousand ';
                 $rupees %= 1000;
             }
-    
+
+            // Handle Hundreds
             if ($rupees >= 100) {
                 $hundred = intval($rupees / 100);
                 $words .= $ones[$hundred] . ' Hundred ';
                 $rupees %= 100;
             }
-    
+
+            // Handle remaining rupees (1-99)
             if ($rupees > 0) {
-                if ($rupees < 20) {
-                    $words .= $ones[$rupees];
-                } else {
-                    $words .= $tens[intval($rupees / 10)];
-                    $words .= ' ' . $ones[$rupees % 10];
-                }
+                $words .= $this->convertTwoDigit($rupees, $ones, $tens);
             }
-    
+
             $words .= ' Rupees ';
         }
-    
+
         if ($paisa > 0) {
-            if ($paisa < 20) {
-                $words .= $ones[$paisa];
-            } else {
-                $words .= $tens[intval($paisa / 10)];
-                $words .= ' ' . $ones[$paisa % 10];
-            }
-    
-            $words .= ' Paisa';
-        } else {
-            $words .= 'Only';
+            $words .= ' and ' . $this->convertTwoDigit($paisa, $ones, $tens) . ' Paisa';
         }
-    
+
+        if (trim($words) == '') {
+            $words = 'Zero Rupees';
+        } else {
+            $words .= ' Only';
+        }
+
         return ucwords(strtolower(trim($words)));
-    }    
+    }
+    private function convertTwoDigit($number, $ones, $tens) {
+        if ($number == 0) {
+            return '';
+        }
+        
+        if ($number < 20) {
+            return $ones[$number];
+        } else {
+            $tenDigit = intval($number / 10);
+            $oneDigit = $number % 10;
+            return $tens[$tenDigit] . ($oneDigit > 0 ? ' ' . $ones[$oneDigit] : '');
+        }
+    } 
     public function Pettycashexpenseposting(){
         $this->db->trans_begin();
         $recordID=$this->input->post('recordID');
