@@ -13,7 +13,7 @@ include "include/topnavbar.php";
                     <div class="page-header-content py-3">
                         <h1 class="page-header-title font-weight-light">
                             <div class="page-header-icon"><i class="far fa-file-pdf"></i></div>
-                            <span>Petty Cash Report</span>
+                            <span>Petty Cash Summery Report</span>
                         </h1>
                     </div>
                 </div>
@@ -50,12 +50,11 @@ include "include/topnavbar.php";
                                                 <th>#</th>
                                                 <th>Company</th>
                                                 <th>Branch</th>
-                                                <th>Date</th>
+                                                <th>Month</th>
                                                 <th>Account</th>
-                                                <th>Open Balance</th>
-                                                <th>Post Balance</th>
-                                                <th>Reimburse Balance</th>
-                                                <th>Close Balance</th>
+                                                <!-- <th>Date</th> -->
+                                                <!-- <th>Description</th> -->
+                                                <th>Amount</th>
                                             </tr>
                                         </thead>
                                         <tbody></tbody>
@@ -66,10 +65,9 @@ include "include/topnavbar.php";
                                                 <th></th>
                                                 <th></th>
                                                 <th></th>
-                                                <th></th>
+                                                <!-- <th></th> -->
+                                                <!-- <th></th>  -->
                                                 <th></th> 
-                                                <th></th> 
-                                                <th></th>
                                             </tr>
                                         </tfoot>
                                     </table>
@@ -100,6 +98,52 @@ include "include/topnavbar.php";
                 var fromdate = $('#fromdate').val();
                 var todate = $('#todate').val();
 
+                // Swal.fire({
+                //     title: '',
+                //     html: '<div class="div-spinner"><div class="custom-loader"></div></div>',
+                //     allowOutsideClick: false,
+                //     showConfirmButton: false, // Hide the OK button
+                //     backdrop: `
+                //         rgba(255, 255, 255, 0.5) 
+                //     `,
+                //     customClass: {
+                //         popup: 'fullscreen-swal'
+                //     },
+                //     didOpen: () => {
+                //         document.body.style.overflow = 'hidden';
+
+                //         $.ajax({
+                //             type: "POST",
+                //             data: {
+                //                 frommonth: frommonth,
+                //                 tomonth: tomonth
+                //             },
+                //             url: 'PettyCashSummeryReport/GetPettyCashSummeryReport',
+                //             success: function (result) { //alert(result);
+                                
+                //             },
+                //             error: function(error) {
+                //                 // Close the SweetAlert on error
+                //                 Swal.close();
+                                
+                //                 // Show an error alert
+                //                 Swal.fire({
+                //                     icon: 'error',
+                //                     title: 'Error',
+                //                     text: 'Something went wrong. Please try again later.'
+                //                 });
+                //             }
+                //         });
+
+                //         document.body.style.overflow = 'visible';
+                //     }
+                // });
+
+                let lastCompany = null;
+                let lastBranch = null;
+                let lastMonth = null;
+                let lastAccount = null;
+
                 $('#dataTable').DataTable({
                     "processing": true,
                     "serverSide": true,
@@ -111,14 +155,14 @@ include "include/topnavbar.php";
                     "buttons": [{
                             extend: 'csv',
                             className: 'btn btn-success btn-sm',
-                            title: 'Petty Cash Report',
+                            title: 'Petty Cash Summery Report',
                             text: '<i class="fas fa-file-csv mr-2"></i> CSV',
                             footer: true
                         },
                         {
                             extend: 'pdf',
                             className: 'btn btn-danger btn-sm',
-                            title: 'Petty Cash Report',
+                            title: 'Petty Cash Summery Report',
                             text: '<i class="fas fa-file-pdf mr-2"></i> PDF',
                             footer: true,
                             orientation: 'landscape',
@@ -130,7 +174,7 @@ include "include/topnavbar.php";
                         },
                         {
                             extend: 'print',
-                            title: 'Petty Cash Report',
+                            title: 'Petty Cash Summery Report',
                             className: 'btn btn-primary btn-sm',
                             text: '<i class="fas fa-print mr-2"></i> Print',
                             customize: function(win) {
@@ -143,7 +187,7 @@ include "include/topnavbar.php";
                         // 'copy', 'csv', 'excel', 'pdf', 'print'
                     ],
                     "ajax": {
-                        "url": "<?php echo base_url(); ?>scripts/getpettycashreport.php",
+                        "url": "<?php echo base_url(); ?>scripts/getpettycashsummeryreport.php",
                         "type": "POST",
                         "data": {
                             fromdate: fromdate,
@@ -151,98 +195,89 @@ include "include/topnavbar.php";
                         }
                     },
                     "columns": [
-                        {
-                            "data": "idtbl_pettycash_summary"
-                        },
-                        {
-                            "targets": -1,
-                            "className": '',
-                            "data": null,
-                            "render": function(data, type, full) {
-                                return '<?php echo $_SESSION['company'] ?>';
-                            }
-                        },
-                        {
-                            "targets": -1,
-                            "className": '',
-                            "data": null,
-                            "render": function(data, type, full) {
-                                return '<?php echo $_SESSION['branch'] ?>';
-                            }
-                        },
-                        {
-                            "data": "date"
-                        },
-                        {
-                            "targets": -1,
-                            "className": '',
-                            "data": null,
-                            "render": function(data, type, full) {
-                                return full['accountno'] + ' - ' + full['accountname'];
-                            }
-                        },
-                        {
-                            "targets": -1,
+                        { "data": "idtbl_pettycash" },
+                        { "data": "company_name" }, 
+                        { "data": "branch_name" }, 
+                        { "data": "month_name" }, 
+                        { "data": "expense_account_full" }, 
+                        // { "data": "date" }, 
+                        // { "data": "desc" }, 
+                        { 
+                            "data": "amount", 
                             "className": 'text-right',
-                            "data": null,
-                            "render": function(data, type, full) {
-                                return addCommas(full['openbal'] ? parseFloat(full['openbal']).toFixed(2) : '0.00');
+                            "render": function(data) {
+                                return addCommas(data ? parseFloat(data).toFixed(2) : '0.00');
                             }
                         },
+                    ],
+                    "columnDefs": [
                         {
-                            "targets": -1,
-                            "className": 'text-right',
-                            "data": null,
-                            "render": function(data, type, full) {
-                                return addCommas(full['postbal'] ? parseFloat(full['postbal']).toFixed(2) : '0.00');
-                            }
-                        },
-                        {
-                            "targets": -1,
-                            "className": 'text-right',
-                            "data": null,
-                            "render": function(data, type, full) {
-                                return addCommas(full['reimbal'] ? parseFloat(full['reimbal']).toFixed(2) : '0.00');
-                            }
-                        },
-                        {
-                            "targets": -1,
-                            "className": 'text-right',
-                            "data": null,
-                            "render": function(data, type, full) {
-                                return addCommas(full['closebal'] ? parseFloat(full['closebal']).toFixed(2) : '0.00');
+                            "targets": 0,
+                            "render": function (data, type, full, meta) {
+                                return meta.row + 1;
                             }
                         }
                     ],
+                    "createdRow": function (row, data, dataIndex) {
+                        const $row = $(row);
+                        
+                        // Grouping keys
+                        const currentCompany = data.company_name;
+                        const currentBranch = data.branch_name;
+                        const currentMonth = data.month_name;
+                        const currentAccount = data.expense_account_full;
+
+                        // Check if a new group starts
+                        const newGroup = 
+                            currentCompany !== lastCompany || 
+                            currentBranch !== lastBranch || 
+                            currentMonth !== lastMonth || 
+                            currentAccount === lastAccount;
+
+                        if (!newGroup) {
+                            // If it's NOT a new group, clear the content of the grouping columns
+                            $row.find('td:eq(1)').html(''); // Company
+                            $row.find('td:eq(2)').html(''); // Branch
+                            $row.find('td:eq(3)').html(''); // Month
+                            // $row.find('td:eq(4)').html(''); // Account
+                        } else {
+                            // Optional: Add a class to the first row of a group for styling
+                            $row.addClass('group-start-row');
+                        }
+                        
+                        // Update the last group variables for the next iteration
+                        lastCompany = currentCompany;
+                        lastBranch = currentBranch;
+                        lastMonth = currentMonth;
+                        lastAccount = currentAccount;
+                    },
+                    "initComplete": function(settings, json) {
+                        // Reset last group variables after the table draws (e.g., on page change)
+                        this.api().on('draw.dt', function () {
+                            lastCompany = null;
+                            lastBranch = null;
+                            lastMonth = null;
+                            lastAccount = null;
+                        });
+                    },
+                    // --- END CRITICAL SECTION ---
+                    
                     "footerCallback": function (row, data, start, end, display) {
                         var api = this.api();
-
-                        // Helper function to calculate the total for a column
-                        var total = function (column, dataProperty) {
-                            return api
-                                .column(column, { page: 'current' }) // 'current' for visible data, remove for all data
-                                .data()
-                                .reduce(function (a, b) {
-                                    var value = parseFloat(b[dataProperty]) || 0;
-                                    return a + value;
-                                }, 0);
-                        };
-
-                        // Total over all filtered pages
-                        var postBalanceTotal = total(6, 'postbal'); // Index 6 is the 'Post Balance' column
-                        var reimburseBalanceTotal = total(7, 'reimbal'); // Index 7 is the 'Reimburse Balance' column
-
-                        // Update footer
-                        $(api.column(5).footer()).html('Total'); // Set 'Total' text on the first column's footer cell
                         
-                        // Column 6: Post Balance
-                        $(api.column(6).footer()).html(
-                            addCommas(postBalanceTotal.toFixed(2))
-                        );
-                        // Column 7: Reimburse Balance
-                        $(api.column(7).footer()).html(
-                            addCommas(reimburseBalanceTotal.toFixed(2))
-                        );
+                        // Remove the helper function and calculate directly
+                        var expenceTotal = 0;
+                        
+                        // Loop through the current page data
+                        api.rows({ page: 'current' }).every(function () {
+                            var rowData = this.data();
+                            var amount = parseFloat(rowData.amount) || 0;
+                            expenceTotal += amount;
+                        });
+                        
+                        // Update footer - amount column is index 5 (0-indexed)
+                        $(api.column(4).footer()).html('Total'); 
+                        $(api.column(5).footer()).html(addCommas(expenceTotal.toFixed(2)));
                     },
                     "destroy": true
                 });
