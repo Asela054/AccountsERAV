@@ -283,6 +283,13 @@ else if($controllermenu=='Pettycashreport'){
     $deletecheck=checkprivilege($menuprivilegearray, 175, 4);
     $approvecheck=checkprivilege($menuprivilegearray, 175, 5);
 }
+else if($controllermenu=='PettyCashSummeryReport'){
+    $addcheck=checkprivilege($menuprivilegearray, 177, 1);
+    $editcheck=checkprivilege($menuprivilegearray, 177, 2);
+    $statuscheck=checkprivilege($menuprivilegearray, 177, 3);
+    $deletecheck=checkprivilege($menuprivilegearray, 177, 4);
+    $approvecheck=checkprivilege($menuprivilegearray, 177, 5);
+}
 
 function checkprivilege($arraymenu, $menuID, $type){
     foreach($arraymenu as $array){
@@ -460,13 +467,13 @@ function checkprivilege($arraymenu, $menuID, $type){
                     <?php } ?>
                 </nav>
             </div>
-            <?php } if(menucheck($menuprivilegearray, 160)==1 | menucheck($menuprivilegearray, 161)==1 | menucheck($menuprivilegearray, 162)==1 | menucheck($menuprivilegearray, 163)==1 | menucheck($menuprivilegearray, 164)==1 | menucheck($menuprivilegearray, 165)==1 | menucheck($menuprivilegearray, 174)==1 | menucheck($menuprivilegearray, 175)==1){ ?> 
+            <?php } if(menucheck($menuprivilegearray, 160)==1 | menucheck($menuprivilegearray, 161)==1 | menucheck($menuprivilegearray, 162)==1 | menucheck($menuprivilegearray, 163)==1 | menucheck($menuprivilegearray, 164)==1 | menucheck($menuprivilegearray, 165)==1 | menucheck($menuprivilegearray, 174)==1 | menucheck($menuprivilegearray, 175)==1 | menucheck($menuprivilegearray, 177)==1){ ?> 
             <a class="nav-link p-0 px-3 py-2 collapsed text-dark" href="javascript:void(0);" data-toggle="collapse" data-target="#collapseReport" aria-expanded="false" aria-controls="collapseReport">
                 <div class="nav-link-icon"><i class="far fa-file-pdf"></i></div>
                 Reports
                 <div class="sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
             </a>
-            <div class="collapse <?php if($functionmenu=="periodic_pnl" | $functionmenu=="periodic_balancesheet" | $functionmenu=="ledger_folio" | $functionmenu=="trial_balance" | $functionmenu=="DebtorReport" | $functionmenu=="CreditorReport" | $controllermenu=="Expencereport" | $controllermenu=="Pettycashreport"){echo 'show';} ?>" id="collapseReport" data-parent="#accordionSidenav">
+            <div class="collapse <?php if($functionmenu=="periodic_pnl" | $functionmenu=="periodic_balancesheet" | $functionmenu=="ledger_folio" | $functionmenu=="trial_balance" | $functionmenu=="DebtorReport" | $functionmenu=="CreditorReport" | $controllermenu=="Expencereport" | $controllermenu=="Pettycashreport" | $controllermenu=="PettyCashSummeryReport"){echo 'show';} ?>" id="collapseReport" data-parent="#accordionSidenav">
                 <nav class="sidenav-menu-nested nav accordion" id="accordionSidenavPages">
                     <?php if(menucheck($menuprivilegearray, 160)==1){ ?>
                     <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'ReportModule/periodic_pnl'; ?>">Profit & Lost</a> 
@@ -480,10 +487,12 @@ function checkprivilege($arraymenu, $menuID, $type){
                     <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'ReportModule/DebtorReport'; ?>">Debtor Report</a>
                     <?php } if(menucheck($menuprivilegearray, 165)==1){ ?>
                     <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'ReportModule/CreditorReport'; ?>">Creditor Report</a>
-                    <?php } if(menucheck($menuprivilegearray, 165)==1){ ?>
+                    <?php } if(menucheck($menuprivilegearray, 174)==1){ ?>
                     <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'Expencereport'; ?>">Expence Report</a>
-                    <?php } if(menucheck($menuprivilegearray, 165)==1){ ?>
+                    <?php } if(menucheck($menuprivilegearray, 175)==1){ ?>
                     <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'Pettycashreport'; ?>">Petty Cash Report</a>
+                    <?php } if(menucheck($menuprivilegearray, 177)==1){ ?>
+                    <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'PettyCashSummeryReport'; ?>">Petty Cash Summery Report</a>
                     <?php } ?>
                 </nav>
             </div>

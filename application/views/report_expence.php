@@ -35,7 +35,7 @@ include "include/topnavbar.php";
                                         </div>
                                         <div class="col">
                                             <label class="small font-weight-bold text-dark">&nbsp;</label><br>
-                                            <button type="button" class="btn btn-primary btn-sm px-4" id="searchbtn"><i class="fas fa-search"></i> Search</button>
+                                            <button type="button" class="btn btn-primary btn-sm px-4" id="searchbtn"><i class="fas fa-search mr-2"></i> Search</button>
                                             <input type="submit" class="d-none" id="hidesubmit">
                                         </div>
                                     </div>
@@ -55,9 +55,23 @@ include "include/topnavbar.php";
                                                 <th>Description</th>
                                                 <th>Account</th>
                                                 <th>Expense Account</th>
+                                                <th>Amount</th>
                                             </tr>
                                         </thead>
                                         <tbody></tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                             </div>
@@ -99,12 +113,16 @@ include "include/topnavbar.php";
                             className: 'btn btn-success btn-sm',
                             title: 'Expence Report',
                             text: '<i class="fas fa-file-csv mr-2"></i> CSV',
+                            footer: true
                         },
                         {
                             extend: 'pdf',
                             className: 'btn btn-danger btn-sm',
                             title: 'Expence Report',
                             text: '<i class="fas fa-file-pdf mr-2"></i> PDF',
+                            footer: true,
+                            orientation: 'landscape',
+                            pageSize: 'A4'
                         },
                         {
                             extend: 'print',
@@ -116,6 +134,7 @@ include "include/topnavbar.php";
                                     .addClass('compact')
                                     .css('font-size', 'inherit');
                             },
+                            footer: true
                         },
                         // 'copy', 'csv', 'excel', 'pdf', 'print'
                     ],
@@ -175,12 +194,57 @@ include "include/topnavbar.php";
                                     return full['detail_account_no'] + ' - ' + full['account_detail_name'];
                                 }
                             }
+                        },
+                        {
+                            "targets": -1,
+                            "className": 'text-right',
+                            "data": null,
+                            "render": function(data, type, full) {
+                                return addCommas(full['amount'] ? parseFloat(full['amount']).toFixed(2) : '0.00');
+                            }
                         }
                     ],
+                    "footerCallback": function (row, data, start, end, display) {
+                        var api = this.api();
+
+                        // Helper function to calculate the total for a column
+                        var total = function (column, dataProperty) {
+                            return api
+                                .column(column, { page: 'current' }) // 'current' for visible data, remove for all data
+                                .data()
+                                .reduce(function (a, b) {
+                                    var value = parseFloat(b[dataProperty]) || 0;
+                                    return a + value;
+                                }, 0);
+                        };
+
+                        // Total over all filtered pages
+                        var expenceTotal = total(8, 'amount'); // Index 6 is the 'Expence' column
+
+                        // Update footer
+                        $(api.column(7).footer()).html('Total'); // Set 'Total' text on the first column's footer cell
+                        
+                        // Column 6: Post Balance
+                        $(api.column(8).footer()).html(
+                            addCommas(expenceTotal.toFixed(2))
+                        );
+                    },
                     "destroy": true
                 });
             }
         });
     });
+
+    function addCommas(nStr){
+        nStr += '';
+        x = nStr.split('.');
+        x1 = x[0];
+        x2 = x.length > 1 ? '.' + x[1] : '';
+        var rgx = /(\d+)(\d{3})/;
+        while (rgx.test(x1)) {
+            x1 = x1.replace(rgx, '$1' + ',' + '$2');
+        }
+        return x1 + x2;
+    }
 </script>
 <?php include "include/footer.php"; ?>
