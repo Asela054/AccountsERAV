@@ -41,6 +41,8 @@ $columns = array(
 	array( 'db' => '`ub`.`branch`', 'dt' => 'branch', 'field' => 'branch' ),
 	array( 'db' => '`ud`.`desc`', 'dt' => 'desc', 'field' => 'desc' ),
 	array( 'db' => '`ue`.`monthname`', 'dt' => 'monthname', 'field' => 'monthname' ),
+	array( 'db' => '`uf`.`grnno`', 'dt' => 'grnno', 'field' => 'grnno' ),
+	array( 'db' => '`ug`.`suppliername`', 'dt' => 'suppliername', 'field' => 'suppliername' ),
 	array( 'db' => '`u`.`status`', 'dt' => 'status', 'field' => 'status' )
 );
 
@@ -64,7 +66,7 @@ require('ssp.customized.class.php' );
 $companyid=$_SESSION['companyid'];
 $branchid=$_SESSION['branchid'];
 
-$joinQuery = "FROM `tbl_account_payable_main` AS `u` LEFT JOIN `tbl_company` AS `ua` ON (`ua`.`idtbl_company` = `u`.`tbl_company_idtbl_company`) LEFT JOIN `tbl_company_branch` AS `ub` ON (`ub`.`idtbl_company_branch` = `u`.`tbl_company_branch_idtbl_company_branch`) LEFT JOIN `tbl_master` AS `uc` ON (`uc`.`idtbl_master` = `u`.`tbl_master_idtbl_master`) LEFT JOIN `tbl_finacial_year` AS `ud` ON (`ud`.`idtbl_finacial_year` = `uc`.`tbl_finacial_year_idtbl_finacial_year`) LEFT JOIN `tbl_finacial_month` AS `ue` ON (`ue`.`idtbl_finacial_month` = `uc`.`tbl_finacial_month_idtbl_finacial_month`)";
+$joinQuery = "FROM `tbl_account_payable_main` AS `u` LEFT JOIN `tbl_company` AS `ua` ON (`ua`.`idtbl_company` = `u`.`tbl_company_idtbl_company`) LEFT JOIN `tbl_company_branch` AS `ub` ON (`ub`.`idtbl_company_branch` = `u`.`tbl_company_branch_idtbl_company_branch`) LEFT JOIN `tbl_master` AS `uc` ON (`uc`.`idtbl_master` = `u`.`tbl_master_idtbl_master`) LEFT JOIN `tbl_finacial_year` AS `ud` ON (`ud`.`idtbl_finacial_year` = `uc`.`tbl_finacial_year_idtbl_finacial_year`) LEFT JOIN `tbl_finacial_month` AS `ue` ON (`ue`.`idtbl_finacial_month` = `uc`.`tbl_finacial_month_idtbl_finacial_month`) LEFT JOIN `tbl_expence_info` AS `uf` ON (`uf`.`grnno` = `u`.`invoiceno`) LEFT JOIN `tbl_supplier` AS `ug` ON (`ug`.`idtbl_supplier` = `uf`.`tbl_supplier_idtbl_supplier`)";
 
 $extraWhere = "`u`.`status` IN (1, 2) AND `u`.`paytype`=0 AND `u`.`tbl_company_idtbl_company`='$companyid' AND `u`.`tbl_company_branch_idtbl_company_branch`='$branchid'";
 

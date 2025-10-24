@@ -39,6 +39,8 @@ include "include/topnavbar.php";
                                                 <th>Month</th>
                                                 <th>Date</th>
                                                 <th>Batch No</th>
+                                                <th>Supplier</th>
+                                                <th>GRN | Payment No</th>
                                                 <th>Amount</th>
                                                 <th class="text-right">Actions</th>
                                             </tr>
@@ -300,6 +302,12 @@ include "include/topnavbar.php";
                 },
                 {
                     "data": "batchno"
+                },
+                {
+                    "data": "suppliername"
+                },
+                {
+                    "data": "grnno"
                 },
                 {
                     "targets": -1,
