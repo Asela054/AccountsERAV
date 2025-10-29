@@ -772,7 +772,7 @@ include "include/topnavbar.php";
                 var html = '';
                 html += '<option value="">Select</option>';
                 $.each(obj, function (i, item) {
-                    html += '<option value="' + obj[i].invno + '" data-amount="' + obj[i].amount + '">';
+                    html += '<option value="' + obj[i].invno + '" data-amount="' + obj[i].invamount + '">';
                     html += obj[i].invno ;
                     html += '</option>';
                 });

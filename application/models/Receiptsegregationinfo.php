@@ -872,7 +872,7 @@ class Receiptsegregationinfo extends CI_Model{
     public function Getinvoiceaccocustomer(){
         $recordID=$this->input->post('recordID');
 
-        $this->db->select('idtbl_sales_info, invno, amount');
+        $this->db->select('idtbl_sales_info, invno, amount, invamount');
         $this->db->from('tbl_sales_info');
         $this->db->where('status', 1);
         $this->db->where('paystatus', 0);
