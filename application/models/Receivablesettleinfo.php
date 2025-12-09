@@ -60,258 +60,497 @@ class Receivablesettleinfo extends CI_Model{
         }
         echo $html;
     }
-    public function Receivablesettleinsertupdate(){
-        $userID=$_SESSION['userid'];
-        $detailaccount=0;
-        $chartaccount=0;
+    // public function Receivablesettleinsertupdate(){
+    //     $userID=$_SESSION['userid'];
+    //     $detailaccount=0;
+    //     $chartaccount=0;
 
-        $company=$this->input->post('company');
-        $branch=$this->input->post('branch');
-        $customer=$this->input->post('customer');
-        $receivabletype=$this->input->post('receivabletype');
-        $accounttype=$this->input->post('accounttype');
-        if(!empty($this->input->post('chequedate'))){$chequedate=$this->input->post('chequedate');}else{$chequedate='';}
-        if(!empty($this->input->post('chequeno'))){$chequeno=$this->input->post('chequeno');}else{$chequeno='';}
-        $chartofdetailaccount=$this->input->post('chartofdetailaccount');
-        $narration=$this->input->post('narration');
-        $invoicepayamount= $this->input->post('invoicepayamount');
-        $paidamount=str_replace(',', '', $this->input->post('paidamount'));
-        $invoicedata=json_decode($this->input->post('tableData'));
+    //     $company=$this->input->post('company');
+    //     $branch=$this->input->post('branch');
+    //     $customer=$this->input->post('customer');
+    //     // $receivabletype=$this->input->post('receivabletype');
+    //     // $accounttype=$this->input->post('accounttype');
+    //     // if(!empty($this->input->post('chequedate'))){$chequedate=$this->input->post('chequedate');}else{$chequedate='';}
+    //     // if(!empty($this->input->post('chequeno'))){$chequeno=$this->input->post('chequeno');}else{$chequeno='';}
+    //     // $chartofdetailaccount=$this->input->post('chartofdetailaccount');
+    //     // $narration=$this->input->post('narration');
+    //     $invoicepayamount=str_replace(',', '', $this->input->post('invoicepayamount'));
+    //     $paidamount=str_replace(',', '', $this->input->post('paidamount'));
+    //     $invoicedata=json_decode($this->input->post('tableData'));
+    //     $paymentdata=json_decode($this->input->post('tableReceData'));
+    //     print_r($invoicedata);
+    //     print_r($paymentdata);
+    //     die();
         
-        $chequecashamount=$paidamount;
+    //     $chequecashamount=$paidamount;
 
-        if($accounttype==1){$chartaccount=$chartofdetailaccount;}
-        else if($accounttype==2){$detailaccount=$chartofdetailaccount;}
-
-        $recordOption=$this->input->post('recordOption');
-        if(!empty($this->input->post('recordID'))){$recordID=$this->input->post('recordID');}
+    //     $recordOption=$this->input->post('recordOption');
+    //     if(!empty($this->input->post('recordID'))){$recordID=$this->input->post('recordID');}
         
-        if($recordOption==1){
-            $prefix=receiv_prefix($company, $branch);
-            $masterdata=get_account_period($company, $branch);
-            $batchno=tr_batch_num($prefix, $branch);
-            $masterID=$masterdata->idtbl_master;
+    //     if($recordOption==1){
+    //         $prefix=receiv_prefix($company, $branch);
+    //         $masterdata=get_account_period($company, $branch);
+    //         $batchno=tr_batch_num($prefix, $branch);
+    //         $masterID=$masterdata->idtbl_master;
+    //     }
+
+    //     $updatedatetime=date('Y-m-d H:i:s');
+    //     $today=date('Y-m-d');
+    
+    //     if($recordOption==1){
+    //         if(!empty($batchno)){
+    //             $this->db->trans_begin();
+
+    //             $paymentnettotal=0;
+    //             foreach($paymentdata as $rowpaymentdata):
+    //                 if($rowpaymentdata->accounttype==1){$chartaccount=$rowpaymentdata->chartofaccount; $detailaccount=0;}
+    //                 else if($rowpaymentdata->accounttype==2){$detailaccount=$rowpaymentdata->chartofaccount; $chartaccount=0;}
+
+    //                 $data = array(
+    //                     'recdate'=> $today, 
+    //                     'batchno'=> $batchno, 
+    //                     'payer'=> $customer, 
+    //                     'amount'=> str_replace(',', '', $rowpaymentdata->amount), 
+    //                     'narration'=> $rowpaymentdata->narration, 
+    //                     'chequedate'=> $rowpaymentdata->chequedate, 
+    //                     'chequeno'=> $rowpaymentdata->chequeno, 
+    //                     'poststatus'=> '0', 
+    //                     'status'=> '1', 
+    //                     'insertdatetime'=> $updatedatetime, 
+    //                     'tbl_user_idtbl_user'=> $userID,
+    //                     'tbl_receivable_type_idtbl_receivable_type'=> $rowpaymentdata->receivabletypeid,
+    //                     'tbl_company_idtbl_company'=> $company,
+    //                     'tbl_company_branch_idtbl_company_branch'=> $branch,
+    //                     'tbl_master_idtbl_master'=> $masterID,
+    //                     'tbl_account_idtbl_account'=> $chartaccount,
+    //                     'tbl_account_detail_idtbl_account_detail'=> $detailaccount
+    //                 );
+
+    //                 $this->db->insert('tbl_receivable', $data);
+
+    //                 $receivableID=$this->db->insert_id();
+
+    //                 foreach($invoicedata as $rowinvoicedata){
+    //                     $narration=$rowinvoicedata->customer.' - '.$rowinvoicedata->invoiceno;
+    //                     $invoicetotal=str_replace(',', '', $rowinvoicedata->amount);
+
+    //                     if($chequecashamount>=$invoicetotal){
+    //                         $invoicepayamount=$invoicetotal;
+    //                         $chequecashamount=$chequecashamount-$invoicetotal;
+    //                     }
+    //                     else{
+    //                         $invoicepayamount=$chequecashamount;
+    //                         $chequecashamount=0;
+    //                     }
+
+    //                     $datasub = array(
+    //                         'invoiceno'=> $rowinvoicedata->invid, 
+    //                         'narration'=> $narration, 
+    //                         'amount'=> $invoicepayamount, 
+    //                         'status'=> '1', 
+    //                         'insertdatetime'=> $updatedatetime, 
+    //                         'tbl_user_idtbl_user'=> $userID,
+    //                         'tbl_receivable_main_idtbl_receivable_main'=> $receivableID,
+    //                     );
+
+    //                     $this->db->insert('tbl_receivable_info', $datasub);
+    //                 }
+
+    //                 $paymentnettotal=$paymentnettotal+str_replace(',', '', $rowpaymentdata->amount);
+    //             endforeach;
+
+    //             $this->db->trans_complete();
+    //             if ($this->db->trans_status() === TRUE) {
+    //                 if($paymentnettotal==$paidamount){
+    //                     $this->db->trans_commit();
+
+    //                     $actionObj=new stdClass();
+    //                     $actionObj->icon='fas fa-save';
+    //                     $actionObj->title='';
+    //                     $actionObj->message='Record Added Successfully';
+    //                     $actionObj->url='';
+    //                     $actionObj->target='_blank';
+    //                     $actionObj->type='success';
+
+    //                     $actionJSON=json_encode($actionObj);
+                        
+    //                     $obj=new stdClass();
+    //                     $obj->status=1;
+    //                     $obj->action=$actionJSON;
+
+    //                     echo json_encode($obj);
+    //                 }
+    //                 else{
+    //                     $this->db->trans_rollback();
+
+    //                     $actionObj=new stdClass();
+    //                     $actionObj->icon='fas fa-warning';
+    //                     $actionObj->title='';
+    //                     $actionObj->message='Record Error, Payment amount not equal payment type amount.';
+    //                     $actionObj->url='';
+    //                     $actionObj->target='_blank';
+    //                     $actionObj->type='danger';
+
+    //                     $actionJSON=json_encode($actionObj);
+                        
+    //                     $obj=new stdClass();
+    //                     $obj->status=0;
+    //                     $obj->action=$actionJSON;
+
+    //                     echo json_encode($obj);
+    //                 }                                       
+    //             } else {
+    //                 $this->db->trans_rollback();
+
+    //                 $actionObj=new stdClass();
+    //                 $actionObj->icon='fas fa-warning';
+    //                 $actionObj->title='';
+    //                 $actionObj->message='Record Error';
+    //                 $actionObj->url='';
+    //                 $actionObj->target='_blank';
+    //                 $actionObj->type='danger';
+
+    //                 $actionJSON=json_encode($actionObj);
+                    
+    //                 $obj=new stdClass();
+    //                 $obj->status=0;
+    //                 $obj->action=$actionJSON;
+
+    //                 echo json_encode($obj);
+    //             }
+    //         }
+    //         else{
+    //             $actionObj=new stdClass();
+    //             $actionObj->icon='fas fa-warning';
+    //             $actionObj->title='';
+    //             $actionObj->message='Record Error, Batch no defind by system';
+    //             $actionObj->url='';
+    //             $actionObj->target='_blank';
+    //             $actionObj->type='danger';
+
+    //             $actionJSON=json_encode($actionObj);
+                
+    //             $obj=new stdClass();
+    //             $obj->status=0;
+    //             $obj->action=$actionJSON;
+
+    //             echo json_encode($obj);
+    //         }
+    //     }
+    //     else{
+    //         $this->db->trans_begin();
+
+    //         $this->db->select('batchno, tbl_company_idtbl_company, tbl_company_branch_idtbl_company_branch, tbl_master_idtbl_master, poststatus');
+    //         $this->db->from('tbl_receivable');
+    //         $this->db->where('idtbl_receivable', $recordID);
+    //         $this->db->where('status', 1);
+
+    //         $respond=$this->db->get();
+            
+    //         $this->db->where('tbl_receivable_idtbl_receivable', $recordID);
+    //         $this->db->delete('tbl_receivable_info');
+
+    //         $data = array(
+    //             'amount'=> $invoicepayamount, 
+    //             'narration'=> $narration, 
+    //             'chequedate'=> $chequedate, 
+    //             'chequeno'=> $chequeno,  
+    //             'editstatus' => '0',
+    //             'status'=> '1', 
+    //             'updateuser'=> $userID, 
+    //             'updatedatetime'=> $updatedatetime,
+    //             'tbl_receivable_type_idtbl_receivable_type'=> $receivabletype,
+    //             'tbl_account_idtbl_account'=> $chartaccount,
+    //             'tbl_account_detail_idtbl_account_detail'=> $detailaccount
+    //         );
+    
+    //         $this->db->where('idtbl_receivable', $recordID);
+    //         $this->db->update('tbl_receivable', $data);
+
+    //         if($respond->row(0)->poststatus==0){
+    //             foreach($invoicedata as $rowinvoicedata){
+    //                 $narration=$rowinvoicedata['col_2'].' - '.$rowinvoicedata['col_4'];
+    //                 $datasub = array(
+    //                     'invoiceno'=> $rowinvoicedata['col_4'], 
+    //                     'narration'=> $narration, 
+    //                     'amount'=> $rowinvoicedata['col_5'], 
+    //                     'status'=> '1', 
+    //                     'insertdatetime'=> $updatedatetime, 
+    //                     'tbl_user_idtbl_user'=> $userID,
+    //                     'tbl_receivable_idtbl_receivable'=> $recordID,
+    //                 );
+
+    //                 $this->db->insert('tbl_receivable_info', $datasub);
+    //             }
+
+    //             $this->db->trans_complete();
+    //             if ($this->db->trans_status() === TRUE) {
+    //                 $this->db->trans_commit();
+                    
+    //                 $actionObj=new stdClass();
+    //                 $actionObj->icon='fas fa-save';
+    //                 $actionObj->title='';
+    //                 $actionObj->message='Record Added Successfully';
+    //                 $actionObj->url='';
+    //                 $actionObj->target='_blank';
+    //                 $actionObj->type='success';
+
+    //                 $actionJSON=json_encode($actionObj);
+                    
+    //                 $obj=new stdClass();
+    //                 $obj->status=1;
+    //                 $obj->action=$actionJSON;
+
+    //                 echo json_encode($obj);
+    //             } else {
+    //                 $this->db->trans_rollback();
+
+    //                 $actionObj=new stdClass();
+    //                 $actionObj->icon='fas fa-warning';
+    //                 $actionObj->title='';
+    //                 $actionObj->message='Record Error';
+    //                 $actionObj->url='';
+    //                 $actionObj->target='_blank';
+    //                 $actionObj->type='danger';
+
+    //                 $actionJSON=json_encode($actionObj);
+                    
+    //                 $obj=new stdClass();
+    //                 $obj->status=0;
+    //                 $obj->action=$actionJSON;
+
+    //                 echo json_encode($obj);
+    //             }
+    //         }
+    //         else{
+    //             $this->db->trans_commit();
+
+    //             $actionObj=new stdClass();
+    //             $actionObj->icon='fas fa-warning';
+    //             $actionObj->title='';
+    //             $actionObj->message='Record Error. This record already posted.';
+    //             $actionObj->url='';
+    //             $actionObj->target='_blank';
+    //             $actionObj->type='danger';
+
+    //             $actionJSON=json_encode($actionObj);
+                
+    //             $obj=new stdClass();
+    //             $obj->status=0;
+    //             $obj->action=$actionJSON;
+
+    //             echo json_encode($obj);
+    //         }
+    //     }
+    // }
+    public function Receivablesettleinsertupdate() {
+        $userID = $_SESSION['userid'];
+        $detailaccount = 0;
+        $chartaccount = 0;
+
+        $company = $this->input->post('company');
+        $branch = $this->input->post('branch');
+        $customer = $this->input->post('customer');
+        $invoicepayamount = str_replace(',', '', $this->input->post('invoicepayamount'));
+        $paidamount = str_replace(',', '', $this->input->post('paidamount'));
+        $invoicedata = json_decode($this->input->post('tableData'));
+        $paymentdata = json_decode($this->input->post('tableReceData'));
+        
+        $chequecashamount = $paidamount;
+
+        $recordOption = $this->input->post('recordOption');
+        if (!empty($this->input->post('recordID'))) {
+            $recordID = $this->input->post('recordID');
+        }
+        
+        if ($recordOption == 1) {
+            $prefix = receiv_prefix($company, $branch);
+            $masterdata = get_account_period($company, $branch);
+            $batchno = tr_batch_num($prefix, $branch);
+            $masterID = $masterdata->idtbl_master;
         }
 
-        $updatedatetime=date('Y-m-d H:i:s');
-        $today=date('Y-m-d');
-    
-        if($recordOption==1){
-            if(!empty($batchno)){
+        $updatedatetime = date('Y-m-d H:i:s');
+        $today = date('Y-m-d');
+        
+        if ($recordOption == 1) {
+            if (!empty($batchno)) {
                 $this->db->trans_begin();
 
-                $data = array(
-                    'recdate'=> $today, 
-                    'batchno'=> $batchno, 
-                    'payer'=> $customer, 
-                    'amount'=> $paidamount, 
-                    'narration'=> $narration, 
-                    'chequedate'=> $chequedate, 
-                    'chequeno'=> $chequeno, 
-                    'poststatus'=> '0', 
-                    'status'=> '1', 
-                    'insertdatetime'=> $updatedatetime, 
-                    'tbl_user_idtbl_user'=> $userID,
-                    'tbl_receivable_type_idtbl_receivable_type'=> $receivabletype,
-                    'tbl_company_idtbl_company'=> $company,
-                    'tbl_company_branch_idtbl_company_branch'=> $branch,
-                    'tbl_master_idtbl_master'=> $masterID,
-                    'tbl_account_idtbl_account'=> $chartaccount,
-                    'tbl_account_detail_idtbl_account_detail'=> $detailaccount
-                );
-
-                $this->db->insert('tbl_receivable', $data);
-
-                $receivalbleID=$this->db->insert_id();
-
-                foreach($invoicedata as $rowinvoicedata){
-                    $narration=$rowinvoicedata->customer.' - '.$rowinvoicedata->invoiceno;
-                    $invoicetotal=str_replace(',', '', $rowinvoicedata->amount);
-
-                    if($chequecashamount>=$invoicetotal){
-                        $invoicepayamount=$invoicetotal;
-                        $chequecashamount=$chequecashamount-$invoicetotal;
-                    }
-                    else{
-                        $invoicepayamount=$chequecashamount;
-                        $chequecashamount=0;
+                $paymentnettotal = 0;
+                
+                // Create a working copy of invoice data with remaining amounts
+                $invoicePayments = [];
+                foreach ($invoicedata as $invoice) {
+                    $invoicePayments[] = [
+                        'invoice' => $invoice,
+                        'remaining' => floatval(str_replace(',', '', $invoice->amount))
+                    ];
+                }
+                
+                foreach ($paymentdata as $rowpaymentdata):
+                    if ($rowpaymentdata->accounttype == 1) {
+                        $chartaccount = $rowpaymentdata->chartofaccount;
+                        $detailaccount = 0;
+                    } else if ($rowpaymentdata->accounttype == 2) {
+                        $detailaccount = $rowpaymentdata->chartofaccount;
+                        $chartaccount = 0;
                     }
 
-                    $datasub = array(
-                        'invoiceno'=> $rowinvoicedata->invid, 
-                        'narration'=> $narration, 
-                        'amount'=> $invoicepayamount, 
-                        'status'=> '1', 
-                        'insertdatetime'=> $updatedatetime, 
-                        'tbl_user_idtbl_user'=> $userID,
-                        'tbl_receivable_idtbl_receivable'=> $receivalbleID,
+                    $data = array(
+                        'recdate' => $today,
+                        'batchno' => $batchno,
+                        'payer' => $customer,
+                        'amount' => str_replace(',', '', $rowpaymentdata->amount),
+                        'narration' => $rowpaymentdata->narration,
+                        'chequedate' => $rowpaymentdata->chequedate,
+                        'chequeno' => $rowpaymentdata->chequeno,
+                        'poststatus' => '0',
+                        'status' => '1',
+                        'insertdatetime' => $updatedatetime,
+                        'tbl_user_idtbl_user' => $userID,
+                        'tbl_receivable_type_idtbl_receivable_type' => $rowpaymentdata->receivabletypeid,
+                        'tbl_company_idtbl_company' => $company,
+                        'tbl_company_branch_idtbl_company_branch' => $branch,
+                        'tbl_master_idtbl_master' => $masterID,
+                        'tbl_account_idtbl_account' => $chartaccount,
+                        'tbl_account_detail_idtbl_account_detail' => $detailaccount
                     );
 
-                    $this->db->insert('tbl_receivable_info', $datasub);
-                }
+                    $this->db->insert('tbl_receivable', $data);
+                    $receivableID = $this->db->insert_id();
+
+                    // Process invoices for this payment
+                    $paymentAmount = floatval(str_replace(',', '', $rowpaymentdata->amount));
+                    
+                    foreach ($invoicePayments as &$invoicePayment) {
+                        // Skip if this invoice is already fully paid
+                        if ($invoicePayment['remaining'] <= 0) {
+                            continue;
+                        }
+                        
+                        $invoiceRemaining = $invoicePayment['remaining'];
+                        $narration = $invoicePayment['invoice']->customer . ' - ' . $invoicePayment['invoice']->invoiceno;
+                        
+                        if ($paymentAmount > 0) {
+                            if ($paymentAmount >= $invoiceRemaining) {
+                                // Full payment for this invoice
+                                $invoicepayamount = $invoiceRemaining;
+                                $paymentAmount = $paymentAmount - $invoiceRemaining;
+                                $invoicePayment['remaining'] = 0;
+                                
+                                // Update the original invoice amount for consistency
+                                $invoicePayment['invoice']->amount = '0.00';
+                            } else {
+                                // Partial payment
+                                $invoicepayamount = $paymentAmount;
+                                $invoicePayment['remaining'] = $invoiceRemaining - $paymentAmount;
+                                
+                                // Update the original invoice amount for consistency
+                                $invoicePayment['invoice']->amount = number_format($invoicePayment['remaining'], 2);
+                                
+                                $paymentAmount = 0;
+                            }
+                            
+                            // Insert payment record for this invoice
+                            $datasub = array(
+                                'invoiceno' => $invoicePayment['invoice']->invid,
+                                'narration' => $narration,
+                                'amount' => $invoicepayamount,
+                                'status' => '1',
+                                'insertdatetime' => $updatedatetime,
+                                'tbl_user_idtbl_user' => $userID,
+                                'tbl_receivable_idtbl_receivable' => $receivableID,
+                            );
+
+                            $this->db->insert('tbl_receivable_info', $datasub);
+                        }
+                        
+                        // Break if payment amount is exhausted
+                        if ($paymentAmount <= 0) {
+                            break;
+                        }
+                    }
+
+                    $paymentnettotal = $paymentnettotal + str_replace(',', '', $rowpaymentdata->amount);
+                endforeach;
 
                 $this->db->trans_complete();
                 if ($this->db->trans_status() === TRUE) {
-                    $this->db->trans_commit();
-                    
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-save';
-                    $actionObj->title='';
-                    $actionObj->message='Record Added Successfully';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='success';
+                    if ($paymentnettotal == $paidamount) {
+                        $this->db->trans_commit();
 
-                    $actionJSON=json_encode($actionObj);
-                    
-                    $obj=new stdClass();
-                    $obj->status=1;
-                    $obj->action=$actionJSON;
+                        $actionObj = new stdClass();
+                        $actionObj->icon = 'fas fa-save';
+                        $actionObj->title = '';
+                        $actionObj->message = 'Record Added Successfully';
+                        $actionObj->url = '';
+                        $actionObj->target = '_blank';
+                        $actionObj->type = 'success';
 
-                    echo json_encode($obj);
+                        $actionJSON = json_encode($actionObj);
+                        
+                        $obj = new stdClass();
+                        $obj->status = 1;
+                        $obj->action = $actionJSON;
+
+                        echo json_encode($obj);
+                    } else {
+                        $this->db->trans_rollback();
+
+                        $actionObj = new stdClass();
+                        $actionObj->icon = 'fas fa-warning';
+                        $actionObj->title = '';
+                        $actionObj->message = 'Record Error, Payment amount not equal payment paid nettotal.';
+                        $actionObj->url = '';
+                        $actionObj->target = '_blank';
+                        $actionObj->type = 'danger';
+
+                        $actionJSON = json_encode($actionObj);
+                        
+                        $obj = new stdClass();
+                        $obj->status = 0;
+                        $obj->action = $actionJSON;
+
+                        echo json_encode($obj);
+                    }
                 } else {
                     $this->db->trans_rollback();
 
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-warning';
-                    $actionObj->title='';
-                    $actionObj->message='Record Error';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='danger';
+                    $actionObj = new stdClass();
+                    $actionObj->icon = 'fas fa-warning';
+                    $actionObj->title = '';
+                    $actionObj->message = 'Record Error';
+                    $actionObj->url = '';
+                    $actionObj->target = '_blank';
+                    $actionObj->type = 'danger';
 
-                    $actionJSON=json_encode($actionObj);
+                    $actionJSON = json_encode($actionObj);
                     
-                    $obj=new stdClass();
-                    $obj->status=0;
-                    $obj->action=$actionJSON;
+                    $obj = new stdClass();
+                    $obj->status = 0;
+                    $obj->action = $actionJSON;
 
                     echo json_encode($obj);
                 }
-            }
-            else{
-                $actionObj=new stdClass();
-                $actionObj->icon='fas fa-warning';
-                $actionObj->title='';
-                $actionObj->message='Record Error, Batch no defind by system';
-                $actionObj->url='';
-                $actionObj->target='_blank';
-                $actionObj->type='danger';
+            } else {
+                $actionObj = new stdClass();
+                $actionObj->icon = 'fas fa-warning';
+                $actionObj->title = '';
+                $actionObj->message = 'Record Error, Batch no defined by system';
+                $actionObj->url = '';
+                $actionObj->target = '_blank';
+                $actionObj->type = 'danger';
 
-                $actionJSON=json_encode($actionObj);
+                $actionJSON = json_encode($actionObj);
                 
-                $obj=new stdClass();
-                $obj->status=0;
-                $obj->action=$actionJSON;
+                $obj = new stdClass();
+                $obj->status = 0;
+                $obj->action = $actionJSON;
 
                 echo json_encode($obj);
             }
-        }
-        else{
-            $this->db->trans_begin();
-
-            $this->db->select('batchno, tbl_company_idtbl_company, tbl_company_branch_idtbl_company_branch, tbl_master_idtbl_master, poststatus');
-            $this->db->from('tbl_receivable');
-            $this->db->where('idtbl_receivable', $recordID);
-            $this->db->where('status', 1);
-
-            $respond=$this->db->get();
-            
-            $this->db->where('tbl_receivable_idtbl_receivable', $recordID);
-            $this->db->delete('tbl_receivable_info');
-
-            $data = array(
-                'amount'=> $invoicepayamount, 
-                'narration'=> $narration, 
-                'chequedate'=> $chequedate, 
-                'chequeno'=> $chequeno,  
-                'editstatus' => '0',
-                'status'=> '1', 
-                'updateuser'=> $userID, 
-                'updatedatetime'=> $updatedatetime,
-                'tbl_receivable_type_idtbl_receivable_type'=> $receivabletype,
-                'tbl_account_idtbl_account'=> $chartaccount,
-                'tbl_account_detail_idtbl_account_detail'=> $detailaccount
-            );
-    
-            $this->db->where('idtbl_receivable', $recordID);
-            $this->db->update('tbl_receivable', $data);
-
-            if($respond->row(0)->poststatus==0){
-                foreach($invoicedata as $rowinvoicedata){
-                    $narration=$rowinvoicedata['col_2'].' - '.$rowinvoicedata['col_4'];
-                    $datasub = array(
-                        'invoiceno'=> $rowinvoicedata['col_4'], 
-                        'narration'=> $narration, 
-                        'amount'=> $rowinvoicedata['col_5'], 
-                        'status'=> '1', 
-                        'insertdatetime'=> $updatedatetime, 
-                        'tbl_user_idtbl_user'=> $userID,
-                        'tbl_receivable_idtbl_receivable'=> $recordID,
-                    );
-
-                    $this->db->insert('tbl_receivable_info', $datasub);
-                }
-
-                $this->db->trans_complete();
-                if ($this->db->trans_status() === TRUE) {
-                    $this->db->trans_commit();
-                    
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-save';
-                    $actionObj->title='';
-                    $actionObj->message='Record Added Successfully';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='success';
-
-                    $actionJSON=json_encode($actionObj);
-                    
-                    $obj=new stdClass();
-                    $obj->status=1;
-                    $obj->action=$actionJSON;
-
-                    echo json_encode($obj);
-                } else {
-                    $this->db->trans_rollback();
-
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-warning';
-                    $actionObj->title='';
-                    $actionObj->message='Record Error';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='danger';
-
-                    $actionJSON=json_encode($actionObj);
-                    
-                    $obj=new stdClass();
-                    $obj->status=0;
-                    $obj->action=$actionJSON;
-
-                    echo json_encode($obj);
-                }
-            }
-            else{
-                $this->db->trans_commit();
-
-                $actionObj=new stdClass();
-                $actionObj->icon='fas fa-warning';
-                $actionObj->title='';
-                $actionObj->message='Record Error. This record already posted.';
-                $actionObj->url='';
-                $actionObj->target='_blank';
-                $actionObj->type='danger';
-
-                $actionJSON=json_encode($actionObj);
-                
-                $obj=new stdClass();
-                $obj->status=0;
-                $obj->action=$actionJSON;
-
-                echo json_encode($obj);
-            }
-        }
+        } 
     }
     // **********************No Use These Function on 2024-02-21*********************
     public function Receivablesettleedit(){
@@ -764,171 +1003,225 @@ class Receivablesettleinfo extends CI_Model{
         }
     }
     public function Receivablesettlestatus($x, $y){
-        $this->db->trans_begin();
-
         $userID=$_SESSION['userid'];
         $recordID=$x;
         $type=$y;
         $updatedatetime=date('Y-m-d H:i:s');
 
-        if($type==1){
-            $data = array(
-                'status' => '1',
-                'updateuser'=> $userID, 
-                'updatedatetime'=> $updatedatetime
-            );
+        $this->db->select('poststatus');
+        $this->db->from('tbl_receivable_main');
+        $this->db->where('idtbl_receivable_main', $recordID);
+        $this->db->where('status', 1);
 
-            $this->db->where('idtbl_receivable', $recordID);
-            $this->db->update('tbl_receivable', $data);
+        $respond=$this->db->get();
 
-            $datapay = array(
-                'status' => '1',
-                'updateuser'=> $userID, 
-                'updatedatetime'=> $updatedatetime
-            );
+        if($respond->row(0)->poststatus==0){
+            if($type==1){
+                $this->db->trans_begin();
 
-            $this->db->where('tbl_receivable_idtbl_receivable', $recordID);
-            $this->db->update('tbl_receivable_info', $datapay);
+                $datamain = array(
+                    'status' => '1',
+                    'updateuser'=> $userID, 
+                    'updatedatetime'=> $updatedatetime
+                );
 
-            $this->db->trans_complete();
+                $this->db->where('idtbl_receivable_main', $recordID);
+                $this->db->update('tbl_receivable_main', $datamain);
 
-            if ($this->db->trans_status() === TRUE) {
-                $this->db->trans_commit();
-                
-                $actionObj=new stdClass();
-                $actionObj->icon='fas fa-check';
-                $actionObj->title='';
-                $actionObj->message='Record Activate Successfully';
-                $actionObj->url='';
-                $actionObj->target='_blank';
-                $actionObj->type='success';
+                $data = array(
+                    'status' => '1',
+                    'updateuser'=> $userID, 
+                    'updatedatetime'=> $updatedatetime
+                );
 
-                $actionJSON=json_encode($actionObj);
-                
-                $this->session->set_flashdata('msg', $actionJSON);
-                redirect('Receivablesettle');                
-            } else {
-                $this->db->trans_rollback();
+                $this->db->where('tbl_receivable_main_idtbl_receivable_main', $recordID);
+                $this->db->update('tbl_receivable', $data);
 
-                $actionObj=new stdClass();
-                $actionObj->icon='fas fa-warning';
-                $actionObj->title='';
-                $actionObj->message='Record Error';
-                $actionObj->url='';
-                $actionObj->target='_blank';
-                $actionObj->type='danger';
+                $datapay = array(
+                    'status' => '1',
+                    'updateuser'=> $userID, 
+                    'updatedatetime'=> $updatedatetime
+                );
 
-                $actionJSON=json_encode($actionObj);
-                
-                $this->session->set_flashdata('msg', $actionJSON);
-                redirect('Receivablesettle');
+                $this->db->where('tbl_receivable_main_idtbl_receivable_main', $recordID);
+                $this->db->update('tbl_receivable_info', $datapay);
+
+                $this->db->trans_complete();
+
+                if ($this->db->trans_status() === TRUE) {
+                    $this->db->trans_commit();
+                    
+                    $actionObj=new stdClass();
+                    $actionObj->icon='fas fa-check';
+                    $actionObj->title='';
+                    $actionObj->message='Record Activate Successfully';
+                    $actionObj->url='';
+                    $actionObj->target='_blank';
+                    $actionObj->type='success';
+
+                    $actionJSON=json_encode($actionObj);
+                    
+                    $this->session->set_flashdata('msg', $actionJSON);
+                    redirect('Receivablesettle');                
+                } else {
+                    $this->db->trans_rollback();
+
+                    $actionObj=new stdClass();
+                    $actionObj->icon='fas fa-warning';
+                    $actionObj->title='';
+                    $actionObj->message='Record Error';
+                    $actionObj->url='';
+                    $actionObj->target='_blank';
+                    $actionObj->type='danger';
+
+                    $actionJSON=json_encode($actionObj);
+                    
+                    $this->session->set_flashdata('msg', $actionJSON);
+                    redirect('Receivablesettle');
+                }
+            }
+            else if($type==2){
+                $this->db->trans_begin();
+
+                $datamain = array(
+                    'status' => '2',
+                    'updateuser'=> $userID, 
+                    'updatedatetime'=> $updatedatetime
+                );
+
+                $this->db->where('idtbl_receivable_main', $recordID);
+                $this->db->update('tbl_receivable_main', $datamain);
+
+                $data = array(
+                    'status' => '2',
+                    'updateuser'=> $userID, 
+                    'updatedatetime'=> $updatedatetime
+                );
+
+                $this->db->where('tbl_receivable_main_idtbl_receivable_main', $recordID);
+                $this->db->update('tbl_receivable', $data);
+
+                $datapay = array(
+                    'status' => '2',
+                    'updateuser'=> $userID, 
+                    'updatedatetime'=> $updatedatetime
+                );
+
+                $this->db->where('tbl_receivable_main_idtbl_receivable_main', $recordID);
+                $this->db->update('tbl_receivable_info', $datapay);
+
+                $this->db->trans_complete();
+
+                if ($this->db->trans_status() === TRUE) {
+                    $this->db->trans_commit();
+                    
+                    $actionObj=new stdClass();
+                    $actionObj->icon='fas fa-times';
+                    $actionObj->title='';
+                    $actionObj->message='Record Deactivate Successfully';
+                    $actionObj->url='';
+                    $actionObj->target='_blank';
+                    $actionObj->type='warning';
+
+                    $actionJSON=json_encode($actionObj);
+                    
+                    $this->session->set_flashdata('msg', $actionJSON);
+                    redirect('Receivablesettle');                
+                } else {
+                    $this->db->trans_rollback();
+
+                    $actionObj=new stdClass();
+                    $actionObj->icon='fas fa-warning';
+                    $actionObj->title='';
+                    $actionObj->message='Record Error';
+                    $actionObj->url='';
+                    $actionObj->target='_blank';
+                    $actionObj->type='danger';
+
+                    $actionJSON=json_encode($actionObj);
+                    
+                    $this->session->set_flashdata('msg', $actionJSON);
+                    redirect('Receivablesettle');
+                }
+            }
+            else if($type==3){
+                $this->db->trans_begin();
+
+                $datamain = array(
+                    'status' => '3',
+                    'updateuser'=> $userID, 
+                    'updatedatetime'=> $updatedatetime
+                );
+
+                $this->db->where('idtbl_receivable_main', $recordID);
+                $this->db->update('tbl_receivable_main', $datamain);
+
+                $data = array(
+                    'status' => '3',
+                    'updateuser'=> $userID, 
+                    'updatedatetime'=> $updatedatetime
+                );
+
+                $this->db->where('tbl_receivable_main_idtbl_receivable_main', $recordID);
+                $this->db->update('tbl_receivable', $data);
+
+                $datapay = array(
+                    'status' => '3',
+                    'updateuser'=> $userID, 
+                    'updatedatetime'=> $updatedatetime
+                );
+
+                $this->db->where('tbl_receivable_main_idtbl_receivable_main', $recordID);
+                $this->db->update('tbl_receivable_info', $datapay);
+
+                $this->db->trans_complete();
+
+                if ($this->db->trans_status() === TRUE) {
+                    $this->db->trans_commit();
+                    
+                    $actionObj=new stdClass();
+                    $actionObj->icon='fas fa-trash-alt';
+                    $actionObj->title='';
+                    $actionObj->message='Record Remove Successfully';
+                    $actionObj->url='';
+                    $actionObj->target='_blank';
+                    $actionObj->type='danger';
+
+                    $actionJSON=json_encode($actionObj);
+                    
+                    $this->session->set_flashdata('msg', $actionJSON);
+                    redirect('Receivablesettle');                
+                } else {
+                    $this->db->trans_rollback();
+
+                    $actionObj=new stdClass();
+                    $actionObj->icon='fas fa-warning';
+                    $actionObj->title='';
+                    $actionObj->message='Record Error';
+                    $actionObj->url='';
+                    $actionObj->target='_blank';
+                    $actionObj->type='danger';
+
+                    $actionJSON=json_encode($actionObj);
+                    
+                    $this->session->set_flashdata('msg', $actionJSON);
+                    redirect('Receivablesettle');
+                }
             }
         }
-        else if($type==2){
-            $data = array(
-                'status' => '2',
-                'updateuser'=> $userID, 
-                'updatedatetime'=> $updatedatetime
-            );
+        else{
+            $actionObj=new stdClass();
+            $actionObj->icon='fas fa-warning';
+            $actionObj->title='';
+            $actionObj->message='Record Error. This record already posted.';
+            $actionObj->url='';
+            $actionObj->target='_blank';
+            $actionObj->type='danger';
 
-            $this->db->where('idtbl_receivable', $recordID);
-            $this->db->update('tbl_receivable', $data);
+            $actionJSON=json_encode($actionObj);
 
-            $datapay = array(
-                'status' => '2',
-                'updateuser'=> $userID, 
-                'updatedatetime'=> $updatedatetime
-            );
-
-            $this->db->where('tbl_receivable_idtbl_receivable', $recordID);
-            $this->db->update('tbl_receivable_info', $datapay);
-
-            $this->db->trans_complete();
-
-            if ($this->db->trans_status() === TRUE) {
-                $this->db->trans_commit();
-                
-                $actionObj=new stdClass();
-                $actionObj->icon='fas fa-times';
-                $actionObj->title='';
-                $actionObj->message='Record Deactivate Successfully';
-                $actionObj->url='';
-                $actionObj->target='_blank';
-                $actionObj->type='warning';
-
-                $actionJSON=json_encode($actionObj);
-                
-                $this->session->set_flashdata('msg', $actionJSON);
-                redirect('Receivablesettle');                
-            } else {
-                $this->db->trans_rollback();
-
-                $actionObj=new stdClass();
-                $actionObj->icon='fas fa-warning';
-                $actionObj->title='';
-                $actionObj->message='Record Error';
-                $actionObj->url='';
-                $actionObj->target='_blank';
-                $actionObj->type='danger';
-
-                $actionJSON=json_encode($actionObj);
-                
-                $this->session->set_flashdata('msg', $actionJSON);
-                redirect('Receivablesettle');
-            }
-        }
-        else if($type==3){
-            $data = array(
-                'status' => '3',
-                'updateuser'=> $userID, 
-                'updatedatetime'=> $updatedatetime
-            );
-
-            $this->db->where('idtbl_receivable', $recordID);
-            $this->db->update('tbl_receivable', $data);
-
-            $datapay = array(
-                'status' => '3',
-                'updateuser'=> $userID, 
-                'updatedatetime'=> $updatedatetime
-            );
-
-            $this->db->where('tbl_receivable_idtbl_receivable', $recordID);
-            $this->db->update('tbl_receivable_info', $datapay);
-
-            $this->db->trans_complete();
-
-            if ($this->db->trans_status() === TRUE) {
-                $this->db->trans_commit();
-                
-                $actionObj=new stdClass();
-                $actionObj->icon='fas fa-trash-alt';
-                $actionObj->title='';
-                $actionObj->message='Record Remove Successfully';
-                $actionObj->url='';
-                $actionObj->target='_blank';
-                $actionObj->type='danger';
-
-                $actionJSON=json_encode($actionObj);
-                
-                $this->session->set_flashdata('msg', $actionJSON);
-                redirect('Receivablesettle');                
-            } else {
-                $this->db->trans_rollback();
-
-                $actionObj=new stdClass();
-                $actionObj->icon='fas fa-warning';
-                $actionObj->title='';
-                $actionObj->message='Record Error';
-                $actionObj->url='';
-                $actionObj->target='_blank';
-                $actionObj->type='danger';
-
-                $actionJSON=json_encode($actionObj);
-                
-                $this->session->set_flashdata('msg', $actionJSON);
-                redirect('Receivablesettle');
-            }
+            $this->session->set_flashdata('msg', $actionJSON);
+            redirect('Receivablesettle');
         }
     }
     public function Getinvrecno(){
