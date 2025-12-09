@@ -289,27 +289,34 @@ class Apiinfo extends CI_Model{
         }
     }
     public function Issuematerialprocess(){
-        $userID=$this->input->post('userid');
-        $company=$this->input->post('company');
-        $branch=$this->input->post('branch');
-        $tradate=$this->input->post('tradate');
-        $traamount=$this->input->post('traamount');
-        $accountcrno=$this->input->post('accountcrno');
-        $narrationcr=$this->input->post('narrationcr');
-        $accountdrno=$this->input->post('accountdrno');
-        $narrationdr=$this->input->post('narrationdr');
+        header('Content-Type: application/json');
 
-        $updatedatetime=date('Y-m-d H:i:s');
+        try {
+            $userID=$this->input->post('userid');
+            $company=$this->input->post('company');
+            $branch=$this->input->post('branch');
+            $tradate=$this->input->post('tradate');
+            $traamount=$this->input->post('traamount');
+            $accountcrno=$this->input->post('accountcrno');
+            $narrationcr=$this->input->post('narrationcr');
+            $accountdrno=$this->input->post('accountdrno');
+            $narrationdr=$this->input->post('narrationdr');
 
-        $fullnarration=$narrationcr.' & '.$narrationdr;
+            $updatedatetime=date('Y-m-d H:i:s');
 
-        $prefix=journal_prefix($company, $branch);
-        $masterdata=get_account_period($company, $branch);
-        $batchno=tr_batch_num($prefix, $branch);
-        $masterID=$masterdata->idtbl_master;
+            $fullnarration=$narrationcr.' & '.$narrationdr;
 
-        if(!empty($batchno)){
-            $this->db->trans_begin();
+            $prefix=journal_prefix($company, $branch);
+            $masterdata=get_account_period($company, $branch);
+            $batchno=tr_batch_num($prefix, $branch);
+
+            if (empty($batchno)) {
+                throw new Exception("Failed to generate batch number");
+            }
+
+            $masterID=$masterdata->idtbl_master;
+
+            // $this->db->trans_begin();
 
             $data = array(
                 'tradate'=> $tradate, 
@@ -324,7 +331,7 @@ class Apiinfo extends CI_Model{
                 'tbl_company_idtbl_company'=> $company,
                 'tbl_company_branch_idtbl_company_branch'=> $branch
             );
-
+            
             $this->db->insert('tbl_account_transaction_manual_main', $data);
 
             $journalmainID=$this->db->insert_id();
@@ -371,29 +378,57 @@ class Apiinfo extends CI_Model{
 
             $this->db->insert('tbl_account_transaction_manual', $data2);
 
-            $this->db->trans_complete();
-            if ($this->db->trans_status() === TRUE) {
-                $this->db->trans_commit();
-                
-                $obj=new stdClass();
-                $obj->status=200;
-
-                echo json_encode($obj);
-            } else {
-                $this->db->trans_rollback();
-
-                $obj=new stdClass();
-                $obj->status=500;
-
-                echo json_encode($obj);
+            if ($this->db->trans_status() === FALSE) {
+                throw new Exception("Database error occurred");
             }
-        }
-        else{
-            $obj=new stdClass();
-            $obj->status=500;
 
-            echo json_encode($obj);
+            $this->db->trans_commit();
+
+            // Return success response
+            echo json_encode([
+                'status' => 'success',
+                'code' => 200,
+                'message' => 'Transaction completed successfully',
+                'data' => [
+                    'batch_no' => $batchno,
+                    'journal_main_id' => $journalmainID
+                ]
+            ]);
+        } catch (Exception $e) {
+            $this->db->trans_rollback();
+            
+            // Return error response
+            http_response_code(500); // Set proper HTTP status code
+            echo json_encode([
+                'status' => 'error',
+                'code' => 500,
+                'message' => $e->getMessage(),
+                'data' => null
+            ]);
         }
+            //     $this->db->trans_complete();
+            //     if ($this->db->trans_status() === TRUE) {
+            //         $this->db->trans_commit();
+                    
+            //         $obj=new stdClass();
+            //         $obj->status=200;
+
+            //         echo json_encode($obj);
+            //     } else {
+            //         $this->db->trans_rollback();
+
+            //         $obj=new stdClass();
+            //         $obj->status=500;
+
+            //         echo json_encode($obj);
+            //     }
+            // }
+            // else{
+            //     $obj=new stdClass();
+            //     $obj->status=500;
+
+            //     echo json_encode($obj);
+            // }
     }
     public function Payrollsalaryprocess(){
         $userID=$this->input->post('userid');

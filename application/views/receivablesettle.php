@@ -173,7 +173,7 @@ include "include/topnavbar.php";
                                 </div>
                                 <div class="col">
                                     <label class="small font-weight-bold">Cheque No*</label>
-                                    <input type="text" name="chequeno" id="chequeno" class="form-control form-control-sm input-integer">
+                                    <input type="text" name="chequeno" id="chequeno" class="form-control form-control-sm">
                                 </div>
                             </div>
                             <div class="row">
@@ -188,10 +188,17 @@ include "include/topnavbar.php";
                                     <input type="text" name="narration" id="narration" class="form-control form-control-sm" required>
                                 </div>
                                 <div class="col">
-                                    <label class="small font-weight-bold">Paid Amount*</label>
-                                    <input type="text" name="paidamount" id="paidamount" class="form-control form-control-sm text-right input-integer" required>
+                                    <label class="small font-weight-bold">Amount*</label>
+                                    <input type="text" name="receivableamount" id="receivableamount" class="form-control form-control-sm text-right input-integer" required>
                                 </div>
                             </div>
+                            <?php if($addcheck==1){ ?>
+                            <div class="row">
+                                <div class="col-12 text-right">
+                                    <button type="button" class="btn btn-primary btn-sm mt-3 px-3" id="addreclistbtn">Add to list</button>
+                                </div>
+                            </div>
+                            <?php } ?>
                             <input type="hidden" name="recordOption" id="recordOption" value="1">
                             <input type="hidden" name="recordID" id="recordID" value="">
 
@@ -200,12 +207,37 @@ include "include/topnavbar.php";
                         </form>
                     </div>
                     <div class="col-12">
-                        
+                        <h6 class="title-style small"><span>Payment Information</span></h6>
+                        <table class="table table-striped table-bordered table-sm small mt-3" id="tblreceivableinfo">
+                            <thead>
+                                <tr>
+                                    <th class="d-none">ReceTypeID</th>
+                                    <th>Receivable Type</th>
+                                    <th>Cheque Date</th>
+                                    <th>Cheque No</th>
+                                    <th>Account No</th>
+                                    <th>Narration</th>
+                                    <th class="text-right">Amount</th>
+                                    <th class="d-none">Chartofaccount</th>
+                                    <th class="d-none">AccountType</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                        <div class="row">
+                            <div class="col">&nbsp;</div>
+                            <div class="col-2">
+                                <label class="small font-weight-bold">Paid Nettotal*</label>
+                                <input type="text" name="paidamount" id="paidamount" class="form-control form-control-sm text-right input-integer" readonly>
+                            </div>
+                        </div>
                         <hr class="border-dark">
                     </div>
+                    <?php if($addcheck==1){ ?>
                     <div class="col-12 text-right">
-                        <button type="button" class="btn btn-primary btn-sm px-4" id="btnfullinvoicepayment" <?php if($addcheck==0){echo 'disabled';} ?>><i class="fas fa-save mr-2"></i>Complete</button>
+                        <button type="button" class="btn btn-primary btn-sm px-4" id="btnfullinvoicepayment"><i class="fas fa-save mr-2"></i>Complete</button>
                     </div>
+                    <?php } ?>
                 </div>
 			</div>
 		</div>
@@ -295,7 +327,7 @@ include "include/topnavbar.php";
 
         // $('#chartofdetailaccount').select2({dropdownParent: $('#modalreceivable')});
         $('.input-integer').inputNumber({
-            allowDecimals: true, allowNegative: false, thousandSep: '', maxDecimalDigits: 2
+            allowDecimals: true, allowNegative: false, thousandSep: ',', maxDecimalDigits: 2
         });
 
         $('#dataTable').DataTable({
@@ -457,8 +489,8 @@ include "include/topnavbar.php";
 
             var poststatus = $(this).attr("data-poststatus");
             var recordtype = $(this).attr("data-recordtype");
-            if(poststatus==1){$('#btnposttransaction').prop('disabled', true);}
-            else if(recordtype==1){$('#btnposttransaction').prop('disabled', true);}
+            if(poststatus==1){$('#btnposttransaction').prop('disabled', true).addClass('d-none');}
+            else if(recordtype==1){$('#btnposttransaction').prop('disabled', true).addClass('d-none');}
             else{$('#btnposttransaction').prop('disabled', false);}
 
             $('#receiableid').val(id);
@@ -473,8 +505,8 @@ include "include/topnavbar.php";
                 success: function(result) { //alert(result);
                     var obj = JSON.parse(result);
                     $('#viewdiv').html(obj.html);
-                    if(obj.editablestatus==1){$('#btnposttransaction').addClass('d-none');}
-                    else{$('#btnposttransaction').removeClass('d-none');}
+                    // if(obj.editablestatus==1){$('#btnposttransaction').addClass('d-none');}
+                    // else{$('#btnposttransaction').removeClass('d-none');}
                 }
             });
         });
@@ -532,43 +564,6 @@ include "include/topnavbar.php";
                 }
             });
         });
-        // $('#invoice').change(function(){
-        //     var invoiceamount = $(this).find(':selected').attr("data-amount");
-        //     $('#invoiceamount').val(parseFloat(invoiceamount).toFixed(2)).attr('max', parseFloat(invoiceamount).toFixed(2));
-        //     checkinvoicecomplete();
-        // });
-        // $("#invoiceamount").keydown(function(){
-        //     $(this).attr('type', 'text');
-        // });
-        // $('#btnaddtolist').click(function(){
-        //     $('#invoiceamount').attr('type', 'number');
-        //     $('#customer').attr('disabled', false);
-        //     if (!$("#invoicepaymentform")[0].checkValidity()) {
-        //         // If the form is invalid, submit it. The form won't actually submit;
-        //         // this will just cause the browser to display the native HTML5 error messages.
-        //         $("#hidesegsubmit").click();
-        //     } else {
-        //         var customerID = $('#customer').val();
-        //         var customer = $('#customer option:selected').text();
-        //         var invoiceID = $('#invoice').val();
-        //         var invoice = $('#invoice option:selected').text();
-        //         var invoiceamount = $('#invoiceamount').val();
-
-        //         $('#tableinvoicepayment> tbody:last').append('<tr><td class="d-none">' + customerID + '</td><td>' + customer + '</td><td class="d-none">' + invoiceID + '</td><td>' + invoice + '</td><td class="invbalamount text-right">' + invoiceamount + '</td><td class="text-right"><button type="button" class="btn btn-danger btn-sm btnremoverow"><i class="fas fa-times"></i></button></td></tr>');
-        //         $('#invoice').val('');
-        //         $('#invoiceamount').val('').attr('type', 'text');
-        //         $('#customer').attr('disabled', true);
-
-        //         checkinvoicecomplete();
-        //     }
-        // });
-        // $('#tableinvoicepayment tbody').on('click', '.btnremoverow', function () {
-    	// 	var r = confirm("Are you sure, You want to remove this invoice payment? ");
-    	// 	if (r == true) {
-    	// 		$(this).closest('tr').remove();
-        //         checkinvoicecomplete();
-    	// 	}
-    	// });
         $('#tableinvoicepayment tbody').on('click', '.checkclick', function() {
             if ($(this).is(':checked')) {
                 checkinvoicecomplete();
@@ -576,130 +571,198 @@ include "include/topnavbar.php";
                 checkinvoicecomplete();
             }
         });
-
-        $('#receivabletype').change(function(){
-            var receivetype = $(this).val();
-            var companyid = $('#company').val();
-            var branchid = $('#branch').val();
-
-            getaccountlist(companyid, branchid, receivetype, '');
+        $("#chartofdetailaccount").select2({
+            dropdownParent: $('#modalreceivable'),
+            ajax: {
+                url: "<?php echo base_url() ?>Payablesegregation/Getaccountlist",
+                type: "post",
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return {
+                        searchTerm: params.term, // search term
+                        companyid: $('#company').val(),
+                        branchid: $('#branch').val()
+                    };
+                },
+                processResults: function (response) {
+                    return {
+                        results: response.map(function (item) {
+                            return {
+                                id: item.id,
+                                text: item.text,
+                                data: {
+                                    type: item.acctype
+                                }
+                            };
+                        })
+                    }
+                },
+                cache: true
+            },
         });
-
-        $('#btnfullinvoicepayment').click(function(){
+        $('#addreclistbtn').click(function(){
             if (!$("#invoicepaymentform")[0].checkValidity()) {
                 // If the form is invalid, submit it. The form won't actually submit;
                 // this will just cause the browser to display the native HTML5 error messages.
                 $("#hidesegsubmit").click();
             } else {
-                $('#btnfullinvoicepayment').prop('disabled', true).html('<i class="fas fa-circle-notch fa-spin mr-2"></i> Complete');
-                var tablelist = $("#tableinvoicepayment tbody input[type=checkbox]:checked");
+                var receivabletype = $('#receivabletype').val();
+                var receivabletypetext = $("#receivabletype option:selected").text();
+                var chequedate = $('#chequedate').val();
+                var chequeno = $('#chequeno').val();
 
-                if (tablelist.length > 0) {
-                    $('#customer').attr('disabled', false);
-                    jsonObj = [];
-                    tablelist.each(function() {
-                        item = {}
-                        var row = $(this).closest("tr");
-                        item["cusid"] = row.find('td:eq(1)').text();
-                        item["customer"] = row.find('td:eq(2)').text();
-                        item["invid"] = row.find('td:eq(3)').text();
-                        item["invoiceno"] = row.find('td:eq(4)').text();
-                        item["amount"] = row.find('td:eq(6)').text();
-                        jsonObj.push(item);
-                    });
-                    var myJSON = JSON.stringify(jsonObj);
+                var chartofdetailaccount = $('#chartofdetailaccount').val();
+                var chartdetailaccount = $('#chartofdetailaccount option:selected').text();
+                // var accounttype = $('#chartofdetailaccount').find(':selected').attr('data-type');;
+                var selectedData = $('#chartofdetailaccount').select2('data')[0];
+                var accounttype = selectedData ? selectedData.data.type : null;
 
-                    var recordID = $('#recordID').val();
-                    var recordOption = $('#recordOption').val();
-                    var company = $('#company').val();
-                    var branch = $('#branch').val();
-                    var customerID = $('#customer').val();
-                    var receivabletype = $('#receivabletype').val();
-                    var chequedate = $('#chequedate').val();
-                    var chequeno = $('#chequeno').val();
-                    var chartofdetailaccount = $('#chartofdetailaccount').val();
-                    // var accounttype = $('#chartofdetailaccount').find(':selected').attr('data-type');;
-                    var selectedData = $('#chartofdetailaccount').select2('data')[0];
-                    var accounttype = selectedData ? selectedData.data.type : null;
-                    var narration = $('#narration').val();
-                    var invoicepayamount = $('#invoicepayamount').val();
-                    var paidamount = $('#paidamount').val();
+                var narration = $('#narration').val();
+                var invoicepayamount = $('#invoicepayamount').val();
+                var receivableamount = addCommas(parseFloat($('#receivableamount').val().replace(/,/g, '')).toFixed(2));
 
-                    Swal.fire({
-                        title: '',
-                        html: '<div class="div-spinner"><div class="custom-loader"></div></div>',
-                        allowOutsideClick: false,
-                        showConfirmButton: false, // Hide the OK button
-                        backdrop: `
-                            rgba(255, 255, 255, 0.5) 
-                        `,
-                        customClass: {
-                            popup: 'fullscreen-swal'
-                        },
-                        didOpen: () => {
-                            document.body.style.overflow = 'hidden';
+                $('#tblreceivableinfo> tbody:last').append('<tr><td class="d-none">' + receivabletype + '</td><td>' + receivabletypetext + '</td><td>' + chequedate + '</td><td>' + chequeno + '</td><td>' + chartdetailaccount + '</td><td>' + narration + '</td><td class="text-right addamount">' + receivableamount + '</td><td class="d-none">' + chartofdetailaccount + '<td class="d-none">' + accounttype + '</td></tr>');
+                $('#receivabletype').val('');
+                $('#chartofdetailaccount').val(null).trigger('change');
+                $('#chequedate').val('');
+                $('#chequeno').val('');
+                $('#narration').val('');
+                $('#receivableamount').val('');
 
-                            $.ajax({
-                                type: "POST",
-                                data: {
-                                    tableData: myJSON,
-                                    company: company,
-                                    branch: branch,
-                                    customer: customerID,
-                                    receivabletype: receivabletype,
-                                    chequedate: chequedate,
-                                    chequeno: chequeno,
-                                    chartofdetailaccount: chartofdetailaccount,
-                                    narration: narration,
-                                    invoicepayamount: invoicepayamount,
-                                    paidamount: paidamount,
-                                    accounttype: accounttype,
-                                    recordOption: recordOption,
-                                    recordID: recordID
-                                },
-                                url: 'Receivablesettle/Receivablesettleinsertupdate',
-                                success: function (result) { //alert(result);
-                                    // console.log(result);
-                                    var obj = JSON.parse(result);
-                                    if (obj.status == 1) {
-                                        Swal.close();
-                                        // $('#hidesegreset').click();
-                                        $('#tableinvoicepayment> tbody').empty();
-                                        $('#customer').val('').trigger('change');
-                                        $('#receivabletype').val('');
-                                        $('#chequedate').val('');
-                                        $('#chequeno').val('');
-                                        $('#chartofdetailaccount').val('').trigger('change');
-                                        $('#narration').val('');
-                                        $('#invoicepayamount').val('0');
-                                        $('#paidamount').val('0');
-                                        $('#btnfullinvoicepayment').prop('disabled', false).html('<i class="fas fa-save mr-2"></i> Complete');
+                var totalpaidamount = 0;
+                $('#tblreceivableinfo tbody tr').each(function() {
+                    var amount = $(this).find('.addamount').text().replace(/,/g, '');
+                    totalpaidamount += parseFloat(amount);
+                });
+                $('#paidamount').val(addCommas(parseFloat(totalpaidamount).toFixed(2)));
+            }
+        });
+        $('#tblreceivableinfo tbody').on('click', 'td', async function() {
+            var r = await Otherconfirmation("You want to remove this segregation ? ");
+    		if (r == true) {
+    			$(this).closest('tr').remove();
+    		}
+            var totalpaidamount = 0;
+            $('#tblreceivableinfo tbody tr').each(function() {
+                var amount = $(this).find('.addamount').text().replace(/,/g, '');
+                totalpaidamount += parseFloat(amount);
+            });
+            $('#paidamount').val(addCommas(parseFloat(totalpaidamount).toFixed(2)));
+    	});
+        
+        $('#btnfullinvoicepayment').click(function(){
+            $('#btnfullinvoicepayment').prop('disabled', true).html('<i class="fas fa-circle-notch fa-spin mr-2"></i> Complete');
+            var tablelist = $("#tableinvoicepayment tbody input[type=checkbox]:checked");
 
-                                        if(recordOption==2){
-                                            setTimeout( function(){ 
-                                                $('#modalreceivable').modal('hide');
-                                            } ,3000 );
-                                        }
-                                    }
-                                    action(obj.action);
-                                },
-                                error: function(error) {
-                                    // Close the SweetAlert on error
+            if (tablelist.length > 0) {
+                $('#customer').attr('disabled', false);
+                jsonObj = [];
+                tablelist.each(function() {
+                    item = {}
+                    var row = $(this).closest("tr");
+                    item["cusid"] = row.find('td:eq(1)').text();
+                    item["customer"] = row.find('td:eq(2)').text();
+                    item["invid"] = row.find('td:eq(3)').text();
+                    item["invoiceno"] = row.find('td:eq(4)').text();
+                    item["amount"] = row.find('td:eq(6)').text();
+                    jsonObj.push(item);
+                });
+                var myJSON = JSON.stringify(jsonObj);
+
+                jsonObjPay = [];
+                $('#tblreceivableinfo tbody tr').each(function() {
+                    itemPay = {}
+                    var rowPay = $(this).closest("tr");
+                    itemPay["receivabletypeid"] = rowPay.find('td:eq(0)').text();
+                    itemPay["receivabletype"] = rowPay.find('td:eq(1)').text();
+                    itemPay["chequedate"] = rowPay.find('td:eq(2)').text();
+                    itemPay["chequeno"] = rowPay.find('td:eq(3)').text();
+                    itemPay["accountno"] = rowPay.find('td:eq(4)').text();
+                    itemPay["narration"] = rowPay.find('td:eq(5)').text();
+                    itemPay["amount"] = rowPay.find('td:eq(6)').text();
+                    itemPay["chartofaccount"] = rowPay.find('td:eq(7)').text();
+                    itemPay["accounttype"] = rowPay.find('td:eq(8)').text();
+                    jsonObjPay.push(itemPay);
+                });
+                var myJSONPay = JSON.stringify(jsonObjPay);
+                
+                var recordID = $('#recordID').val();
+                var recordOption = $('#recordOption').val();
+                var invoicepayamount = $('#invoicepayamount').val();
+                var customerID = $('#customer').val();
+                var company = $('#company').val();
+                var branch = $('#branch').val();
+                var paidamount = $('#paidamount').val();
+
+                Swal.fire({
+                    title: '',
+                    html: '<div class="div-spinner"><div class="custom-loader"></div></div>',
+                    allowOutsideClick: false,
+                    showConfirmButton: false, // Hide the OK button
+                    backdrop: `
+                        rgba(255, 255, 255, 0.5) 
+                    `,
+                    customClass: {
+                        popup: 'fullscreen-swal'
+                    },
+                    didOpen: () => {
+                        document.body.style.overflow = 'hidden';
+
+                        $.ajax({
+                            type: "POST",
+                            data: {
+                                tableData: myJSON,
+                                tableReceData: myJSONPay,
+                                company: company,
+                                branch: branch,
+                                customer: customerID,
+                                invoicepayamount: invoicepayamount,
+                                paidamount: paidamount,
+                                recordOption: recordOption,
+                                recordID: recordID
+                            },
+                            url: 'Receivablesettle/Receivablesettleinsertupdate',
+                            success: function (result) { //alert(result);
+                                // console.log(result);
+                                var obj = JSON.parse(result);
+                                if (obj.status == 1) {
                                     Swal.close();
-                                    
-                                    // Show an error alert
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Error',
-                                        text: 'Something went wrong. Please try again later.'
-                                    });
-                                }
-                            });
+                                    // $('#hidesegreset').click();
+                                    $('#tableinvoicepayment> tbody').empty();
+                                    $('#tblreceivableinfo> tbody').empty();
+                                    $('#customer').val('').trigger('change');
+                                    $('#invoicepayamount').val('0');
+                                    $('#paidamount').val('0');
+                                    $('#btnfullinvoicepayment').prop('disabled', false).html('<i class="fas fa-save mr-2"></i> Complete');
 
-                            document.body.style.overflow = 'visible';
-                        }
-                    });
-                }
+                                    // if(recordOption==2){
+                                    //     setTimeout( function(){ 
+                                    //         $('#modalreceivable').modal('hide');
+                                    //     } ,3000 );
+                                    // }
+                                    actionreload(obj.action);
+                                }
+                                else{
+                                    action(obj.action);
+                                }
+                            },
+                            error: function(error) {
+                                // Close the SweetAlert on error
+                                Swal.close();
+                                
+                                // Show an error alert
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: 'Something went wrong. Please try again later.'
+                                });
+                            }
+                        });
+
+                        document.body.style.overflow = 'visible';
+                    }
+                });
             }
         }); 
 
@@ -841,68 +904,68 @@ include "include/topnavbar.php";
         });
     }
 
-    function getaccountlist(companyid, branchid, receivetype, value){
-        // $.ajax({
-        //     type: "POST",
-        //     data: {
-        //         companyid: companyid,
-        //         branchid: branchid
-        //         // receivetype: receivetype
-        //     },
-        //     url: '<?php echo base_url() ?>Receivablesettle/Getaccountlist',
-        //     success: function(result) { //alert(result);
-        //         var obj = JSON.parse(result);
-        //         var html = '';
-        //         html += '<option value="">Select</option>';
-        //         $.each(obj, function (i, item) {
-        //             // if(receivetype==1){
-        //             //     html += '<option value="' + obj[i].idtbl_account_detail + '">';
-        //             // }
-        //             // else{
-        //             //     html += '<option value="' + obj[i].idtbl_account + '">';
-        //             // }
-        //             html += '<option value="' + obj[i].accountid + '" data-type="'+obj[i].acctype+'">';
-        //             html += obj[i].accountname+' - '+obj[i].accountno ;
-        //             html += '</option>';
-        //         });
-        //         $('#chartofdetailaccount').empty().append(html);   
+    // function getaccountlist(companyid, branchid, receivetype, value){
+    //     // $.ajax({
+    //     //     type: "POST",
+    //     //     data: {
+    //     //         companyid: companyid,
+    //     //         branchid: branchid
+    //     //         // receivetype: receivetype
+    //     //     },
+    //     //     url: '<?php // echo base_url() ?>Receivablesettle/Getaccountlist',
+    //     //     success: function(result) { //alert(result);
+    //     //         var obj = JSON.parse(result);
+    //     //         var html = '';
+    //     //         html += '<option value="">Select</option>';
+    //     //         $.each(obj, function (i, item) {
+    //     //             // if(receivetype==1){
+    //     //             //     html += '<option value="' + obj[i].idtbl_account_detail + '">';
+    //     //             // }
+    //     //             // else{
+    //     //             //     html += '<option value="' + obj[i].idtbl_account + '">';
+    //     //             // }
+    //     //             html += '<option value="' + obj[i].accountid + '" data-type="'+obj[i].acctype+'">';
+    //     //             html += obj[i].accountname+' - '+obj[i].accountno ;
+    //     //             html += '</option>';
+    //     //         });
+    //     //         $('#chartofdetailaccount').empty().append(html);   
 
-        //         // if(value!=''){
-        //         //     $('#chartofdetailaccount').val(value).trigger('change');
-        //         // }
-        //     }
-        // });
-        $("#chartofdetailaccount").select2({
-            dropdownParent: $('#modalreceivable'),
-            ajax: {
-                url: "<?php echo base_url() ?>Payablesegregation/Getaccountlist",
-                type: "post",
-                dataType: 'json',
-                delay: 250,
-                data: function (params) {
-                    return {
-                        searchTerm: params.term, // search term
-                        companyid: companyid,
-                        branchid: branchid
-                    };
-                },
-                processResults: function (response) {
-                    return {
-                        results: response.map(function (item) {
-                            return {
-                                id: item.id,
-                                text: item.text,
-                                data: {
-                                    type: item.acctype
-                                }
-                            };
-                        })
-                    }
-                },
-                cache: true
-            },
-        });
-    }
+    //     //         // if(value!=''){
+    //     //         //     $('#chartofdetailaccount').val(value).trigger('change');
+    //     //         // }
+    //     //     }
+    //     // });
+    //     $("#chartofdetailaccount").select2({
+    //         dropdownParent: $('#modalreceivable'),
+    //         ajax: {
+    //             url: "<?php echo base_url() ?>Payablesegregation/Getaccountlist",
+    //             type: "post",
+    //             dataType: 'json',
+    //             delay: 250,
+    //             data: function (params) {
+    //                 return {
+    //                     searchTerm: params.term, // search term
+    //                     companyid: companyid,
+    //                     branchid: branchid
+    //                 };
+    //             },
+    //             processResults: function (response) {
+    //                 return {
+    //                     results: response.map(function (item) {
+    //                         return {
+    //                             id: item.id,
+    //                             text: item.text,
+    //                             data: {
+    //                                 type: item.acctype
+    //                             }
+    //                         };
+    //                     })
+    //                 }
+    //             },
+    //             cache: true
+    //         },
+    //     });
+    // }
 
     function checkinvoicecomplete(){
         var intVal = function (i) {
@@ -923,7 +986,7 @@ include "include/topnavbar.php";
             });
         }
 
-        $('#invoicepayamount').val(parseFloat(sum).toFixed(2));
+        $('#invoicepayamount').val(addCommas(parseFloat(sum).toFixed(2)));
 
         var invamount = parseFloat($('#invoicepayamount').val());
         if(invamount>0){
