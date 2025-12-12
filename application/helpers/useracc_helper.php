@@ -334,7 +334,7 @@
 
 		$date = DateTime::createFromFormat('!m', $respond->row(0)->month);
 		$monthName = $date->format('M');
-		return 'RE'.$respond->row(0)->year.strtoupper($monthName);
+		return 'PR'.$respond->row(0)->year.strtoupper($monthName);
 	}
 	
 	function get_chart_account_acco_child_account($companyid, $branchid, $detailaccount){

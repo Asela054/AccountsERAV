@@ -168,11 +168,11 @@ include "include/topnavbar.php";
                                     </select>
                                 </div>
                                 <div class="col">
-                                    <label class="small font-weight-bold">Cheque Date</label>
+                                    <label class="small font-weight-bold">Cheq. | Dep. | Trans. | Rec. Date</label>
                                     <input type="date" name="chequedate" id="chequedate" min="<?php // echo date('Y-m-d'); ?>" class="form-control form-control-sm">
                                 </div>
                                 <div class="col">
-                                    <label class="small font-weight-bold">Cheque No*</label>
+                                    <label class="small font-weight-bold">Cheq. | Trans. No*</label>
                                     <input type="text" name="chequeno" id="chequeno" class="form-control form-control-sm">
                                 </div>
                             </div>
@@ -208,22 +208,24 @@ include "include/topnavbar.php";
                     </div>
                     <div class="col-12">
                         <h6 class="title-style small"><span>Payment Information</span></h6>
-                        <table class="table table-striped table-bordered table-sm small mt-3" id="tblreceivableinfo">
-                            <thead>
-                                <tr>
-                                    <th class="d-none">ReceTypeID</th>
-                                    <th>Receivable Type</th>
-                                    <th>Cheque Date</th>
-                                    <th>Cheque No</th>
-                                    <th>Account No</th>
-                                    <th>Narration</th>
-                                    <th class="text-right">Amount</th>
-                                    <th class="d-none">Chartofaccount</th>
-                                    <th class="d-none">AccountType</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+                        <div class="scrollbar pb-3" id="style-2">
+                            <table class="table table-striped table-bordered table-sm small mt-3" id="tblreceivableinfo">
+                                <thead>
+                                    <tr>
+                                        <th class="d-none">ReceTypeID</th>
+                                        <th>Receivable Type</th>
+                                        <th>Cheq. | Dep. | Trans. | Rec. Date</th>
+                                        <th>Cheq. | Trans. No</th>
+                                        <th>Account No</th>
+                                        <th>Narration</th>
+                                        <th class="text-right">Amount</th>
+                                        <th class="d-none">Chartofaccount</th>
+                                        <th class="d-none">AccountType</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                         <div class="row">
                             <div class="col">&nbsp;</div>
                             <div class="col-2">
@@ -489,8 +491,8 @@ include "include/topnavbar.php";
 
             var poststatus = $(this).attr("data-poststatus");
             var recordtype = $(this).attr("data-recordtype");
-            if(poststatus==1){$('#btnposttransaction').prop('disabled', true).addClass('d-none');}
-            else if(recordtype==1){$('#btnposttransaction').prop('disabled', true).addClass('d-none');}
+            if(poststatus==1){$('#btnposttransaction').prop('disabled', true)}
+            // else if(recordtype==1){$('#btnposttransaction').prop('disabled', true)}
             else{$('#btnposttransaction').prop('disabled', false);}
 
             $('#receiableid').val(id);
@@ -505,8 +507,8 @@ include "include/topnavbar.php";
                 success: function(result) { //alert(result);
                     var obj = JSON.parse(result);
                     $('#viewdiv').html(obj.html);
-                    // if(obj.editablestatus==1){$('#btnposttransaction').addClass('d-none');}
-                    // else{$('#btnposttransaction').removeClass('d-none');}
+                    if(obj.editablestatus==1){$('#btnposttransaction').addClass('d-none');}
+                    else{$('#btnposttransaction').removeClass('d-none');}
                 }
             });
         });
