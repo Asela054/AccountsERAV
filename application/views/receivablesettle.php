@@ -22,12 +22,18 @@ include "include/topnavbar.php";
                 <div class="card">
                     <div class="card-body p-0 p-2">
                         <div class="row">
-                            <div class="col-12 text-right">
+                            <div class="col-6">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input" id="filterpostdated">
+                                    <label class="custom-control-label" for="filterpostdated">View post-dated receivables</label>
+                                </div>
+                            </div>
+                            <div class="col-6 text-right">
                                 <button class="btn btn-orange btn-sm px-4 mr-1" id="btnreceiptprint"><i class="fas fa-print mr-2"></i>Receipt Print</button>
                                 <button class="btn btn-primary btn-sm px-4" id="btncreatesegregation" <?php if($addcheck==0){echo 'disabled';} ?>><i class="fas fa-plus mr-2"></i>Receivable Create</button>
-                                <hr>
                             </div>
                             <div class="col-12">
+                                <hr>
                                 <div class="scrollbar pb-3" id="style-2">
                                     <table class="table table-bordered table-striped table-sm nowrap" id="dataTable">
                                         <thead>
@@ -113,7 +119,7 @@ include "include/topnavbar.php";
                 <div class="row">
                     <div class="col-12">
                         <form id="invoicepaymentform">
-                            <div class="row">
+                            <div class="form-row">
                                 <div class="col">
                                     <label class="small font-weight-bold">Company*</label>
                                     <input type="text" name="showcompany" id="showcompany" class="form-control form-control-sm" readonly>
@@ -121,6 +127,10 @@ include "include/topnavbar.php";
                                 <div class="col">
                                     <label class="small font-weight-bold">Branch*</label>
                                     <input type="text" name="showbranch" id="showbranch" class="form-control form-control-sm" readonly>
+                                </div>
+                                <div class="col">
+                                    <label class="small font-weight-bold">Date*</label>
+                                    <input type="date" name="recsettdate" id="recsettdate" class="form-control form-control-sm" max="<?php echo date('Y-m-d'); ?>" value="<?php echo date('Y-m-d'); ?>" required>
                                 </div>
                                 <div class="col">
                                     <label class="small font-weight-bold">Customer*</label><br>
@@ -153,7 +163,7 @@ include "include/topnavbar.php";
                                     <h6 class="small title-style"><span>Receviable Account</span></h6>
                                 </div>
                             </div>
-                            <div class="row">
+                            <div class="form-row">
                                 <div class="col">
                                     <label class="small font-weight-bold">Invoice Total*</label>
                                     <input type="text" name="invoicepayamount" id="invoicepayamount" class="form-control form-control-sm text-right" value="0" readonly>
@@ -168,15 +178,22 @@ include "include/topnavbar.php";
                                     </select>
                                 </div>
                                 <div class="col">
-                                    <label class="small font-weight-bold">Cheq. | Dep. | Trans. | Rec. Date</label>
-                                    <input type="date" name="chequedate" id="chequedate" min="<?php // echo date('Y-m-d'); ?>" class="form-control form-control-sm">
+                                    <label class="small font-weight-bold">Cheq. | Dep. | Trans. | Rec. Date</label>                                    
+                                    <div class="input-group input-group-sm">
+                                        <input type="date" name="chequedate" id="chequedate" min="<?php // echo date('Y-m-d'); ?>" class="form-control">
+                                        <div class="input-group-append">
+                                            <div class="input-group-text">
+                                                <input type="checkbox" class="mr-2" id="checkpostdated" name="checkpostdated" value="1" aria-label="Checkbox for following text input"><label class="form-check-label" for="checkpostdated">Post-dated</label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="col">
                                     <label class="small font-weight-bold">Cheq. | Trans. No*</label>
                                     <input type="text" name="chequeno" id="chequeno" class="form-control form-control-sm">
                                 </div>
                             </div>
-                            <div class="row">
+                            <div class="form-row">
                                 <div class="col-5">
                                     <label class="small font-weight-bold">Account No*</label>
                                     <select name="chartofdetailaccount" id="chartofdetailaccount" class="form-control form-control-sm" style="width: 100%;" required>
@@ -221,6 +238,7 @@ include "include/topnavbar.php";
                                         <th class="text-right">Amount</th>
                                         <th class="d-none">Chartofaccount</th>
                                         <th class="d-none">AccountType</th>
+                                        <th class="d-none">Postdatedstatus</th>
                                     </tr>
                                 </thead>
                                 <tbody></tbody>
@@ -331,6 +349,20 @@ include "include/topnavbar.php";
         $('.input-integer').inputNumber({
             allowDecimals: true, allowNegative: false, thousandSep: ',', maxDecimalDigits: 2
         });
+        $('#receivabletype').change(function(){
+            if($(this).val()==2){
+                $('#checkpostdated').prop('checked', false);
+                $('#checkpostdated').prop('disabled', false);
+            }
+            else{
+                $('#checkpostdated').prop('checked', false);
+                $('#checkpostdated').prop('disabled', true);
+            }
+        });
+
+        $('#filterpostdated').change(function() {
+            $('#dataTable').DataTable().ajax.reload(null, false);
+        });
 
         $('#dataTable').DataTable({
             "destroy": true,
@@ -341,6 +373,7 @@ include "include/topnavbar.php";
                 type: "POST", // you can use GET
                 data: function(d) {
                     d.userID = '<?php echo $_SESSION['userid']; ?>';
+                    d.filterpost = $('#filterpostdated').is(':checked') ? 1 : 0;
                 }
             },
             "order": [[ 0, "desc" ]],
@@ -412,22 +445,27 @@ include "include/topnavbar.php";
                     "data": null,
                     "render": function(data, type, full) {
                         var button='';
-                        button+='<button class="btn btn-dark btn-sm btnview mr-1" id="'+full['idtbl_receivable']+'" data-toggle="tooltip" data-placement="bottom" title="View and post" data-poststatus="'+full['poststatus']+'" data-recordstatus="'+full['status']+'" data-recordtype="'+full['idtbl_receivable_type']+'">';
-                        if(full['poststatus']==0){
-                            button+='<i class="fas fa-exchange-alt"></i>';
+                        if(full['status']==3){
+                            button='<span class="text-danger">Voucher cancelled</span>';
                         }
                         else{
-                            button+='<i class="fas fa-eye"></i>';
-                        }
-                        button+='</button>';
-                        if(full['poststatus']==0){
-                            if(full['status']==1 && statuscheck==1){
-                                button+='<button type="button" data-url="Receivablesettle/Receivablesettlestatus/'+full['idtbl_receivable']+'/2" data-actiontype="2" class="btn btn-success btn-sm mr-1 btntableaction"><i class="fas fa-check"></i></button>';
-                            }else if(full['status']==2 && statuscheck==1){
-                                button+='<button type="button" data-url="Receivablesettle/Receivablesettlestatus/'+full['idtbl_receivable']+'/1" data-actiontype="1" class="btn btn-warning btn-sm mr-1 text-light btntableaction"><i class="fas fa-times"></i></button>';
+                            button+='<button class="btn btn-dark btn-sm btnview mr-1" id="'+full['idtbl_receivable']+'" data-toggle="tooltip" data-placement="bottom" title="View and post" data-poststatus="'+full['poststatus']+'" data-recordstatus="'+full['status']+'" data-recordtype="'+full['idtbl_receivable_type']+'" data-postdatedstatus="'+full['postdatedstatus']+'" data-chequedate="'+full['chequedate']+'">';
+                            if(full['poststatus']==0){
+                                button+='<i class="fas fa-exchange-alt"></i>';
                             }
-                            if(deletecheck==1){
-                                button+='<button type="button" data-url="Receivablesettle/Receivablesettlestatus/'+full['idtbl_receivable']+'/3" data-actiontype="3" class="btn btn-danger btn-sm text-light btntableaction"><i class="fas fa-trash-alt"></i></button>';
+                            else{
+                                button+='<i class="fas fa-eye"></i>';
+                            }
+                            button+='</button>';
+                            if(full['poststatus']==0){
+                                if(full['status']==1 && statuscheck==1){
+                                    button+='<button type="button" data-url="Receivablesettle/Receivablesettlestatus/'+full['idtbl_receivable']+'/2" data-actiontype="2" class="btn btn-success btn-sm mr-1 btntableaction"><i class="fas fa-check"></i></button>';
+                                }else if(full['status']==2 && statuscheck==1){
+                                    button+='<button type="button" data-url="Receivablesettle/Receivablesettlestatus/'+full['idtbl_receivable']+'/1" data-actiontype="1" class="btn btn-warning btn-sm mr-1 text-light btntableaction"><i class="fas fa-times"></i></button>';
+                                }
+                                if(deletecheck==1){
+                                    button+='<button type="button" data-url="Receivablesettle/Receivablesettlestatus/'+full['idtbl_receivable']+'/3" data-actiontype="3" class="btn btn-danger btn-sm text-light btntableaction"><i class="fas fa-trash-alt"></i></button>';
+                                }
                             }
                         }
                         
@@ -439,7 +477,9 @@ include "include/topnavbar.php";
                 $('[data-toggle="tooltip"]').tooltip();
             },
             createdRow: function( row, data, dataIndex){
-                if ( data['poststatus'] == 1 ) {
+                if ( data['status'] == 3 ) {
+                    $(row).addClass('table-danger');
+                } else if ( data['poststatus'] == 1 ) {
                     $(row).addClass('table-primary');
                 }           
             }
@@ -490,9 +530,11 @@ include "include/topnavbar.php";
             else{$('#btnposttransaction').addClass('d-none');}
 
             var poststatus = $(this).attr("data-poststatus");
+            var postdatedstatus = $(this).attr("data-postdatedstatus");
+            var chequedate = $(this).attr("data-chequedate");
             var recordtype = $(this).attr("data-recordtype");
             if(poststatus==1){$('#btnposttransaction').prop('disabled', true)}
-            // else if(recordtype==1){$('#btnposttransaction').prop('disabled', true)}
+            else if (postdatedstatus == 1 && chequedate > new Date().toISOString().split('T')[0]){$('#btnposttransaction').prop('disabled', true)}
             else{$('#btnposttransaction').prop('disabled', false);}
 
             $('#receiableid').val(id);
@@ -624,13 +666,17 @@ include "include/topnavbar.php";
                 var invoicepayamount = $('#invoicepayamount').val();
                 var receivableamount = addCommas(parseFloat($('#receivableamount').val().replace(/,/g, '')).toFixed(2));
 
-                $('#tblreceivableinfo> tbody:last').append('<tr><td class="d-none">' + receivabletype + '</td><td>' + receivabletypetext + '</td><td>' + chequedate + '</td><td>' + chequeno + '</td><td>' + chartdetailaccount + '</td><td>' + narration + '</td><td class="text-right addamount">' + receivableamount + '</td><td class="d-none">' + chartofdetailaccount + '<td class="d-none">' + accounttype + '</td></tr>');
+                if ($('#checkpostdated').is(':checked')) {var postdated = '1';}
+                else{var postdated = '0';}
+
+                $('#tblreceivableinfo> tbody:last').append('<tr><td class="d-none">' + receivabletype + '</td><td>' + receivabletypetext + '</td><td>' + chequedate + '</td><td>' + chequeno + '</td><td>' + chartdetailaccount + '</td><td>' + narration + '</td><td class="text-right addamount">' + receivableamount + '</td><td class="d-none">' + chartofdetailaccount + '</td><td class="d-none">' + accounttype + '</td><td class="d-none">' + postdated + '</td></tr>');
                 $('#receivabletype').val('');
                 $('#chartofdetailaccount').val(null).trigger('change');
                 $('#chequedate').val('');
                 $('#chequeno').val('');
                 $('#narration').val('');
                 $('#receivableamount').val('');
+                $('#checkpostdated').prop('checked', false);
 
                 var totalpaidamount = 0;
                 $('#tblreceivableinfo tbody tr').each(function() {
@@ -685,6 +731,7 @@ include "include/topnavbar.php";
                     itemPay["amount"] = rowPay.find('td:eq(6)').text();
                     itemPay["chartofaccount"] = rowPay.find('td:eq(7)').text();
                     itemPay["accounttype"] = rowPay.find('td:eq(8)').text();
+                    itemPay["postdatedstatus"] = rowPay.find('td:eq(9)').text();
                     jsonObjPay.push(itemPay);
                 });
                 var myJSONPay = JSON.stringify(jsonObjPay);
@@ -696,6 +743,7 @@ include "include/topnavbar.php";
                 var company = $('#company').val();
                 var branch = $('#branch').val();
                 var paidamount = $('#paidamount').val();
+                var recsettdate = $('#recsettdate').val();
 
                 Swal.fire({
                     title: '',
@@ -721,6 +769,7 @@ include "include/topnavbar.php";
                                 customer: customerID,
                                 invoicepayamount: invoicepayamount,
                                 paidamount: paidamount,
+                                recsettdate: recsettdate,
                                 recordOption: recordOption,
                                 recordID: recordID
                             },

@@ -350,6 +350,7 @@ class Receivablesettleinfo extends CI_Model{
 
         $company = $this->input->post('company');
         $branch = $this->input->post('branch');
+        $recsettdate = $this->input->post('recsettdate');
         $customer = $this->input->post('customer');
         $invoicepayamount = str_replace(',', '', $this->input->post('invoicepayamount'));
         $paidamount = str_replace(',', '', $this->input->post('paidamount'));
@@ -368,6 +369,8 @@ class Receivablesettleinfo extends CI_Model{
             $masterdata = get_account_period($company, $branch);
             $batchno = tr_batch_num($prefix, $branch);
             $masterID = $masterdata->idtbl_master;
+            $receiptno = tr_batch_num('REC'.date('y'), $branch);
+            $receiptno = preg_replace('/^(.{5})00/', '$1', $receiptno);
         }
 
         $updatedatetime = date('Y-m-d H:i:s');
@@ -398,13 +401,15 @@ class Receivablesettleinfo extends CI_Model{
                     }
 
                     $data = array(
-                        'recdate' => $today,
+                        'recdate' => $recsettdate,
+                        'receiptno' => $receiptno,
                         'batchno' => $batchno,
                         'payer' => $customer,
                         'amount' => str_replace(',', '', $rowpaymentdata->amount),
                         'narration' => $rowpaymentdata->narration,
                         'chequedate' => $rowpaymentdata->chequedate,
                         'chequeno' => $rowpaymentdata->chequeno,
+                        'postdatedstatus' => $rowpaymentdata->postdatedstatus,
                         'poststatus' => '0',
                         'status' => '1',
                         'insertdatetime' => $updatedatetime,
@@ -694,6 +699,15 @@ class Receivablesettleinfo extends CI_Model{
                 </div> 
             </div>
         </div>';
+        }if($respond->row(0)->postdatedstatus==1 && $respond->row(0)->chequedate>date('Y-m-d')){
+        $html.='
+        <div class="row">
+            <div class="col">
+                <div class="alert alert-danger" role="alert">
+                <i class="fas fa-exclamation-triangle mr-2"></i> You are viewing a post-dated receivable settlement. Please take note that this transaction will only be posted on the cheque date.
+                </div> 
+            </div>
+        </div>';
         }
         $html.='
         <div class="row">
@@ -763,162 +777,198 @@ class Receivablesettleinfo extends CI_Model{
 
         $i=0;
 
-        $this->db->select('recdate, batchno, amount, poststatus, status, editstatus, postviewtime, updatedatetime, tbl_company_idtbl_company, tbl_company_branch_idtbl_company_branch, tbl_master_idtbl_master, payer, tbl_account_idtbl_account, tbl_account_detail_idtbl_account_detail, narration');
+        $this->db->select('recdate, batchno, amount, poststatus, status, editstatus, postviewtime, updatedatetime, tbl_company_idtbl_company, tbl_company_branch_idtbl_company_branch, tbl_master_idtbl_master, payer, tbl_account_idtbl_account, tbl_account_detail_idtbl_account_detail, narration, postdatedstatus, chequedate');
         $this->db->from('tbl_receivable');
         $this->db->where('idtbl_receivable', $recordID);
         $this->db->where('status', 1);
 
         $respond=$this->db->get();
 
-        if($respond->row(0)->poststatus==0 && $respond->row(0)->status==1 && $respond->row(0)->editstatus==0){
-            if($respond->row(0)->postviewtime>$respond->row(0)->updatedatetime){
-                $this->db->trans_begin();
-                
-                $data = array(
-                    'depositstatus'=> '1',
-                    'poststatus'=> '1',
-                    'postuser'=> $userID,
-                    'postviewtime'=> NULL
-                );
-        
-                $this->db->where('idtbl_receivable', $recordID);
-                $this->db->update('tbl_receivable', $data);
+        if($respond->row(0)->postdatedstatus==1 && $respond->row(0)->chequedate>date('Y-m-d')){
+            $actionObj=new stdClass();
+            $actionObj->icon='fas fa-warning';
+            $actionObj->title='';
+            $actionObj->message='Record Error, You cannot post a post-dated receivable.';
+            $actionObj->url='';
+            $actionObj->target='_blank';
+            $actionObj->type='danger';
 
-                $i=1;
-                //Creditor account Transaction
-                $prefix=trans_prefix($respond->row(0)->tbl_company_idtbl_company, $respond->row(0)->tbl_company_branch_idtbl_company_branch);
-                $batchno=tr_batch_num($prefix, $respond->row(0)->tbl_company_branch_idtbl_company_branch);
+            $actionJSON=json_encode($actionObj);
+            
+            $obj=new stdClass();
+            $obj->status=0;
+            $obj->action=$actionJSON;
 
-                //Get Creditor Account
-                $this->db->where('tbl_account_allocation.companybank', $respond->row(0)->tbl_company_idtbl_company);
-                $this->db->where('tbl_account_allocation.branchcompanybank', $respond->row(0)->tbl_company_branch_idtbl_company_branch);
-                // $this->db->where('tbl_account.tbl_account_type_idtbl_account_type', 2);
-                $this->db->where('tbl_account.specialcate', 35);
-                $this->db->where('tbl_account.status', 1);
-                $this->db->where('tbl_account_allocation.status', 1);
-                $this->db->where('tbl_account_allocation.tbl_account_idtbl_account is NOT NULL', NULL, FALSE);
-                $this->db->select('`tbl_account`.`idtbl_account`, `tbl_account`.`accountno`, `tbl_account`.`accountname`');
-                $this->db->from('tbl_account');
-                $this->db->join('tbl_account_allocation', 'tbl_account_allocation.tbl_account_idtbl_account = tbl_account.idtbl_account', 'left');
+            echo json_encode($obj);
+        }
+        else{
+            if($respond->row(0)->poststatus==0 && $respond->row(0)->status==1 && $respond->row(0)->editstatus==0){
+                if($respond->row(0)->postviewtime>$respond->row(0)->updatedatetime){
+                    $this->db->trans_begin();
+                    
+                    $data = array(
+                        'depositstatus'=> '1',
+                        'poststatus'=> '1',
+                        'postuser'=> $userID,
+                        'postviewtime'=> NULL
+                    );
+            
+                    $this->db->where('idtbl_receivable', $recordID);
+                    $this->db->update('tbl_receivable', $data);
 
-                $respondcreditor=$this->db->get();
+                    $i=1;
+                    //Creditor account Transaction
+                    $prefix=trans_prefix($respond->row(0)->tbl_company_idtbl_company, $respond->row(0)->tbl_company_branch_idtbl_company_branch);
+                    $batchno=tr_batch_num($prefix, $respond->row(0)->tbl_company_branch_idtbl_company_branch);
 
-                $datacredit = array(
-                    'tradate'=> $respond->row(0)->recdate, 
-                    'batchno'=> $batchno, 
-                    'trabatchotherno'=> $respond->row(0)->batchno, 
-                    'tratype'=> 'R', 
-                    'seqno'=> $i, 
-                    'crdr'=> 'C', 
-                    'accamount'=> $respond->row(0)->amount, 
-                    'narration'=> $respond->row(0)->narration, 
-                    'totamount'=> $respond->row(0)->amount, 
-                    'status'=> '1', 
-                    'insertdatetime'=> $updatedatetime, 
-                    'tbl_user_idtbl_user'=> $userID,
-                    'tbl_account_idtbl_account'=> $respondcreditor->row(0)->idtbl_account,
-                    'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
-                    'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
-                    'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
-                );
-                $this->db->insert('tbl_account_transaction', $datacredit);
-        
-                $datacreditfull = array(
-                    'tradate'=> $respond->row(0)->recdate, 
-                    'batchno'=> $batchno, 
-                    'tratype'=> 'R', 
-                    'crdr'=> 'C', 
-                    'accamount'=> $respond->row(0)->amount, 
-                    'narration'=> $respond->row(0)->narration, 
-                    'totamount'=> $respond->row(0)->amount, 
-                    'status'=> '1', 
-                    'insertdatetime'=> $updatedatetime, 
-                    'tbl_user_idtbl_user'=> $userID,
-                    'tbl_account_idtbl_account'=> $respondcreditor->row(0)->idtbl_account,
-                    'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
-                    'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
-                    'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
-                );
-                $this->db->insert('tbl_account_transaction_full', $datacreditfull);
+                    //Get Creditor Account
+                    $this->db->where('tbl_account_allocation.companybank', $respond->row(0)->tbl_company_idtbl_company);
+                    $this->db->where('tbl_account_allocation.branchcompanybank', $respond->row(0)->tbl_company_branch_idtbl_company_branch);
+                    // $this->db->where('tbl_account.tbl_account_type_idtbl_account_type', 2);
+                    $this->db->where('tbl_account.specialcate', 35);
+                    $this->db->where('tbl_account.status', 1);
+                    $this->db->where('tbl_account_allocation.status', 1);
+                    $this->db->where('tbl_account_allocation.tbl_account_idtbl_account is NOT NULL', NULL, FALSE);
+                    $this->db->select('`tbl_account`.`idtbl_account`, `tbl_account`.`accountno`, `tbl_account`.`accountname`');
+                    $this->db->from('tbl_account');
+                    $this->db->join('tbl_account_allocation', 'tbl_account_allocation.tbl_account_idtbl_account = tbl_account.idtbl_account', 'left');
 
-                //Debit account Transaction
+                    $respondcreditor=$this->db->get();
 
-                if(!empty($respond->row(0)->tbl_account_detail_idtbl_account_detail)){
-                    $chartofaccountinfo=get_chart_account_acco_child_account($respond->row(0)->tbl_company_idtbl_company, $respond->row(0)->tbl_company_branch_idtbl_company_branch, $respond->row(0)->tbl_account_detail_idtbl_account_detail);
-                    $chartofaccountID=$chartofaccountinfo->row(0)->idtbl_account;
+                    $datacredit = array(
+                        'tradate'=> $respond->row(0)->recdate, 
+                        'batchno'=> $batchno, 
+                        'trabatchotherno'=> $respond->row(0)->batchno, 
+                        'tratype'=> 'R', 
+                        'seqno'=> $i, 
+                        'crdr'=> 'C', 
+                        'accamount'=> $respond->row(0)->amount, 
+                        'narration'=> $respond->row(0)->narration, 
+                        'totamount'=> $respond->row(0)->amount, 
+                        'status'=> '1', 
+                        'insertdatetime'=> $updatedatetime, 
+                        'tbl_user_idtbl_user'=> $userID,
+                        'tbl_account_idtbl_account'=> $respondcreditor->row(0)->idtbl_account,
+                        'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
+                        'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
+                        'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
+                    );
+                    $this->db->insert('tbl_account_transaction', $datacredit);
+            
+                    $datacreditfull = array(
+                        'tradate'=> $respond->row(0)->recdate, 
+                        'batchno'=> $batchno, 
+                        'tratype'=> 'R', 
+                        'crdr'=> 'C', 
+                        'accamount'=> $respond->row(0)->amount, 
+                        'narration'=> $respond->row(0)->narration, 
+                        'totamount'=> $respond->row(0)->amount, 
+                        'status'=> '1', 
+                        'insertdatetime'=> $updatedatetime, 
+                        'tbl_user_idtbl_user'=> $userID,
+                        'tbl_account_idtbl_account'=> $respondcreditor->row(0)->idtbl_account,
+                        'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
+                        'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
+                        'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
+                    );
+                    $this->db->insert('tbl_account_transaction_full', $datacreditfull);
+
+                    //Debit account Transaction
+
+                    if(!empty($respond->row(0)->tbl_account_detail_idtbl_account_detail)){
+                        $chartofaccountinfo=get_chart_account_acco_child_account($respond->row(0)->tbl_company_idtbl_company, $respond->row(0)->tbl_company_branch_idtbl_company_branch, $respond->row(0)->tbl_account_detail_idtbl_account_detail);
+                        $chartofaccountID=$chartofaccountinfo->row(0)->idtbl_account;
+                    }
+                    else{
+                        $chartofaccountID=$respond->row(0)->tbl_account_idtbl_account;
+                    }
+
+                    $i++;
+                    $data = array(
+                        'tradate'=> $respond->row(0)->recdate, 
+                        'batchno'=> $batchno, 
+                        'trabatchotherno'=> $respond->row(0)->batchno, 
+                        'tratype'=> 'R', 
+                        'seqno'=> $i, 
+                        'crdr'=> 'D', 
+                        'accamount'=> $respond->row(0)->amount, 
+                        'narration'=> $respond->row(0)->narration, 
+                        'totamount'=> $respond->row(0)->amount,
+                        'status'=> '1', 
+                        'insertdatetime'=> $updatedatetime, 
+                        'tbl_user_idtbl_user'=> $userID,
+                        'tbl_account_idtbl_account'=> $chartofaccountID,
+                        'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
+                        'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
+                        'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
+                    );
+
+                    $this->db->insert('tbl_account_transaction', $data);
+
+                    $datafull = array(
+                        'tradate'=> $respond->row(0)->recdate, 
+                        'batchno'=> $batchno, 
+                        'tratype'=> 'R', 
+                        'crdr'=> 'D', 
+                        'accamount'=> $respond->row(0)->amount, 
+                        'narration'=> $respond->row(0)->narration, 
+                        'totamount'=> $respond->row(0)->amount,
+                        'status'=> '1', 
+                        'insertdatetime'=> $updatedatetime, 
+                        'tbl_user_idtbl_user'=> $userID,
+                        'tbl_account_idtbl_account'=> $respond->row(0)->tbl_account_idtbl_account,
+                        'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
+                        'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
+                        'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
+                    );
+
+                    $this->db->insert('tbl_account_transaction_full', $datafull);
+
+                    $this->db->trans_complete();
+
+                    if ($this->db->trans_status() === TRUE) {
+                        $this->db->trans_commit();
+                        
+                        $actionObj=new stdClass();
+                        $actionObj->icon='fas fa-save';
+                        $actionObj->title='';
+                        $actionObj->message='Record Added Successfully';
+                        $actionObj->url='';
+                        $actionObj->target='_blank';
+                        $actionObj->type='success';
+
+                        $actionJSON=json_encode($actionObj);
+                        
+                        $obj=new stdClass();
+                        $obj->status=1;
+                        $obj->action=$actionJSON;
+
+                        echo json_encode($obj);
+                    } else {
+                        $this->db->trans_rollback();
+
+                        $actionObj=new stdClass();
+                        $actionObj->icon='fas fa-warning';
+                        $actionObj->title='';
+                        $actionObj->message='Record Error';
+                        $actionObj->url='';
+                        $actionObj->target='_blank';
+                        $actionObj->type='danger';
+
+                        $actionJSON=json_encode($actionObj);
+                        
+                        $obj=new stdClass();
+                        $obj->status=0;
+                        $obj->action=$actionJSON;
+
+                        echo json_encode($obj);
+                    }
                 }
                 else{
-                    $chartofaccountID=$respond->row(0)->tbl_account_idtbl_account;
-                }
-
-                $i++;
-                $data = array(
-                    'tradate'=> $respond->row(0)->recdate, 
-                    'batchno'=> $batchno, 
-                    'trabatchotherno'=> $respond->row(0)->batchno, 
-                    'tratype'=> 'R', 
-                    'seqno'=> $i, 
-                    'crdr'=> 'D', 
-                    'accamount'=> $respond->row(0)->amount, 
-                    'narration'=> $respond->row(0)->narration, 
-                    'totamount'=> $respond->row(0)->amount,
-                    'status'=> '1', 
-                    'insertdatetime'=> $updatedatetime, 
-                    'tbl_user_idtbl_user'=> $userID,
-                    'tbl_account_idtbl_account'=> $chartofaccountID,
-                    'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
-                    'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
-                    'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
-                );
-
-                $this->db->insert('tbl_account_transaction', $data);
-
-                $datafull = array(
-                    'tradate'=> $respond->row(0)->recdate, 
-                    'batchno'=> $batchno, 
-                    'tratype'=> 'R', 
-                    'crdr'=> 'D', 
-                    'accamount'=> $respond->row(0)->amount, 
-                    'narration'=> $respond->row(0)->narration, 
-                    'totamount'=> $respond->row(0)->amount,
-                    'status'=> '1', 
-                    'insertdatetime'=> $updatedatetime, 
-                    'tbl_user_idtbl_user'=> $userID,
-                    'tbl_account_idtbl_account'=> $respond->row(0)->tbl_account_idtbl_account,
-                    'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
-                    'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
-                    'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
-                );
-
-                $this->db->insert('tbl_account_transaction_full', $datafull);
-
-                $this->db->trans_complete();
-
-                if ($this->db->trans_status() === TRUE) {
-                    $this->db->trans_commit();
-                    
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-save';
-                    $actionObj->title='';
-                    $actionObj->message='Record Added Successfully';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='success';
-
-                    $actionJSON=json_encode($actionObj);
-                    
-                    $obj=new stdClass();
-                    $obj->status=1;
-                    $obj->action=$actionJSON;
-
-                    echo json_encode($obj);
-                } else {
-                    $this->db->trans_rollback();
-
                     $actionObj=new stdClass();
                     $actionObj->icon='fas fa-warning';
                     $actionObj->title='';
-                    $actionObj->message='Record Error';
+                    $actionObj->message='Record Error, Please check this record for information. Because this record was edited before you posted.';
                     $actionObj->url='';
                     $actionObj->target='_blank';
                     $actionObj->type='danger';
@@ -932,11 +982,28 @@ class Receivablesettleinfo extends CI_Model{
                     echo json_encode($obj);
                 }
             }
-            else{
+            else if($respond->row(0)->status==2){
                 $actionObj=new stdClass();
                 $actionObj->icon='fas fa-warning';
                 $actionObj->title='';
-                $actionObj->message='Record Error, Please check this record for information. Because this record was edited before you posted.';
+                $actionObj->message='Record Error, Record Deactivated. Kindly review the status of the record.';
+                $actionObj->url='';
+                $actionObj->target='_blank';
+                $actionObj->type='warning';
+
+                $actionJSON=json_encode($actionObj);
+                
+                $obj=new stdClass();
+                $obj->status=0;
+                $obj->action=$actionJSON;
+
+                echo json_encode($obj);
+            }
+            else if($respond->row(0)->editstatus==1){
+                $actionObj=new stdClass();
+                $actionObj->icon='fas fa-warning';
+                $actionObj->title='';
+                $actionObj->message='Record Error, Record in editable mode. You cannot change anything about the record.';
                 $actionObj->url='';
                 $actionObj->target='_blank';
                 $actionObj->type='danger';
@@ -949,57 +1016,23 @@ class Receivablesettleinfo extends CI_Model{
 
                 echo json_encode($obj);
             }
-        }
-        else if($respond->row(0)->status==2){
-            $actionObj=new stdClass();
-            $actionObj->icon='fas fa-warning';
-            $actionObj->title='';
-            $actionObj->message='Record Error, Record Deactivated. Kindly review the status of the record.';
-            $actionObj->url='';
-            $actionObj->target='_blank';
-            $actionObj->type='warning';
+            else if($respond->row(0)->poststatus==1){
+                $actionObj=new stdClass();
+                $actionObj->icon='fas fa-warning';
+                $actionObj->title='';
+                $actionObj->message='Record Error, Record already posted.';
+                $actionObj->url='';
+                $actionObj->target='_blank';
+                $actionObj->type='danger';
 
-            $actionJSON=json_encode($actionObj);
-            
-            $obj=new stdClass();
-            $obj->status=0;
-            $obj->action=$actionJSON;
+                $actionJSON=json_encode($actionObj);
+                
+                $obj=new stdClass();
+                $obj->status=0;
+                $obj->action=$actionJSON;
 
-            echo json_encode($obj);
-        }
-        else if($respond->row(0)->editstatus==1){
-            $actionObj=new stdClass();
-            $actionObj->icon='fas fa-warning';
-            $actionObj->title='';
-            $actionObj->message='Record Error, Record in editable mode. You cannot change anything about the record.';
-            $actionObj->url='';
-            $actionObj->target='_blank';
-            $actionObj->type='danger';
-
-            $actionJSON=json_encode($actionObj);
-            
-            $obj=new stdClass();
-            $obj->status=0;
-            $obj->action=$actionJSON;
-
-            echo json_encode($obj);
-        }
-        else if($respond->row(0)->poststatus==1){
-            $actionObj=new stdClass();
-            $actionObj->icon='fas fa-warning';
-            $actionObj->title='';
-            $actionObj->message='Record Error, Record already posted.';
-            $actionObj->url='';
-            $actionObj->target='_blank';
-            $actionObj->type='danger';
-
-            $actionJSON=json_encode($actionObj);
-            
-            $obj=new stdClass();
-            $obj->status=0;
-            $obj->action=$actionJSON;
-
-            echo json_encode($obj);
+                echo json_encode($obj);
+            }
         }
     }
     public function Receivablesettlestatus($x, $y){

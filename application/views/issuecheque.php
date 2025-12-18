@@ -182,6 +182,7 @@ include "include/topnavbar.php";
                                 var button='';
                                 if(full['chequereturn']==0){
                                     button+='<button type="button" class="btn btn-danger btn-sm mr-1 btnReturn" id="'+full['idtbl_cheque_issue']+'"><i class="fas fa-undo-alt"></i></button>';
+                                    button+='<a href="<?php echo base_url() ?>Issuecheque/Chequeprint/'+full['idtbl_cheque_issue']+'" target="_blank" class="btn btn-sm btn-primary"><i class="fas fa-print"></i></a>'
                                 }
                                 
                                 return button;

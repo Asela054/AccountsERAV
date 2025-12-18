@@ -50,4 +50,7 @@ class Paymentsettle extends CI_Controller {
         $searchTerm=$this->input->post('searchTerm');
         $result=get_supplier_search_list($searchTerm);
 	}
+    public function Paymentsettlecancel(){
+        $result=$this->Paymentsettleinfo->Paymentsettlecancel();
+    }
 }

@@ -50,6 +50,8 @@ $columns = array(
 	array( 'db' => '`ug`.`accountname`', 'dt' => 'accountname', 'field' => 'accountname' ),
     array( 'db' => '`uh`.`accountno`', 'dt' => 'detailaccountno', 'field' => 'detailaccountno', 'as' => 'detailaccountno' ),
     array( 'db' => '`uh`.`accountname`', 'dt' => 'detailaccountname', 'field' => 'detailaccountname', 'as' => 'detailaccountname' ),
+	array( 'db' => '`u`.`postdatedstatus`', 'dt' => 'postdatedstatus', 'field' => 'postdatedstatus' ),
+	array( 'db' => '`uk`.`chedate`', 'dt' => 'chedate', 'field' => 'chedate' ),
 	array( 'db' => '`u`.`status`', 'dt' => 'status', 'field' => 'status' )
 );
 
@@ -75,7 +77,8 @@ $branchid=$_SESSION['branchid'];
 
 $joinQuery = "FROM `tbl_account_paysettle` AS `u` LEFT JOIN `tbl_company` AS `ua` ON (`ua`.`idtbl_company` = `u`.`tbl_company_idtbl_company`) LEFT JOIN `tbl_company_branch` AS `ub` ON (`ub`.`idtbl_company_branch` = `u`.`tbl_company_branch_idtbl_company_branch`) LEFT JOIN `tbl_master` AS `uc` ON (`uc`.`idtbl_master` = `u`.`tbl_master_idtbl_master`) LEFT JOIN `tbl_finacial_year` AS `ud` ON (`ud`.`idtbl_finacial_year` = `uc`.`tbl_finacial_year_idtbl_finacial_year`) LEFT JOIN `tbl_finacial_month` AS `ue` ON (`ue`.`idtbl_finacial_month` = `uc`.`tbl_finacial_month_idtbl_finacial_month`) LEFT JOIN `tbl_receivable_type` AS `uf` ON (`uf`.`idtbl_receivable_type` = `u`.`tbl_receivable_type_idtbl_receivable_type`) LEFT JOIN `tbl_account` AS `ug` ON (`ug`.`idtbl_account` = `u`.`tbl_account_idtbl_account`) LEFT JOIN `tbl_account_detail` AS `uh` ON (`uh`.`idtbl_account_detail` = `u`.`tbl_account_detail_idtbl_account_detail`) LEFT JOIN `tbl_supplier` AS `ui` ON (`ui`.`idtbl_supplier` = `u`.`supplier`) LEFT JOIN `tbl_account_paysettle_has_tbl_cheque_issue` AS `uj` ON (`uj`.`tbl_account_paysettle_idtbl_account_paysettle` = `u`.`idtbl_account_paysettle`) LEFT JOIN `tbl_cheque_issue` AS `uk` ON (`uk`.`idtbl_cheque_issue` = `uj`.`tbl_cheque_issue_idtbl_cheque_issue`) LEFT JOIN `tbl_cheque_info` AS `ul` ON (`ul`.`idtbl_cheque_info` = `uk`.`tbl_cheque_info_idtbl_cheque_info`) LEFT JOIN `tbl_bank` AS `um` ON (`um`.`idtbl_bank` = `ul`.`tbl_bank_idtbl_bank`)";
 
-$extraWhere = "`u`.`status` IN (1, 2) AND `u`.`tbl_company_idtbl_company`='$companyid' AND `u`.`tbl_company_branch_idtbl_company_branch`='$branchid'";
+if($_POST['filterpost']==1){$extraWhere = "`u`.`status` IN (1, 2) AND `u`.`tbl_company_idtbl_company`='$companyid' AND `u`.`tbl_company_branch_idtbl_company_branch`='$branchid' AND `u`.`postdatedstatus`=1 AND `u`.`poststatus`=0";}
+else{$extraWhere = "`u`.`status` IN (1, 2, 3) AND `u`.`tbl_company_idtbl_company`='$companyid' AND `u`.`tbl_company_branch_idtbl_company_branch`='$branchid'";}
 
 echo json_encode(
 	SSP::simple( $_POST, $sql_details, $table, $primaryKey, $columns, $joinQuery, $extraWhere)
