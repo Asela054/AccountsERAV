@@ -52,6 +52,7 @@ $columns = array(
     array( 'db' => '`uh`.`accountname`', 'dt' => 'detailaccountname', 'field' => 'detailaccountname', 'as' => 'detailaccountname' ),
 	array( 'db' => '`u`.`postdatedstatus`', 'dt' => 'postdatedstatus', 'field' => 'postdatedstatus' ),
 	array( 'db' => '`uk`.`chedate`', 'dt' => 'chedate', 'field' => 'chedate' ),
+	array( 'db' => '`u`.`paymentno`', 'dt' => 'paymentno', 'field' => 'paymentno' ),
 	array( 'db' => '`u`.`status`', 'dt' => 'status', 'field' => 'status' )
 );
 

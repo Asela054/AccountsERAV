@@ -39,6 +39,7 @@ include "include/topnavbar.php";
                                         <thead>
                                             <tr>
                                                 <th>#</th>
+                                                <th>Payment No</th>
                                                 <th>Pay Type</th>
                                                 <th>Company</th>
                                                 <th>Branch</th>
@@ -343,6 +344,9 @@ include "include/topnavbar.php";
             "columns": [
                 {
                     "data": "idtbl_account_paysettle"
+                },
+                {
+                    "data": "paymentno"
                 },
                 {
                     "data": "receivabletype"

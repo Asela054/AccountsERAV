@@ -94,6 +94,8 @@ class Paymentsettleinfo extends CI_Model{
             $masterdata=get_account_period($company, $branch);
             $batchno=tr_batch_num($prefix, $branch);
             $masterID=$masterdata->idtbl_master;
+            $payreceiptno = tr_batch_num('PAY'.date('y'), $branch);
+            $payreceiptno = preg_replace('/^(.{5})00/', '$1', $payreceiptno);
         }
 
         $updatedatetime=date('Y-m-d H:i:s');
@@ -181,6 +183,7 @@ class Paymentsettleinfo extends CI_Model{
             if(!empty($batchno)){
                 $data = array(
                     'date'=> $paiddate, 
+                    'paymentno'=> $payreceiptno, 
                     'batchno'=> $batchno, 
                     'supplier'=> $supplier, 
                     'totalpayment'=> $paidamount, 
@@ -955,7 +958,7 @@ class Paymentsettleinfo extends CI_Model{
             echo json_encode($respond->result());
         }
         else{
-            $this->db->select('`idtbl_account_paysettle` AS `invoicereceiptno`');
+            $this->db->select('`paymentno` AS `invoicereceiptno`');
             $this->db->from('tbl_account_paysettle');
             $this->db->where('tbl_account_paysettle.status', '1');
             if(!empty($printsupplier)){$this->db->where('tbl_account_paysettle.supplier', $printsupplier);}

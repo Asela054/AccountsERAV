@@ -13,7 +13,7 @@ class Receivablesettleinfo extends CI_Model{
         $recordID=$this->input->post('recordID');
 
         // $this->db->select('`tbl_sales_info`.`idtbl_sales_info`, `tbl_sales_info`.`invno`, `tbl_sales_info`.`amount`, IFNULL(SUM(`tbl_receivable_info`.`amount`), 0) AS `sumpay`, (`tbl_sales_info`.`amount`-IFNULL(SUM(`tbl_receivable_info`.`amount`), 0)) AS `balpay`, `tbl_sales_info`.`tbl_customer_idtbl_customer`, `tbl_customer`.`customer`');
-        $this->db->select('`tbl_sales_info`.`idtbl_sales_info`, `tbl_sales_info`.`invno`, `tbl_sales_info`.`amount`, IFNULL(SUM(CASE WHEN `tbl_receivable_info`.`status` = 1 THEN `tbl_receivable_info`.`amount` ELSE 0 END), 0) AS `sumpay`, (`tbl_sales_info`.`amount`-IFNULL(SUM(CASE WHEN `tbl_receivable_info`.`status` = 1 THEN `tbl_receivable_info`.`amount` ELSE 0 END), 0)) AS `balpay`, `tbl_sales_info`.`tbl_customer_idtbl_customer`, `tbl_customer`.`customer`');
+        $this->db->select('`tbl_sales_info`.`idtbl_sales_info`, `tbl_sales_info`.`invno`, `tbl_sales_info`.`invamount`, IFNULL(SUM(CASE WHEN `tbl_receivable_info`.`status` = 1 THEN `tbl_receivable_info`.`amount` ELSE 0 END), 0) AS `sumpay`, (`tbl_sales_info`.`invamount`-IFNULL(SUM(CASE WHEN `tbl_receivable_info`.`status` = 1 THEN `tbl_receivable_info`.`amount` ELSE 0 END), 0)) AS `balpay`, `tbl_sales_info`.`tbl_customer_idtbl_customer`, `tbl_customer`.`customer`');
         $this->db->from('tbl_sales_info');
         $this->db->join('tbl_receivable_info', 'tbl_receivable_info.invoiceno = tbl_sales_info.invno', 'left');
         $this->db->join('tbl_customer', 'tbl_customer.idtbl_customer = tbl_sales_info.tbl_customer_idtbl_customer', 'left');
@@ -51,7 +51,7 @@ class Receivablesettleinfo extends CI_Model{
                     <td>'.$rowdatalist->customer.'</td>
                     <td class="d-none">'.$rowdatalist->invno.'</td>
                     <td>'.$rowdatalist->invno.'</td>
-                    <td class="text-right">'.number_format($rowdatalist->amount, 2).'</td>
+                    <td class="text-right">'.number_format($rowdatalist->invamount, 2).'</td>
                     <td class="text-right invbalamount">'.number_format($netbalpay, 2).'</td>
                 </tr>
                 ';
@@ -1223,7 +1223,7 @@ class Receivablesettleinfo extends CI_Model{
             echo json_encode($respond->result());
         }
         else{
-            $this->db->select('`idtbl_receivable` AS `invoicereceiptno`');
+            $this->db->select('`receiptno` AS `invoicereceiptno`');
             $this->db->from('tbl_receivable');
             $this->db->where('tbl_receivable.status', '1');
             if(!empty($printcustomer)){$this->db->where('tbl_receivable.payer', $printcustomer);}
