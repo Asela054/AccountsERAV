@@ -39,6 +39,7 @@ include "include/topnavbar.php";
                                         <thead>
                                             <tr>
                                                 <th>#</th>
+                                                <th>Receipt No</th>
                                                 <th>Rec. Type</th>
                                                 <th>Company</th>
                                                 <th>Branch</th>
@@ -380,6 +381,9 @@ include "include/topnavbar.php";
             "columns": [
                 {
                     "data": "idtbl_receivable"
+                },
+                {
+                    "data": "receiptno"
                 },
                 {
                     "data": "receivabletype"

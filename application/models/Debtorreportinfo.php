@@ -72,16 +72,20 @@ class Debtorreportinfo extends CI_Model{
                 $openingBalance = $respondopenbalance->row()->openbalance;
 
                 // Get Transactions for this customer
-                $sql = "SELECT * FROM (SELECT `invno` AS `receiptno`, `invdate` AS `invpaydate`, `invamount` AS `amount`, GROUP_CONCAT(`tbl_print_invoicedetail`.`job`) AS `narration`, 'D' AS `tratype`, '' AS `chequedate`, '' AS `chequeno` FROM `tbl_sales_info` LEFT JOIN `tbl_print_invoice` ON `tbl_print_invoice`.`inv_no` = `tbl_sales_info`.`invno` LEFT JOIN `tbl_print_invoicedetail` ON  `tbl_print_invoicedetail`.`tbl_print_invoice_idtbl_print_invoice` = `tbl_print_invoice`.`idtbl_print_invoice` WHERE `tbl_sales_info`.`tbl_customer_idtbl_customer`=? AND `tbl_sales_info`.`tbl_company_idtbl_company`=? AND `tbl_sales_info`.`tbl_company_branch_idtbl_company_branch`=? AND `tbl_sales_info`.`invdate` BETWEEN ? AND ? AND `tbl_sales_info`.`status`=? GROUP BY `tbl_sales_info`.`invno` UNION ALL 
-                        SELECT `tbl_receivable`.`receiptno`, `tbl_receivable`.`recdate` AS `invpaydate`, `tbl_receivable_info`.`amount`, CONCAT(
-                            `tbl_receivable`.`narration`,
-                            ' ',
-                            GROUP_CONCAT(`tbl_receivable_info`.`invoiceno` SEPARATOR ', '),
-                            ' - ',
-                            `tbl_receivable`.`chequeno`
-                        ) AS `narration`, 'C' AS `tratype`, `tbl_receivable`.`chequedate`, `tbl_receivable`.`chequeno` FROM `tbl_receivable_info` LEFT JOIN `tbl_receivable` ON `tbl_receivable`.`idtbl_receivable`=`tbl_receivable_info`.`tbl_receivable_idtbl_receivable` WHERE `tbl_receivable`.`recdate` BETWEEN ? AND ? AND `tbl_receivable`.`status`=? AND `tbl_receivable`.`payer`=? AND `tbl_receivable`.`tbl_company_idtbl_company`=? AND `tbl_receivable`.`tbl_company_branch_idtbl_company_branch`=? GROUP BY `tbl_receivable`.`idtbl_receivable`) AS `u` ORDER BY `u`.`invpaydate` ASC";
+                $sql = "SELECT * FROM (SELECT `invno` AS `receiptno`, `invdate` AS `invpaydate`, `invamount` AS `amount`, GROUP_CONCAT(`tbl_print_invoicedetail`.`job`) AS `narration`, 'D' AS `tratype`, '' AS `chequedate`, '' AS `chequeno` FROM `tbl_sales_info` LEFT JOIN `tbl_print_invoice` ON (
+                    `tbl_print_invoice`.`inv_no` = `tbl_sales_info`.`invno` 
+                    OR 
+                    `tbl_print_invoice`.`inv_no` = CONCAT('INV', `tbl_sales_info`.`invno`)
+                ) LEFT JOIN `tbl_print_invoicedetail` ON  `tbl_print_invoicedetail`.`tbl_print_invoice_idtbl_print_invoice` = `tbl_print_invoice`.`idtbl_print_invoice` WHERE `tbl_sales_info`.`tbl_customer_idtbl_customer`=? AND `tbl_sales_info`.`tbl_company_idtbl_company`=? AND `tbl_sales_info`.`tbl_company_branch_idtbl_company_branch`=? AND `tbl_print_invoice`.`tbl_company_idtbl_company`=? AND `tbl_print_invoice`.`tbl_company_branch_idtbl_company_branch`=? AND `tbl_sales_info`.`invdate` BETWEEN ? AND ? AND `tbl_sales_info`.`status`=? GROUP BY `tbl_sales_info`.`invno` UNION ALL 
+                SELECT `tbl_receivable`.`receiptno`, `tbl_receivable`.`recdate` AS `invpaydate`, `tbl_receivable_info`.`amount`, CONCAT(
+                    `tbl_receivable`.`narration`,
+                    ' ',
+                    GROUP_CONCAT(`tbl_receivable_info`.`invoiceno` SEPARATOR ', '),
+                    ' - ',
+                    `tbl_receivable`.`chequeno`
+                ) AS `narration`, 'C' AS `tratype`, `tbl_receivable`.`chequedate`, `tbl_receivable`.`chequeno` FROM `tbl_receivable_info` LEFT JOIN `tbl_receivable` ON `tbl_receivable`.`idtbl_receivable`=`tbl_receivable_info`.`tbl_receivable_idtbl_receivable` WHERE `tbl_receivable`.`recdate` BETWEEN ? AND ? AND `tbl_receivable`.`status`=? AND `tbl_receivable`.`poststatus`=? AND `tbl_receivable`.`payer`=? AND `tbl_receivable`.`tbl_company_idtbl_company`=? AND `tbl_receivable`.`tbl_company_branch_idtbl_company_branch`=? GROUP BY `tbl_receivable`.`idtbl_receivable`) AS `u` ORDER BY `u`.`invpaydate` ASC";
                 
-                $transactions = $this->db->query($sql, [$cust->idtbl_customer, $companyID, $branchID, $fromdate, $todate, 1, $fromdate, $todate, 1, $cust->idtbl_customer, $companyID, $branchID])->result();
+                $transactions = $this->db->query($sql, [$cust->idtbl_customer, $companyID, $branchID, $companyID, $branchID, $fromdate, $todate, 1, $fromdate, $todate, 1, 1, $cust->idtbl_customer, $companyID, $branchID])->result();
 
                 // Start customer section  
                 $html .= '<tr>';
@@ -150,15 +154,92 @@ class Debtorreportinfo extends CI_Model{
                 $grandTotalCredit += $customerTotalCredit;
                 $grandTotalClosing += $runningBalance;
             }
+
+            //Get Post-dated cheque info
+            $this->db->select('tbl_receivable.receiptno, tbl_receivable.amount, tbl_receivable.chequedate, tbl_receivable.chequeno, tbl_receivable.narration, tbl_customer.customer');
+            $this->db->from('tbl_receivable');
+            $this->db->join('tbl_customer', 'tbl_customer.idtbl_customer = tbl_receivable.payer', 'left');
+            $this->db->where('tbl_receivable.status', '1');
+            $this->db->where('tbl_receivable.postdatedstatus', '1');
+            $this->db->where('tbl_receivable.poststatus', '0');
+            if(!empty($customer)) {
+                $this->db->where('tbl_receivable.payer', $customer);
+            }
+            $respondpostdated=$this->db->get();
+
             $html .= '</tr>';
             $html .= '<td colspan="8">&nbsp;</td>';
             $html .= '</tr>';
             $html .= '<tr>';
-            $html .= '<th colspan="5" class="text-right">GRAND TOTALS - ALL CUSTOMERS</th>';
+            $html .= '<th colspan="5" class="text-right">GRAND TOTALS - ALL CUSTOMERS (without pd cheques)</th>';
             $html .= '<th class="text-right">' . number_format($grandTotalDebit, 2) . '</th>';
             $html .= '<th class="text-right">' . number_format($grandTotalCredit, 2) . '</th>';
             $html .= '<th class="text-right">' . number_format($grandTotalClosing, 2) . '</th>';
             $html .= '</tr>';
+
+            //Post-dated cheque info
+            if(!empty($respondpostdated->result())):
+                $totalpostdated=0;
+                $chno=1;
+                $html .= '<tr>';
+                $html .='<th colspan="8">Post-dated cheque information.</th>';
+                $html .= '</tr>';
+                $html .= '<tr>';
+                $html .= '<th>#</th>';
+                $html .= '<th>Customer</th>';
+                $html .= '<th>Receipt no</th>';
+                $html .= '<th>Cheque date</th>';
+                $html .= '<th>Cheque no</th>';
+                $html .= '<th class="text-left">Narration</th>';
+                $html .= '<th class="text-right">Amount</th>';
+                $html .= '<th>&nbsp;</th>';
+                $html .= '</tr>';
+                foreach($respondpostdated->result() as $rowpostdated):
+                    $html .= '<tr>';
+                    $html .= '<td>'.$chno.'</td>';
+                    $html .= '<td>'.$rowpostdated->customer.'</td>';
+                    $html .= '<td>'.$rowpostdated->receiptno.'</td>';
+                    $html .= '<td>'.$rowpostdated->chequedate.'</td>';
+                    $html .= '<td>'.$rowpostdated->chequeno.'</td>';
+                    $html .= '<td class="text-left">'.$rowpostdated->narration.'</td>';
+                    $html .= '<td class="text-right">'.number_format($rowpostdated->amount, 2).'</td>';
+                    $html .= '<td>&nbsp;</td>';
+                    $html .= '</tr>';
+
+                    $totalpostdated=$totalpostdated+$rowpostdated->amount;
+                    $chno++;
+                endforeach;
+                $html .= '<tr>';
+                $html .='<th class="text-right" colspan="6">Total Post-dated</th>';
+                $html .= '<th class="text-right">'.number_format($totalpostdated, 2).'</th>';
+                $html .= '<th>&nbsp;</th>';
+                $html .= '</tr>';
+
+                // Calculate and add Final Close Balance row
+                $finalCloseBalance = $grandTotalClosing - $totalpostdated;
+                $html .= '<tr>';
+                $html .= '<th colspan="5" class="text-right">GRAND TOTALS - ALL CUSTOMERS</th>';
+                $html .= '<th class="text-right">-</th>';
+                $html .= '<th class="text-right">-</th>';
+                $html .= '<th class="text-right">' . number_format($finalCloseBalance, 2) . '</th>';
+                $html .= '</tr>';
+                
+                // Add a summary row showing the calculation
+                $html .= '<tr>';
+                $html .= '<td colspan="8" style="font-style: italic;">';
+                $html .= 'Calculation: Closing Balance (' . number_format($grandTotalClosing, 2) . ') - Post-dated Total (' . number_format($totalpostdated, 2) . ') = Final Close Balance (' . number_format($finalCloseBalance, 2) . ')';
+                $html .= '</td>';
+                $html .= '</tr>';
+            else:
+                // If no post-dated cheques, final close balance equals closing balance
+                $html .= '<tr>';
+                $html .= '<th colspan="5" class="text-right">GRAND TOTALS - ALL CUSTOMERS</th>';
+                $html .= '<th class="text-right">-</th>';
+                $html .= '<th class="text-right">-</th>';
+                $html .= '<th class="text-right">' . number_format($grandTotalClosing, 2) . '</th>';
+                $html .= '</tr>';
+            endif;
+
             $html .= '</tbody>';
             $html .= '</table>';
             $html .= '</div>'; 
@@ -177,21 +258,26 @@ class Debtorreportinfo extends CI_Model{
             $openingBalance = $respondopenbalance->row()->openbalance;
 
             // Get Transactions
-            $sql="SELECT * FROM (SELECT `invno` AS `receiptno`, `invdate` AS `invpaydate`, `invamount` AS `amount`, GROUP_CONCAT(`tbl_print_invoicedetail`.`job`) AS `narration`, 'D' AS `tratype`, '' AS `chequedate`, '' AS `chequeno` FROM `tbl_sales_info` LEFT JOIN `tbl_print_invoice` ON `tbl_print_invoice`.`inv_no` = `tbl_sales_info`.`invno` LEFT JOIN `tbl_print_invoicedetail` ON  `tbl_print_invoicedetail`.`tbl_print_invoice_idtbl_print_invoice` = `tbl_print_invoice`.`idtbl_print_invoice` WHERE 1=1"; 
+            $sql="SELECT * FROM (SELECT `invno` AS `receiptno`, `invdate` AS `invpaydate`, `invamount` AS `amount`, GROUP_CONCAT(`tbl_print_invoicedetail`.`job`) AS `narration`, 'D' AS `tratype`, '' AS `chequedate`, '' AS `chequeno` FROM `tbl_sales_info` LEFT JOIN `tbl_print_invoice` ON (
+                `tbl_print_invoice`.`inv_no` = `tbl_sales_info`.`invno` 
+                OR 
+                `tbl_print_invoice`.`inv_no` = CONCAT('INV', `tbl_sales_info`.`invno`)
+            ) LEFT JOIN `tbl_print_invoicedetail` ON  `tbl_print_invoicedetail`.`tbl_print_invoice_idtbl_print_invoice` = `tbl_print_invoice`.`idtbl_print_invoice` WHERE 1=1"; 
             if(!empty($customer)): $sql.=" AND `tbl_sales_info`.`tbl_customer_idtbl_customer`='$customer'";endif; 
-            $sql.=" AND `tbl_sales_info`.`tbl_company_idtbl_company`=? AND `tbl_sales_info`.`tbl_company_branch_idtbl_company_branch`=? AND `tbl_sales_info`.`invdate` BETWEEN ? AND ? AND `tbl_sales_info`.`status`=? GROUP BY `tbl_sales_info`.`invno` UNION ALL 
+            $sql.=" AND `tbl_sales_info`.`tbl_company_idtbl_company`=? AND `tbl_sales_info`.`tbl_company_branch_idtbl_company_branch`=? AND `tbl_print_invoice`.`tbl_company_idtbl_company`=? AND `tbl_print_invoice`.`tbl_company_branch_idtbl_company_branch`=? AND `tbl_sales_info`.`invdate` BETWEEN ? AND ? AND `tbl_sales_info`.`status`=? GROUP BY `tbl_sales_info`.`invno` UNION ALL 
             SELECT `tbl_receivable`.`receiptno`, `tbl_receivable`.`recdate` AS `invpaydate`, SUM(`tbl_receivable_info`.`amount`) AS `amount`, CONCAT(
                 `tbl_receivable`.`narration`,
                 ' ',
                 GROUP_CONCAT(`tbl_receivable_info`.`invoiceno` SEPARATOR ', '),
                 ' - ',
                 `tbl_receivable`.`chequeno`
-            ) AS `narration`, 'C' AS `tratype`, `tbl_receivable`.`chequedate`, `tbl_receivable`.`chequeno` FROM `tbl_receivable_info` LEFT JOIN `tbl_receivable` ON `tbl_receivable`.`idtbl_receivable`=`tbl_receivable_info`.`tbl_receivable_idtbl_receivable` WHERE `tbl_receivable`.`recdate` BETWEEN ? AND ? AND `tbl_receivable`.`status`=? AND `tbl_receivable`.`tbl_company_idtbl_company`=? AND `tbl_receivable`.`tbl_company_branch_idtbl_company_branch`=?";
+            ) AS `narration`, 'C' AS `tratype`, `tbl_receivable`.`chequedate`, `tbl_receivable`.`chequeno` FROM `tbl_receivable_info` LEFT JOIN `tbl_receivable` ON `tbl_receivable`.`idtbl_receivable`=`tbl_receivable_info`.`tbl_receivable_idtbl_receivable` WHERE `tbl_receivable`.`recdate` BETWEEN ? AND ? AND `tbl_receivable`.`status`=? AND `tbl_receivable`.`poststatus`=? AND `tbl_receivable`.`tbl_company_idtbl_company`=? AND `tbl_receivable`.`tbl_company_branch_idtbl_company_branch`=?";
             if(!empty($customer)): $sql.=" AND `tbl_receivable`.`payer`='$customer'"; endif;
             $sql.=" GROUP BY `tbl_receivable_info`.`tbl_receivable_idtbl_receivable`) AS `u` ORDER BY `u`.`invpaydate` ASC";
             
-            $respond = $this->db->query($sql, array($companyID, $branchID, $fromdate, $todate, 1, $fromdate, $todate, 1, $companyID, $branchID));
+            $respond = $this->db->query($sql, array($companyID, $branchID, $companyID, $branchID, $fromdate, $todate, 1, $fromdate, $todate, 1, 1, $companyID, $branchID));
             $transactions = $respond->result();
+            // print_r($this->db->last_query());
 
             // Get Customer Info
             $customerInfo = [];
@@ -199,6 +285,18 @@ class Debtorreportinfo extends CI_Model{
                 $custQuery = $this->db->query("SELECT * FROM tbl_customer WHERE idtbl_customer = ?", [$customer]);
                 $customerInfo = $custQuery->row();
             }
+
+            //Get Post-dated cheque info
+            $this->db->select('tbl_receivable.receiptno, tbl_receivable.amount, tbl_receivable.chequedate, tbl_receivable.chequeno, tbl_receivable.narration, tbl_customer.customer');
+            $this->db->from('tbl_receivable');
+            $this->db->join('tbl_customer', 'tbl_customer.idtbl_customer = tbl_receivable.payer', 'left');
+            $this->db->where('tbl_receivable.status', '1');
+            $this->db->where('tbl_receivable.postdatedstatus', '1');
+            $this->db->where('tbl_receivable.poststatus', '0');
+            if(!empty($customer)) {
+                $this->db->where('tbl_receivable.payer', $customer);
+            }
+            $respondpostdated=$this->db->get();
 
             // Transaction Table
             $html .= '<div class="table-responsive">';
@@ -267,11 +365,74 @@ class Debtorreportinfo extends CI_Model{
 
             // Closing Balance Row
             $html .= '<tr>';
-            $html .= '<th colspan="5" class="text-right">Closing Balance</th>';
+            $html .= '<th colspan="5" class="text-right">Closing Balance (without pd cheque)</th>';
             $html .= '<th class="text-right">' . number_format($totalDebit, 2) . '</th>';
             $html .= '<th class="text-right">' . number_format($totalCredit, 2) . '</th>';
             $html .= '<th class="text-right">' . number_format($runningBalance, 2) . '</th>';
             $html .= '</tr>';
+
+            //Post-dated cheque info
+            if(!empty($respondpostdated->result())):
+                $totalpostdated=0;
+                $chno=1;
+                $html .= '<tr>';
+                $html .='<th colspan="8">Post-dated cheque information.</th>';
+                $html .= '</tr>';
+                $html .= '<tr>';
+                $html .= '<th>#</th>';
+                $html .= '<th>Customer</th>';
+                $html .= '<th>Receipt no</th>';
+                $html .= '<th>Cheque date</th>';
+                $html .= '<th>Cheque no</th>';
+                $html .= '<th class="text-left">Narration</th>';
+                $html .= '<th class="text-right">Amount</th>';
+                $html .= '<th>&nbsp;</th>';
+                $html .= '</tr>';
+                foreach($respondpostdated->result() as $rowpostdated):
+                    $html .= '<tr>';
+                    $html .= '<td>'.$chno.'</td>';
+                    $html .= '<td>'.$rowpostdated->customer.'</td>';
+                    $html .= '<td>'.$rowpostdated->receiptno.'</td>';
+                    $html .= '<td>'.$rowpostdated->chequedate.'</td>';
+                    $html .= '<td>'.$rowpostdated->chequeno.'</td>';
+                    $html .= '<td class="text-left">'.$rowpostdated->narration.'</td>';
+                    $html .= '<td class="text-right">'.number_format($rowpostdated->amount, 2).'</td>';
+                    $html .= '<td>&nbsp;</td>';
+                    $html .= '</tr>';
+
+                    $totalpostdated=$totalpostdated+$rowpostdated->amount;
+                    $chno++;
+                endforeach;
+                $html .= '<tr>';
+                $html .='<th class="text-right" colspan="6">Total Post-dated</th>';
+                $html .= '<th class="text-right">'.number_format($totalpostdated, 2).'</th>';
+                $html .= '<th>&nbsp;</th>';
+                $html .= '</tr>';
+
+                // Calculate and add Final Close Balance row
+                $finalCloseBalance = $runningBalance - $totalpostdated;
+                $html .= '<tr>';
+                $html .= '<th colspan="5" class="text-right">Final Close Balance</th>';
+                $html .= '<th class="text-right">-</th>';
+                $html .= '<th class="text-right">-</th>';
+                $html .= '<th class="text-right">' . number_format($finalCloseBalance, 2) . '</th>';
+                $html .= '</tr>';
+                
+                // Add a summary row showing the calculation
+                $html .= '<tr>';
+                $html .= '<td colspan="8" style="font-style: italic;">';
+                $html .= 'Calculation: Closing Balance (' . number_format($runningBalance, 2) . ') - Post-dated Total (' . number_format($totalpostdated, 2) . ') = Final Close Balance (' . number_format($finalCloseBalance, 2) . ')';
+                $html .= '</td>';
+                $html .= '</tr>';
+            else:
+                // If no post-dated cheques, final close balance equals closing balance
+                $html .= '<tr>';
+                $html .= '<th colspan="5" class="text-right">Final Close Balance</th>';
+                $html .= '<th class="text-right">-</th>';
+                $html .= '<th class="text-right">-</th>';
+                $html .= '<th class="text-right">' . number_format($runningBalance, 2) . '</th>';
+                $html .= '</tr>';
+            endif;
 
             $html .= '</tbody>';
             $html .= '</table>';
@@ -297,6 +458,18 @@ class Debtorreportinfo extends CI_Model{
             $custQuery = $this->db->query("SELECT * FROM tbl_customer WHERE idtbl_customer = ?", [$customer]);
             $customerInfo = $custQuery->row();
         }
+
+        //Get Post-dated cheque info
+        $this->db->select('tbl_receivable.receiptno, tbl_receivable.amount, tbl_receivable.chequedate, tbl_receivable.chequeno, tbl_receivable.narration, tbl_customer.customer');
+        $this->db->from('tbl_receivable');
+        $this->db->join('tbl_customer', 'tbl_customer.idtbl_customer = tbl_receivable.payer', 'left');
+        $this->db->where('tbl_receivable.status', '1');
+        $this->db->where('tbl_receivable.postdatedstatus', '1');
+        $this->db->where('tbl_receivable.poststatus', '0');
+        if(!empty($customer)) {
+            $this->db->where('tbl_receivable.payer', $customer);
+        }
+        $respondpostdated=$this->db->get();
 
         if(!empty($customer) && !empty($customerInfo)) {            
             // Main Table Header
@@ -351,6 +524,7 @@ class Debtorreportinfo extends CI_Model{
                 JOIN tbl_receivable_info ri ON r.idtbl_receivable = ri.tbl_receivable_idtbl_receivable
                 WHERE r.payer = ?
                 AND r.status = 1
+                AND r.poststatus = 1
                 AND r.recdate <= ?
                 AND r.tbl_company_idtbl_company = ?
                 AND r.tbl_company_branch_idtbl_company_branch = ?
@@ -473,6 +647,65 @@ class Debtorreportinfo extends CI_Model{
             $html .= '<th class="text-right">' . number_format($netBalance, 2) . '</th>';
             $html .= '</tr>';
             
+            //Post-dated cheque info
+            if(!empty($respondpostdated->result())):
+                $totalpostdated=0;
+                $chno=1;
+                $html .= '<tr>';
+                $html .='<td colspan="7">&nbsp;</td>';
+                $html .= '</tr>';
+                $html .= '<tr>';
+                $html .='<th colspan="7">Post-dated cheque information.</th>';
+                $html .= '</tr>';
+                $html .= '<tr>';
+                $html .= '<th>#</th>';
+                $html .= '<th>Customer</th>';
+                $html .= '<th>Receipt no</th>';
+                $html .= '<th>Cheque date</th>';
+                $html .= '<th>Cheque no</th>';
+                $html .= '<th class="text-left">Narration</th>';
+                $html .= '<th class="text-right">Amount</th>';
+                $html .= '</tr>';
+                foreach($respondpostdated->result() as $rowpostdated):
+                    $html .= '<tr>';
+                    $html .= '<td>'.$chno.'</td>';
+                    $html .= '<td>'.$rowpostdated->customer.'</td>';
+                    $html .= '<td>'.$rowpostdated->receiptno.'</td>';
+                    $html .= '<td>'.$rowpostdated->chequedate.'</td>';
+                    $html .= '<td>'.$rowpostdated->chequeno.'</td>';
+                    $html .= '<td class="text-left">'.$rowpostdated->narration.'</td>';
+                    $html .= '<td class="text-right">'.number_format($rowpostdated->amount, 2).'</td>';
+                    $html .= '</tr>';
+
+                    $totalpostdated=$totalpostdated+$rowpostdated->amount;
+                    $chno++;
+                endforeach;
+                $html .= '<tr>';
+                $html .='<th class="text-right" colspan="6">Total Post-dated</th>';
+                $html .= '<th class="text-right">'.number_format($totalpostdated, 2).'</th>';
+                $html .= '</tr>';
+
+                // Calculate and add Final Close Balance row
+                $finalCloseBalance = $netBalance - $totalpostdated;
+                $html .= '<tr>';
+                $html .= '<th colspan="6" class="text-right">OUTSTADING AFTER PD CHEQUES</th>';
+                $html .= '<th class="text-right">' . number_format($finalCloseBalance, 2) . '</th>';
+                $html .= '</tr>';
+                
+                // Add a summary row showing the calculation
+                $html .= '<tr>';
+                $html .= '<td colspan="7" style="font-style: italic;">';
+                $html .= 'Calculation: Closing Balance (' . number_format($netBalance, 2) . ') - Post-dated Total (' . number_format($totalpostdated, 2) . ') = Final Close Balance (' . number_format($finalCloseBalance, 2) . ')';
+                $html .= '</td>';
+                $html .= '</tr>';
+            else:
+                // If no post-dated cheques, final close balance equals closing balance
+                $html .= '<tr>';
+                $html .= '<th colspan="6" class="text-right">OUTSTADING AFTER PD CHEQUES</th>';
+                $html .= '<th class="text-right">' . number_format($netBalance, 2) . '</th>';
+                $html .= '</tr>';
+            endif;
+
             $html .= '</tbody>';
             $html .= '</table>';
         } else {
@@ -501,6 +734,7 @@ class Debtorreportinfo extends CI_Model{
                     AND r.tbl_company_branch_idtbl_company_branch = ?
                     AND r.recdate <= ?
                     AND r.status = 1
+                    AND r.poststatus = 1
                 WHERE c.status = 1
                 GROUP BY c.idtbl_customer
                 HAVING net_balance > 0
@@ -512,6 +746,18 @@ class Debtorreportinfo extends CI_Model{
                 $companyID, $branchID, $asofdate,
                 $companyID, $branchID, $asofdate
             ])->result();
+
+            //Get Post-dated cheque info
+            $this->db->select('tbl_receivable.receiptno, tbl_receivable.amount, tbl_receivable.chequedate, tbl_receivable.chequeno, tbl_receivable.narration, tbl_customer.customer');
+            $this->db->from('tbl_receivable');
+            $this->db->join('tbl_customer', 'tbl_customer.idtbl_customer = tbl_receivable.payer', 'left');
+            $this->db->where('tbl_receivable.status', '1');
+            $this->db->where('tbl_receivable.postdatedstatus', '1');
+            $this->db->where('tbl_receivable.poststatus', '0');
+            if(!empty($customer)) {
+                $this->db->where('tbl_receivable.payer', $customer);
+            }
+            $respondpostdated=$this->db->get();
 
             // Calculate totals
             $totalOver90 = 0;
@@ -572,6 +818,68 @@ class Debtorreportinfo extends CI_Model{
             $html .= '<th class="text-right">' . number_format($totalLess30, 2) . '</th>';
             $html .= '<th class="text-right">' . number_format($grandTotal, 2) . '</th>';
             $html .= '</tr>';
+
+            //Post-dated cheque info
+            if(!empty($respondpostdated->result())):
+                $totalpostdated=0;
+                $chno=1;
+                $html .= '<tr>';
+                $html .='<td colspan="8">&nbsp;</td>';
+                $html .= '</tr>';
+                $html .= '<tr>';
+                $html .='<th colspan="8">Post-dated cheque information.</th>';
+                $html .= '</tr>';
+                $html .= '<tr>';
+                $html .= '<th>#</th>';
+                $html .= '<th>Customer</th>';
+                $html .= '<th>Receipt no</th>';
+                $html .= '<th>Cheque date</th>';
+                $html .= '<th>Cheque no</th>';
+                $html .= '<th class="text-left">Narration</th>';
+                $html .= '<th class="text-right">Amount</th>';
+                $html .= '<th>&nbsp;</th>';
+                $html .= '</tr>';
+                foreach($respondpostdated->result() as $rowpostdated):
+                    $html .= '<tr>';
+                    $html .= '<td>'.$chno.'</td>';
+                    $html .= '<td>'.$rowpostdated->customer.'</td>';
+                    $html .= '<td>'.$rowpostdated->receiptno.'</td>';
+                    $html .= '<td>'.$rowpostdated->chequedate.'</td>';
+                    $html .= '<td>'.$rowpostdated->chequeno.'</td>';
+                    $html .= '<td class="text-left">'.$rowpostdated->narration.'</td>';
+                    $html .= '<td class="text-right">'.number_format($rowpostdated->amount, 2).'</td>';
+                    $html .= '<td>&nbsp;</td>';
+                    $html .= '</tr>';
+
+                    $totalpostdated=$totalpostdated+$rowpostdated->amount;
+                    $chno++;
+                endforeach;
+                $html .= '<tr>';
+                $html .='<th class="text-right" colspan="6">Total Post-dated</th>';
+                $html .= '<th class="text-right">'.number_format($totalpostdated, 2).'</th>';
+                $html .= '<th>&nbsp;</th>';
+                $html .= '</tr>';
+
+                // Calculate and add Final Close Balance row
+                $finalCloseBalance = $grandTotal - $totalpostdated;
+                $html .= '<tr>';
+                $html .= '<th colspan="7" class="text-right">OUTSTADING AFTER PD CHEQUES</th>';
+                $html .= '<th class="text-right">' . number_format($finalCloseBalance, 2) . '</th>';
+                $html .= '</tr>';
+                
+                // Add a summary row showing the calculation
+                $html .= '<tr>';
+                $html .= '<td colspan="8" style="font-style: italic;">';
+                $html .= 'Calculation: Closing Balance (' . number_format($grandTotal, 2) . ') - Post-dated Total (' . number_format($totalpostdated, 2) . ') = Final Close Balance (' . number_format($finalCloseBalance, 2) . ')';
+                $html .= '</td>';
+                $html .= '</tr>';
+            else:
+                // If no post-dated cheques, final close balance equals closing balance
+                $html .= '<tr>';
+                $html .= '<th colspan="7" class="text-right">OUTSTADING AFTER PD CHEQUES</th>';
+                $html .= '<th class="text-right">' . number_format($grandTotal, 2) . '</th>';
+                $html .= '</tr>';
+            endif;
 
             $html .= '</tbody>';
             $html .= '</table>';

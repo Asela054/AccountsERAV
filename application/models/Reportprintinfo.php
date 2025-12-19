@@ -1,14 +1,14 @@
 <?php
 class Reportprintinfo extends CI_Model{
     public function Receivereceipt($invoicereceipt, $printtype){
-        $this->db->select('`tbl_receivable_info`.`invoiceno`, `tbl_receivable_info`.`narration`, `tbl_receivable_info`.`amount`,`tbl_receivable`.`idtbl_receivable`, `tbl_receivable`.`recdate`');
+        $this->db->select('`tbl_receivable_info`.`invoiceno`, `tbl_receivable`.`receiptno`, `tbl_receivable_info`.`narration`, `tbl_receivable_info`.`amount`,`tbl_receivable`.`idtbl_receivable`, `tbl_receivable`.`recdate`');
         $this->db->from('tbl_receivable_info');
         $this->db->join('tbl_receivable', 'tbl_receivable.idtbl_receivable = tbl_receivable_info.tbl_receivable_idtbl_receivable', 'left');
         if($printtype==1){
             $this->db->where('`tbl_receivable_info`.`invoiceno`', $invoicereceipt);
         }
         else{
-            $this->db->where('tbl_receivable.idtbl_receivable', $invoicereceipt);
+            $this->db->where('tbl_receivable.receiptno', $invoicereceipt);
         }
         $this->db->where('tbl_receivable_info.status', '1');
         $this->db->where('tbl_receivable.status', '1');
@@ -23,7 +23,7 @@ class Reportprintinfo extends CI_Model{
             $this->db->where('tbl_receivable_info.status', '1');
         }
         else{
-            $this->db->where('tbl_receivable.idtbl_receivable', $invoicereceipt);
+            $this->db->where('tbl_receivable.receiptno', $invoicereceipt);
         }
         $this->db->where('tbl_receivable.status', '1');
         // $this->db->group_by('`tbl_receivable_info`.`tbl_receivable_idtbl_receivable`');
@@ -38,7 +38,7 @@ class Reportprintinfo extends CI_Model{
             $this->db->where('tbl_receivable_info.status', '1');
         }
         else{
-            $this->db->where('tbl_receivable.idtbl_receivable', $invoicereceipt);
+            $this->db->where('tbl_receivable.receiptno', $invoicereceipt);
         }
         $this->db->where('tbl_receivable.status', '1');
         $respondcheque=$this->db->get(); 
@@ -55,7 +55,7 @@ class Reportprintinfo extends CI_Model{
             $this->db->where('tbl_receivable_info.status', '1');
         }
         else{
-            $this->db->where('tbl_receivable.idtbl_receivable', $invoicereceipt);
+            $this->db->where('tbl_receivable.receiptno', $invoicereceipt);
         }
         $this->db->where('tbl_receivable.status', '1');
 		$companydetails = $this->db->get();
@@ -152,7 +152,7 @@ class Reportprintinfo extends CI_Model{
                             <p style="margin:0px;font-size:13px;font-weight:normal;text-transform: uppercase;">'.$companydetails->row()->companyaddress.'</p>
                             <p style="margin:0px;font-size:13px;font-weight:normal;">Phone : '.$companydetails->row()->companymobile.'/'.$companydetails->row()->companyphone.'</p>
                             <p style="margin:0px;font-size:13px;font-weight:normal;"><u>E-Mail : '.$companydetails->row()->companyemail.'</u></p>
-                            <p style="margin:0px;font-size:13px;font-weight:normal;">Receipt No : '.$respondinvoiceinfo->row(0)->invoiceno.'</p>
+                            <p style="margin:0px;font-size:13px;font-weight:normal;">Receipt No : '.$respondinvoiceinfo->row(0)->receiptno.'</p>
                             <p style="margin:0px;font-size:13px;font-weight:normal;">Date : '.$respondinvoiceinfo->row(0)->recdate.'</p>
                             <p style="margin:0px;font-size:13px;font-weight:normal;">Our Vat No : &nbsp; 103305667-7000</p>
                         </td>
@@ -442,14 +442,14 @@ class Reportprintinfo extends CI_Model{
         return ucfirst(trim($words));
     }     
     public function Paymentsettlereceipt($invoicereceipt, $printtype){
-        $this->db->select('`tbl_account_paysettle_info`.`invoiceno`, `tbl_account_paysettle_info`.`narration`, `tbl_account_paysettle_info`.`amount`,`tbl_account_paysettle`.`idtbl_account_paysettle`, `tbl_account_paysettle`.`date`');
+        $this->db->select('`tbl_account_paysettle_info`.`invoiceno`, `tbl_account_paysettle`.`paymentno`, `tbl_account_paysettle_info`.`narration`, `tbl_account_paysettle_info`.`amount`,`tbl_account_paysettle`.`idtbl_account_paysettle`, `tbl_account_paysettle`.`date`');
         $this->db->from('tbl_account_paysettle_info');
         $this->db->join('tbl_account_paysettle', 'tbl_account_paysettle.idtbl_account_paysettle = tbl_account_paysettle_info.tbl_account_paysettle_idtbl_account_paysettle', 'left');
         if($printtype==1){
             $this->db->where('`tbl_account_paysettle_info`.`invoiceno`', $invoicereceipt);
         }
         else{
-            $this->db->where('tbl_account_paysettle.idtbl_account_paysettle', $invoicereceipt);
+            $this->db->where('tbl_account_paysettle.paymentno', $invoicereceipt);
         }
         $this->db->where('tbl_account_paysettle_info.status', '1');
         $this->db->where('tbl_account_paysettle.status', '1');
@@ -464,7 +464,7 @@ class Reportprintinfo extends CI_Model{
             $this->db->where('tbl_account_paysettle_info.status', '1');
         }
         else{
-            $this->db->where('tbl_account_paysettle.idtbl_account_paysettle', $invoicereceipt);
+            $this->db->where('tbl_account_paysettle.paymentno', $invoicereceipt);
         }
         $this->db->where('tbl_account_paysettle.status', '1');
         $respondreceipt=$this->db->get(); 
@@ -480,7 +480,7 @@ class Reportprintinfo extends CI_Model{
             $this->db->where('tbl_account_paysettle_info.status', '1');
         }
         else{
-            $this->db->where('tbl_account_paysettle.idtbl_account_paysettle', $invoicereceipt);
+            $this->db->where('tbl_account_paysettle.paymentno', $invoicereceipt);
         }
         $this->db->where('tbl_account_paysettle.status', '1');
         $respondcheque=$this->db->get(); 
@@ -497,7 +497,7 @@ class Reportprintinfo extends CI_Model{
             $this->db->where('tbl_account_paysettle_info.status', '1');
         }
         else{
-            $this->db->where('tbl_account_paysettle.idtbl_account_paysettle', $invoicereceipt);
+            $this->db->where('tbl_account_paysettle.paymentno', $invoicereceipt);
         }
         $this->db->where('tbl_account_paysettle.status', '1');
 		$companydetails = $this->db->get();
@@ -591,7 +591,7 @@ class Reportprintinfo extends CI_Model{
                             <p style="margin:0px;font-size:13px;font-weight:normal;text-transform: uppercase;">'.$companydetails->row()->companyaddress.'</p>
                             <p style="margin:0px;font-size:13px;font-weight:normal;">Phone : '.$companydetails->row()->companymobile.'/'.$companydetails->row()->companyphone.'</p>
                             <p style="margin:0px;font-size:13px;font-weight:normal;"><u>E-Mail : '.$companydetails->row()->companyemail.'</u></p>
-                            <p style="margin:0px;font-size:13px;font-weight:normal;">Receipt No : '.$respondinvoiceinfo->row(0)->invoiceno.'</p>
+                            <p style="margin:0px;font-size:13px;font-weight:normal;">Receipt No : '.$respondinvoiceinfo->row(0)->paymentno.'</p>
                             <p style="margin:0px;font-size:13px;font-weight:normal;">Date : '.$respondinvoiceinfo->row(0)->date.'</p>
                             <p style="margin:0px;font-size:13px;font-weight:normal;">Our Vat No : &nbsp; 103305667-7000</p>
                         </td>

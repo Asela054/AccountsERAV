@@ -152,7 +152,7 @@ include "include/topnavbar.php";
                                 // console.log(result);
                                 Swal.close();
                                 $('#reportviewdiv').html(result);
-                                exportoption();
+                                // exportoption();
                                 $('#btnpdfconvert').prop('disabled', false);
                             },
                             error: function(error) {
@@ -173,9 +173,7 @@ include "include/topnavbar.php";
                 });
             }
         });
-    });
 
-    function exportoption(){
         $('#btnpdfconvert').click(function(){
             var { jsPDF } = window.jspdf;
             var doc = new jsPDF('l', 'pt', 'legal');
@@ -188,10 +186,14 @@ include "include/topnavbar.php";
                 // console.log(row);
                 var rowData = [];
                 for (var j = 0, col; col = row.cells[j]; j++) {
+                    var hasTextLeftClass = col.classList && col.classList.contains('text-left');
                     if(row.cells.length==1){					
 						if (col.tagName.toLowerCase() === 'th') {						
 							rowData.push({content: col.innerText, styles: {halign: 'left', fontStyle: 'bold'}});
 						}
+                        else{
+                            rowData.push({content: col.innerText, colSpan: 8, styles: {halign: 'left', fontStyle: 'italic'}});
+                        }
 					}
 					else if (col.tagName.toLowerCase() === 'th') {
                         if(row.cells.length==6){
@@ -210,12 +212,38 @@ include "include/topnavbar.php";
                                 rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
                             }
                         }
+                        else if(row.cells.length==3){
+                            if(j==0){
+                                rowData.push({content: col.innerText, colSpan: 6, styles: {halign: 'right', fontStyle: 'bold'}});
+                            }
+                            else{
+                                rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
+                            }
+                        }
+                        else if(row.cells.length==2){
+                            if(j==0){
+                                rowData.push({content: col.innerText, colSpan: 6, styles: {halign: 'right', fontStyle: 'bold'}});
+                            }
+                            else{
+                                rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
+                            }
+                        }
                         else{
-						    rowData.push({content: col.innerText, styles: {fontStyle: 'bold'}});
+                            if (hasTextLeftClass) {
+                                rowData.push({content: col.innerText, styles: {halign: 'left', fontStyle: 'bold'}});
+                            }
+                            else{
+						        rowData.push({content: col.innerText, styles: {fontStyle: 'bold'}});
+                            }
                         }
 					}
 					else{
-						rowData.push(col.innerText);
+						if (hasTextLeftClass) {
+                            rowData.push({content: col.innerText, styles: {halign: 'left'}});
+                        }
+                        else{
+                            rowData.push(col.innerText);
+                        }
 					}
                 }
                 rows.push(rowData);
@@ -270,6 +298,7 @@ include "include/topnavbar.php";
                     startY: 80,
                     theme: 'striped',
                     headStyles: { fillColor: [41, 128, 185] }, 
+                    showHead: 'firstPage',
                     styles: { cellPadding: 5, halign: 'left', fontSize: 8 }, 
                     columnStyles: {
                         5: { halign: 'right' }, 
@@ -286,6 +315,7 @@ include "include/topnavbar.php";
                         startY: 80,
                         theme: 'striped',
                         headStyles: { fillColor: [41, 128, 185] }, 
+                        showHead: 'firstPage',
                         styles: { cellPadding: 5, halign: 'left', fontSize: 8 }, 
                         columnStyles: {
                             3: { halign: 'right' }, 
@@ -303,6 +333,7 @@ include "include/topnavbar.php";
                         startY: 80,
                         theme: 'striped',
                         headStyles: { fillColor: [41, 128, 185] }, 
+                        showHead: 'firstPage',
                         styles: { cellPadding: 5, halign: 'left', fontSize: 8 }, 
                         columnStyles: {
                             2: { halign: 'right' }, 
@@ -318,7 +349,7 @@ include "include/topnavbar.php";
             var filetitle = ''+'<?php echo $_SESSION['company'] ?>_'+titleLine3;
             doc.save(filetitle+".pdf");
         });
-    }
+    });
 
     function addCommas(nStr){
         nStr += '';
