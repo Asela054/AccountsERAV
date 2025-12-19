@@ -17,4 +17,7 @@ class Issuecheque extends CI_Controller {
     public function Issuechequestatus(){
         $result=$this->Issuechequeinfo->Issuechequestatus();
 	}
+    public function Chequeprint($x){
+        $result=$this->Issuechequeinfo->Chequeprint($x);
+    }
 }

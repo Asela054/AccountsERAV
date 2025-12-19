@@ -152,7 +152,7 @@ include "include/topnavbar.php";
                                 // console.log(result);
                                 Swal.close();
                                 $('#reportviewdiv').html(result);
-                                exportoption();
+                                // exportoption();
                                 $('#btnpdfconvert').prop('disabled', false);
                             },
                             error: function(error) {
@@ -173,9 +173,7 @@ include "include/topnavbar.php";
                 });
             }
         });
-    });
 
-    function exportoption(){
         $('#btnpdfconvert').click(function(){
             var { jsPDF } = window.jspdf;
             var doc = new jsPDF('l', 'pt', 'legal');
@@ -318,7 +316,7 @@ include "include/topnavbar.php";
             var filetitle = ''+'<?php echo $_SESSION['company'] ?>_'+titleLine3;
             doc.save(filetitle+".pdf");
         });
-    }
+    });
 
     function addCommas(nStr){
         nStr += '';

@@ -65,15 +65,21 @@ class Debtorreportinfo extends CI_Model{
 
             foreach($customers as $cust) {
                 // Get Opening Balance for this customer
-                $sqlOpenBalance = "SELECT ((SELECT COALESCE(SUM(`amount`), 0) FROM `tbl_sales_info` WHERE `status`=? AND `invdate`<? AND `tbl_customer_idtbl_customer`=? AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=?)-(SELECT COALESCE(SUM(`amount`), 0) FROM `tbl_receivable` WHERE `status`=? AND `recdate`<? AND `payer`=? AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=?)) AS `openbalance`";
+                $sqlOpenBalance = "SELECT ((SELECT COALESCE(SUM(`invamount`), 0) FROM `tbl_sales_info` WHERE `status`=? AND `invdate`<? AND `tbl_customer_idtbl_customer`=? AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=?)-(SELECT COALESCE(SUM(`amount`), 0) FROM `tbl_receivable` WHERE `status`=? AND `recdate`<? AND `payer`=? AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=?)) AS `openbalance`";
                 
                 $params = [1, $fromdate, $cust->idtbl_customer, $companyID, $branchID, 1, $fromdate, $cust->idtbl_customer, $companyID, $branchID];
                 $respondopenbalance = $this->db->query($sqlOpenBalance, $params);
                 $openingBalance = $respondopenbalance->row()->openbalance;
 
                 // Get Transactions for this customer
-                $sql = "SELECT * FROM (SELECT `invno` AS `receiptno`, `invdate` AS `invpaydate`, `amount`, '' AS `narration`, 'D' AS `tratype`, '' AS `chequedate`, '' AS `chequeno` FROM `tbl_sales_info` WHERE `tbl_customer_idtbl_customer`=? AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=? AND `invdate` BETWEEN ? AND ? AND `status`=? UNION ALL 
-                        SELECT `tbl_receivable_info`.`invoiceno` AS `receiptno`, `tbl_receivable`.`recdate` AS `invpaydate`, `tbl_receivable_info`.`amount`, `tbl_receivable_info`.`narration` AS `narration`, 'C' AS `tratype`, `tbl_receivable`.`chequedate`, `tbl_receivable`.`chequeno` FROM `tbl_receivable_info` LEFT JOIN `tbl_receivable` ON `tbl_receivable`.`idtbl_receivable`=`tbl_receivable_info`.`tbl_receivable_idtbl_receivable` WHERE `tbl_receivable`.`recdate` BETWEEN ? AND ? AND `tbl_receivable`.`status`=? AND `tbl_receivable`.`payer`=? AND `tbl_receivable`.`tbl_company_idtbl_company`=? AND `tbl_receivable`.`tbl_company_branch_idtbl_company_branch`=?) AS `u` ORDER BY `u`.`invpaydate` ASC";
+                $sql = "SELECT * FROM (SELECT `invno` AS `receiptno`, `invdate` AS `invpaydate`, `invamount` AS `amount`, GROUP_CONCAT(`tbl_print_invoicedetail`.`job`) AS `narration`, 'D' AS `tratype`, '' AS `chequedate`, '' AS `chequeno` FROM `tbl_sales_info` LEFT JOIN `tbl_print_invoice` ON `tbl_print_invoice`.`inv_no` = `tbl_sales_info`.`invno` LEFT JOIN `tbl_print_invoicedetail` ON  `tbl_print_invoicedetail`.`tbl_print_invoice_idtbl_print_invoice` = `tbl_print_invoice`.`idtbl_print_invoice` WHERE `tbl_sales_info`.`tbl_customer_idtbl_customer`=? AND `tbl_sales_info`.`tbl_company_idtbl_company`=? AND `tbl_sales_info`.`tbl_company_branch_idtbl_company_branch`=? AND `tbl_sales_info`.`invdate` BETWEEN ? AND ? AND `tbl_sales_info`.`status`=? GROUP BY `tbl_sales_info`.`invno` UNION ALL 
+                        SELECT `tbl_receivable`.`receiptno`, `tbl_receivable`.`recdate` AS `invpaydate`, `tbl_receivable_info`.`amount`, CONCAT(
+                            `tbl_receivable`.`narration`,
+                            ' ',
+                            GROUP_CONCAT(`tbl_receivable_info`.`invoiceno` SEPARATOR ', '),
+                            ' - ',
+                            `tbl_receivable`.`chequeno`
+                        ) AS `narration`, 'C' AS `tratype`, `tbl_receivable`.`chequedate`, `tbl_receivable`.`chequeno` FROM `tbl_receivable_info` LEFT JOIN `tbl_receivable` ON `tbl_receivable`.`idtbl_receivable`=`tbl_receivable_info`.`tbl_receivable_idtbl_receivable` WHERE `tbl_receivable`.`recdate` BETWEEN ? AND ? AND `tbl_receivable`.`status`=? AND `tbl_receivable`.`payer`=? AND `tbl_receivable`.`tbl_company_idtbl_company`=? AND `tbl_receivable`.`tbl_company_branch_idtbl_company_branch`=? GROUP BY `tbl_receivable`.`idtbl_receivable`) AS `u` ORDER BY `u`.`invpaydate` ASC";
                 
                 $transactions = $this->db->query($sql, [$cust->idtbl_customer, $companyID, $branchID, $fromdate, $todate, 1, $fromdate, $todate, 1, $cust->idtbl_customer, $companyID, $branchID])->result();
 
@@ -171,12 +177,18 @@ class Debtorreportinfo extends CI_Model{
             $openingBalance = $respondopenbalance->row()->openbalance;
 
             // Get Transactions
-            $sql="SELECT * FROM (SELECT `invno` AS `receiptno`, `invdate` AS `invpaydate`, `amount`, '' AS `narration`, 'D' AS `tratype`, '' AS `chequedate`, '' AS `chequeno` FROM `tbl_sales_info` WHERE 1=1"; 
-            if(!empty($customer)): $sql.=" AND `tbl_customer_idtbl_customer`='$customer'";endif; 
-            $sql.=" AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=? AND `invdate` BETWEEN ? AND ? AND `status`=? UNION ALL 
-            SELECT `tbl_receivable_info`.`invoiceno` AS `receiptno`, `tbl_receivable`.`recdate` AS `invpaydate`, `tbl_receivable_info`.`amount`, `tbl_receivable_info`.`narration` AS `narration`, 'C' AS `tratype`, `tbl_receivable`.`chequedate`, `tbl_receivable`.`chequeno` FROM `tbl_receivable_info` LEFT JOIN `tbl_receivable` ON `tbl_receivable`.`idtbl_receivable`=`tbl_receivable_info`.`tbl_receivable_idtbl_receivable` WHERE `tbl_receivable`.`recdate` BETWEEN ? AND ? AND `tbl_receivable`.`status`=? AND `tbl_receivable`.`tbl_company_idtbl_company`=? AND `tbl_receivable`.`tbl_company_branch_idtbl_company_branch`=?";
+            $sql="SELECT * FROM (SELECT `invno` AS `receiptno`, `invdate` AS `invpaydate`, `invamount` AS `amount`, GROUP_CONCAT(`tbl_print_invoicedetail`.`job`) AS `narration`, 'D' AS `tratype`, '' AS `chequedate`, '' AS `chequeno` FROM `tbl_sales_info` LEFT JOIN `tbl_print_invoice` ON `tbl_print_invoice`.`inv_no` = `tbl_sales_info`.`invno` LEFT JOIN `tbl_print_invoicedetail` ON  `tbl_print_invoicedetail`.`tbl_print_invoice_idtbl_print_invoice` = `tbl_print_invoice`.`idtbl_print_invoice` WHERE 1=1"; 
+            if(!empty($customer)): $sql.=" AND `tbl_sales_info`.`tbl_customer_idtbl_customer`='$customer'";endif; 
+            $sql.=" AND `tbl_sales_info`.`tbl_company_idtbl_company`=? AND `tbl_sales_info`.`tbl_company_branch_idtbl_company_branch`=? AND `tbl_sales_info`.`invdate` BETWEEN ? AND ? AND `tbl_sales_info`.`status`=? GROUP BY `tbl_sales_info`.`invno` UNION ALL 
+            SELECT `tbl_receivable`.`receiptno`, `tbl_receivable`.`recdate` AS `invpaydate`, SUM(`tbl_receivable_info`.`amount`) AS `amount`, CONCAT(
+                `tbl_receivable`.`narration`,
+                ' ',
+                GROUP_CONCAT(`tbl_receivable_info`.`invoiceno` SEPARATOR ', '),
+                ' - ',
+                `tbl_receivable`.`chequeno`
+            ) AS `narration`, 'C' AS `tratype`, `tbl_receivable`.`chequedate`, `tbl_receivable`.`chequeno` FROM `tbl_receivable_info` LEFT JOIN `tbl_receivable` ON `tbl_receivable`.`idtbl_receivable`=`tbl_receivable_info`.`tbl_receivable_idtbl_receivable` WHERE `tbl_receivable`.`recdate` BETWEEN ? AND ? AND `tbl_receivable`.`status`=? AND `tbl_receivable`.`tbl_company_idtbl_company`=? AND `tbl_receivable`.`tbl_company_branch_idtbl_company_branch`=?";
             if(!empty($customer)): $sql.=" AND `tbl_receivable`.`payer`='$customer'"; endif;
-            $sql.=") AS `u` ORDER BY `u`.`invpaydate` ASC";
+            $sql.=" GROUP BY `tbl_receivable_info`.`tbl_receivable_idtbl_receivable`) AS `u` ORDER BY `u`.`invpaydate` ASC";
             
             $respond = $this->db->query($sql, array($companyID, $branchID, $fromdate, $todate, 1, $fromdate, $todate, 1, $companyID, $branchID));
             $transactions = $respond->result();
@@ -304,9 +316,9 @@ class Debtorreportinfo extends CI_Model{
             // Get all invoices for this customer with aging calculation
             $sqlInvoices = "
                 SELECT 
-                    s.invno,
+                    CONCAT(s.invno, ' (', GROUP_CONCAT(pid.job_no SEPARATOR ', '), ')') AS invno,
                     s.invdate,
-                    s.amount,
+                    s.invamount AS amount,
                     DATEDIFF(?, s.invdate) as days_aged,
                     CASE 
                         WHEN DATEDIFF(?, s.invdate) > 89 THEN '90 & Above'
@@ -315,11 +327,14 @@ class Debtorreportinfo extends CI_Model{
                         ELSE 'Less than 30 Days'
                     END as age_category
                 FROM tbl_sales_info s
+                LEFT JOIN tbl_print_invoice pi ON s.invno = pi.inv_no
+                LEFT JOIN tbl_print_invoicedetail pid ON pi.idtbl_print_invoice = pid.tbl_print_invoice_idtbl_print_invoice
                 WHERE s.tbl_customer_idtbl_customer = ?
                 AND s.status = 1
                 AND s.invdate <= ?
                 AND s.tbl_company_idtbl_company = ?
                 AND s.tbl_company_branch_idtbl_company_branch = ?
+                GROUP BY s.invno
                 ORDER BY s.invdate ASC
             ";
 
