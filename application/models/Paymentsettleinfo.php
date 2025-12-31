@@ -90,7 +90,7 @@ class Paymentsettleinfo extends CI_Model{
         if(!empty($this->input->post('recordID'))){$recordID=$this->input->post('recordID');}
         
         if($recordOption==1){
-            $prefix=pay_prefix($company, $branch);
+            $prefix=payset_prefix($company, $branch);
             $masterdata=get_account_period($company, $branch);
             $batchno=tr_batch_num($prefix, $branch);
             $masterID=$masterdata->idtbl_master;

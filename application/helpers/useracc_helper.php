@@ -750,4 +750,20 @@
         
         echo json_encode($data);
 	}
+
+	function payset_prefix($companyid, $branchid){
+		$CI = get_instance();
+		$CI->db->where('tbl_master.status', 1);
+		$CI->db->where('tbl_master.tbl_company_idtbl_company', $companyid);
+		$CI->db->where('tbl_master.tbl_company_branch_idtbl_company_branch', $branchid);
+		$CI->db->select('tbl_finacial_year.year, tbl_finacial_month.month');
+		$CI->db->from('tbl_master');
+		$CI->db->join('tbl_finacial_year', 'tbl_finacial_year.idtbl_finacial_year = tbl_master.tbl_finacial_year_idtbl_finacial_year', 'left');
+		$CI->db->join('tbl_finacial_month', 'tbl_finacial_month.idtbl_finacial_month = tbl_master.tbl_finacial_month_idtbl_finacial_month', 'left');
+		$respond=$CI->db->get();
+
+		$date = DateTime::createFromFormat('!m', $respond->row(0)->month);
+		$monthName = $date->format('M');
+		return 'PS'.$respond->row(0)->year.strtoupper($monthName);
+	}
 ?>

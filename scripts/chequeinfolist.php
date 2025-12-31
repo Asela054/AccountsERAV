@@ -1,4 +1,8 @@
 <?php
+require_once '../external.php';
+
+$CI =& get_instance();
+$CI->load->library('session');
 
 /*
  * DataTables example server-side processing script.
@@ -55,9 +59,12 @@ $sql_details = array(
 // require( 'ssp.class.php' );
 require('ssp.customized.class.php' );
 
-$joinQuery = "FROM `tbl_cheque_info` AS `u` LEFT JOIN `tbl_account` AS `ua` ON (`ua`.`idtbl_account` = `u`.`tbl_account_idtbl_account`) LEFT JOIN `tbl_bank` AS `ub` ON (`ub`.`idtbl_bank` = `u`.`tbl_bank_idtbl_bank`) LEFT JOIN `tbl_bank_branch` AS `uc` ON (`uc`.`idtbl_bank_branch` = `u`.`tbl_bank_branch_idtbl_bank_branch`)";
+$companyid=$_SESSION['companyid'];
+$branchid=$_SESSION['branchid'];
 
-$extraWhere = "`u`.`status` IN (1, 2)";
+$joinQuery = "FROM `tbl_cheque_info` AS `u` LEFT JOIN `tbl_account` AS `ua` ON (`ua`.`idtbl_account` = `u`.`tbl_account_idtbl_account`) LEFT JOIN `tbl_bank` AS `ub` ON (`ub`.`idtbl_bank` = `u`.`tbl_bank_idtbl_bank`) LEFT JOIN `tbl_bank_branch` AS `uc` ON (`uc`.`idtbl_bank_branch` = `u`.`tbl_bank_branch_idtbl_bank_branch`) LEFT JOIN `tbl_account_allocation` AS `ud` ON (`ud`.`tbl_account_idtbl_account`=`ua`.`idtbl_account`)";
+
+$extraWhere = "`u`.`status` IN (1, 2) AND`ud`.`companybank`='$companyid' AND `ud`.`branchcompanybank`='$branchid'";
 
 echo json_encode(
 	SSP::simple( $_POST, $sql_details, $table, $primaryKey, $columns, $joinQuery, $extraWhere)
