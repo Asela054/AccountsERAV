@@ -134,6 +134,18 @@ class Reportprintinfo extends CI_Model{
                     right: 0px;
                     height: 20px;
                 }
+
+                /** Page break for sections **/
+                .page-break {
+                    page-break-after: always;
+                    break-after: page;
+                }
+                
+                /** No page break for last section **/
+                .no-page-break {
+                    page-break-after: avoid;
+                    break-after: avoid;
+                }
             </style>
         </head>
         <body>
@@ -170,8 +182,16 @@ class Reportprintinfo extends CI_Model{
                     </tr>
                 </table>
             </footer>';
+
+            // Get total number of sections
+            $totalSections = count($dataArray);
+            $currentSection = 1;
+
             foreach ($dataArray as $index => $section) {
-                $html.='<main>
+                // Add page-break class to all sections except the last one
+                $pageBreakClass = ($currentSection < $totalSections) ? 'page-break' : 'no-page-break';
+
+                $html.='<main class="' . $pageBreakClass . '">
                     <table style="width:100%;border-collapse: collapse;font-size: 13px;">
                         <tr>
                             <th width="10%" style="text-align: center; border:1px solid black;">No</th>
@@ -187,29 +207,32 @@ class Reportprintinfo extends CI_Model{
                                 <td width="25%" style="text-align: right; border:1px solid black;padding-right: 10px;">'.number_format($row['amount'], 2).'</td>
                             </tr>';
                         }
-                    $html .= '</table>
-                    <p style="font-size:13px;">Cheque information</p>
-                    <table style="width:50%;border-collapse: collapse;">
-                        <tr>
-                            <th style="text-align: center; font-size:13px;border:1px solid black;">#</th>
-                            <th style="text-align: left; font-size:13px;border:1px solid black;padding-left:5px;">Cheque No</th>
-                            <th style="text-align: left; font-size:13px;border:1px solid black;padding-left:5px;">Cheque Date</th>
-                        </tr>';
-                        $j=1; foreach($respondcheque->result() as $rowcheque){if(!empty($rowcheque->chequeno)){
-                        $html.='<tr>
-                            <td style="text-align: center; font-size:13px;border:1px solid black;">'.$j.'</td>
-                            <td style="text-align: left; font-size:13px;border:1px solid black;padding-left:5px;">'.$rowcheque->chequeno.'</td>
-                            <td style="text-align: left; font-size:13px;border:1px solid black;padding-left:5px;">'.$rowcheque->chequedate.'</td>
-                        </tr>
-                        ';
-                        }}
-                    $html .= '</table>
-                </main>
-                ';
+                    $html .= '</table>';
+                    
+                    if ($currentSection === $totalSections) {
+                        $html.='<p style="font-size:13px;">Cheque information</p>
+                        <table style="width:50%;border-collapse: collapse;">
+                            <tr>
+                                <th style="text-align: center; font-size:13px;border:1px solid black;">#</th>
+                                <th style="text-align: left; font-size:13px;border:1px solid black;padding-left:5px;">Cheque No</th>
+                                <th style="text-align: left; font-size:13px;border:1px solid black;padding-left:5px;">Cheque Date</th>
+                            </tr>';
+                            $j=1; foreach($respondcheque->result() as $rowcheque){if(!empty($rowcheque->chequeno)){
+                            $html.='<tr>
+                                <td style="text-align: center; font-size:13px;border:1px solid black;">'.$j.'</td>
+                                <td style="text-align: left; font-size:13px;border:1px solid black;padding-left:5px;">'.$rowcheque->chequeno.'</td>
+                                <td style="text-align: left; font-size:13px;border:1px solid black;padding-left:5px;">'.$rowcheque->chequedate.'</td>
+                            </tr>
+                            ';
+                            }}
+                        $html .= '</table>';
+                    }
+                $html.='</main>';
+                $currentSection++;
             }
         $html.='</body>
         </html>';
-
+        // echo $html;
         $this->load->library('pdf');
         $this->pdf->loadHtml($html);
         $this->pdf->render();
@@ -574,6 +597,17 @@ class Reportprintinfo extends CI_Model{
                     right: 0px;
                     height: 20px;
                 }
+                /** Page break for sections **/
+                .page-break {
+                    page-break-after: always;
+                    break-after: page;
+                }
+                
+                /** No page break for last section **/
+                .no-page-break {
+                    page-break-after: avoid;
+                    break-after: avoid;
+                }
             </style>
         </head>
         <body>
@@ -609,8 +643,14 @@ class Reportprintinfo extends CI_Model{
                     </tr>
                 </table>
             </footer>';
+            // Get total number of sections
+            $totalSections = count($dataArray);
+            $currentSection = 1;
             foreach ($dataArray as $index => $section) {
-                $html.='<main>
+                // Add page-break class to all sections except the last one
+                $pageBreakClass = ($currentSection < $totalSections) ? 'page-break' : 'no-page-break';
+
+                $html.='<main class="' . $pageBreakClass . '">
                     <table style="width:100%;border-collapse: collapse;font-size: 13px;">
                         <tr>
                             <th width="10%" style="text-align: center; border:1px solid black;">No</th>
@@ -626,25 +666,28 @@ class Reportprintinfo extends CI_Model{
                                 <td width="25%" style="text-align: right; border:1px solid black;padding-right: 10px;">'.number_format($row['amount'], 2).'</td>
                             </tr>';
                         }
-                    $html .= '</table>
-                    <p style="font-size:13px;">Cheque information</p>
-                    <table style="width:50%;border-collapse: collapse;">
-                        <tr>
-                            <th style="text-align: center; font-size:13px;border:1px solid black;">#</th>
-                            <th style="text-align: left; font-size:13px;border:1px solid black;padding-left:5px;">Cheque No</th>
-                            <th style="text-align: left; font-size:13px;border:1px solid black;padding-left:5px;">Cheque Date</th>
-                        </tr>';
-                        $j=1; foreach($respondcheque->result() as $rowcheque){if(!empty($rowcheque->chequeno)){
-                        $html.='<tr>
-                            <td style="text-align: center; font-size:13px;border:1px solid black;">'.$j.'</td>
-                            <td style="text-align: left; font-size:13px;border:1px solid black;padding-left:5px;">'.$rowcheque->chequeno.'</td>
-                            <td style="text-align: left; font-size:13px;border:1px solid black;padding-left:5px;">'.$rowcheque->chedate.'</td>
-                        </tr>
-                        ';
-                        }}
-                    $html .= '</table>
-                </main>
-                ';
+                    $html .= '</table>';
+                    if ($currentSection === $totalSections) {
+                        $html.='
+                        <p style="font-size:13px;">Cheque information</p>
+                        <table style="width:50%;border-collapse: collapse;">
+                            <tr>
+                                <th style="text-align: center; font-size:13px;border:1px solid black;">#</th>
+                                <th style="text-align: left; font-size:13px;border:1px solid black;padding-left:5px;">Cheque No</th>
+                                <th style="text-align: left; font-size:13px;border:1px solid black;padding-left:5px;">Cheque Date</th>
+                            </tr>';
+                            $j=1; foreach($respondcheque->result() as $rowcheque){if(!empty($rowcheque->chequeno)){
+                            $html.='<tr>
+                                <td style="text-align: center; font-size:13px;border:1px solid black;">'.$j.'</td>
+                                <td style="text-align: left; font-size:13px;border:1px solid black;padding-left:5px;">'.$rowcheque->chequeno.'</td>
+                                <td style="text-align: left; font-size:13px;border:1px solid black;padding-left:5px;">'.$rowcheque->chedate.'</td>
+                            </tr>
+                            ';
+                            }}
+                        $html .= '</table>';
+                    }
+                $html.='</main>';
+                $currentSection++;
             }
         $html.='</body>
         </html>';

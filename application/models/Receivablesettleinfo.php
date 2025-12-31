@@ -1228,6 +1228,7 @@ class Receivablesettleinfo extends CI_Model{
             $this->db->where('tbl_receivable.status', '1');
             if(!empty($printcustomer)){$this->db->where('tbl_receivable.payer', $printcustomer);}
             if(!empty($printdate)){$this->db->where('tbl_receivable.recdate', $printdate);}
+            $this->db->group_by('`receiptno`');
 
             $respond=$this->db->get();
 
