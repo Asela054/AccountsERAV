@@ -162,19 +162,19 @@ class Audittrailreportinfo extends CI_Model{
                 /* 2. Optional Joins: Get detail account info from specific modules ONLY if they match */
                 -- AR Detail
                 LEFT JOIN tbl_account_receivable ar 
-                    ON a.trabatchotherno = ar.batchno AND a.accamount = ar.amount AND a.trabatchotherno LIKE 'AR%'
+                    ON a.trabatchotherno = ar.batchno AND a.accamount = ar.amount AND a.crdr = ar.tratype AND a.trabatchotherno LIKE 'AR%' 
                 LEFT JOIN tbl_account_detail det_ar 
                     ON ar.tbl_account_detail_idtbl_account_detail = det_ar.idtbl_account_detail
 
                 -- AP Detail
                 LEFT JOIN tbl_account_payable ap 
-                    ON a.trabatchotherno = ap.batchno AND a.accamount = ap.amount AND a.trabatchotherno LIKE 'AP%'
+                    ON a.trabatchotherno = ap.batchno AND a.accamount = ap.amount AND a.crdr = ap.tratype AND a.trabatchotherno LIKE 'AP%'
                 LEFT JOIN tbl_account_detail det_ap 
                     ON ap.tbl_account_detail_idtbl_account_detail = det_ap.idtbl_account_detail
 
                 -- JE Detail
                 LEFT JOIN tbl_account_transaction_manual je 
-                    ON a.trabatchotherno = je.batchno AND a.accamount = je.amount AND a.trabatchotherno LIKE 'JE%'
+                    ON a.trabatchotherno = je.batchno AND a.accamount = je.amount AND a.crdr = je.crdr AND a.trabatchotherno LIKE 'JE%'
                 LEFT JOIN tbl_account_detail det_je 
                     ON je.tbl_account_detail_idtbl_account_detail = det_je.idtbl_account_detail
 
