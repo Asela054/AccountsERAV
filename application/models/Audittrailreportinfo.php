@@ -134,68 +134,141 @@ class Audittrailreportinfo extends CI_Model{
         //     AND a.tbl_company_idtbl_company = '$companyID'
         //     AND a.tbl_company_branch_idtbl_company_branch = '$branchID'
         // ORDER BY a.batchno, a.tradate, a.seqno";
+        // $sql = "SELECT 
+        //             a.batchno AS 'Audit Trail Number',
+        //             DATE(a.tradate) AS 'Date',
+        //             SUBSTRING(a.trabatchotherno, 3) AS 'Reference',
+        //             SUBSTRING(a.trabatchotherno, 1, 2) AS 'TrCode',
+        //             /* Logic: If a detail/sub-account exists in the specific module tables, show it.
+        //             Otherwise, fall back to the main account name from the transaction table.
+        //             */
+        //             CASE 
+        //                 WHEN det_ar.accountno IS NOT NULL THEN CONCAT(det_ar.accountno, ' - ', det_ar.accountname)
+        //                 WHEN det_ap.accountno IS NOT NULL THEN CONCAT(det_ap.accountno, ' - ', det_ap.accountname)
+        //                 WHEN det_je.accountno IS NOT NULL THEN CONCAT(det_je.accountno, ' - ', det_je.accountname)
+        //                 WHEN det_re.accountno IS NOT NULL THEN CONCAT(det_re.accountno, ' - ', det_re.accountname)
+        //                 WHEN det_ps.accountno IS NOT NULL THEN CONCAT(det_ps.accountno, ' - ', det_ps.accountname)
+        //                 ELSE CONCAT(acc_main.accountno, ' - ', acc_main.accountname)
+        //             END AS 'LedgerAccount',
+        //             a.narration AS 'Description',
+        //             CASE WHEN a.crdr = 'D' THEN a.accamount ELSE NULL END AS 'Debit',
+        //             CASE WHEN a.crdr = 'C' THEN a.accamount ELSE NULL END AS 'Credit'
+
+        //         FROM tbl_account_transaction a
+        //         /* 1. Primary Join: Get the main account info directly from the transaction table */
+        //         INNER JOIN tbl_account acc_main 
+        //             ON a.tbl_account_idtbl_account = acc_main.idtbl_account
+
+        //         /* 2. Optional Joins: Get detail account info from specific modules ONLY if they match */
+        //         -- AR Detail
+        //         LEFT JOIN tbl_account_receivable ar 
+        //             ON a.trabatchotherno = ar.batchno AND a.accamount = ar.amount AND a.crdr = ar.tratype AND a.trabatchotherno LIKE 'AR%' AND a.tratype ='R'
+        //         LEFT JOIN tbl_account_detail det_ar 
+        //             ON ar.tbl_account_detail_idtbl_account_detail = det_ar.idtbl_account_detail
+
+        //         -- AP Detail
+        //         LEFT JOIN tbl_account_payable ap 
+        //             ON a.trabatchotherno = ap.batchno AND a.accamount = ap.amount AND a.crdr = ap.tratype AND a.trabatchotherno LIKE 'AP%' AND a.tratype ='P'
+        //         LEFT JOIN tbl_account_detail det_ap 
+        //             ON ap.tbl_account_detail_idtbl_account_detail = det_ap.idtbl_account_detail
+
+        //         -- JE Detail
+        //         LEFT JOIN tbl_account_transaction_manual je 
+        //             ON a.trabatchotherno = je.batchno AND a.accamount = je.amount AND a.crdr = je.crdr AND a.trabatchotherno LIKE 'JE%' AND a.tratype ='J'
+        //         LEFT JOIN tbl_account_detail det_je 
+        //             ON je.tbl_account_detail_idtbl_account_detail = det_je.idtbl_account_detail
+
+        //         -- RE Detail
+        //         LEFT JOIN tbl_receivable re 
+        //             ON a.trabatchotherno = re.batchno AND a.accamount = re.amount AND a.trabatchotherno LIKE 'RE%'
+        //         LEFT JOIN tbl_account_detail det_re 
+        //             ON re.tbl_account_detail_idtbl_account_detail = det_re.idtbl_account_detail
+
+        //         -- PS Detail
+        //         LEFT JOIN tbl_account_paysettle ps 
+        //             ON a.trabatchotherno = ps.batchno AND a.accamount = ps.totalpayment AND a.trabatchotherno LIKE 'PS%'
+        //         LEFT JOIN tbl_account_detail det_ps 
+        //             ON ps.tbl_account_detail_idtbl_account_detail = det_ps.idtbl_account_detail
+
+        //         WHERE a.trabatchotherno IS NOT NULL 
+        //             AND a.trabatchotherno != ''
+        //             AND DATE(a.tradate) BETWEEN '$fromdate' AND '$todate'
+        //             AND a.tbl_company_idtbl_company = '$companyID'
+        //             AND a.tbl_company_branch_idtbl_company_branch = '$branchID'
+        //         ORDER BY a.batchno, a.tradate, a.seqno;";
         $sql = "SELECT 
-                    a.batchno AS 'Audit Trail Number',
-                    DATE(a.tradate) AS 'Date',
-                    SUBSTRING(a.trabatchotherno, 3) AS 'Reference',
-                    SUBSTRING(a.trabatchotherno, 1, 2) AS 'TrCode',
-                    /* Logic: If a detail/sub-account exists in the specific module tables, show it.
-                    Otherwise, fall back to the main account name from the transaction table.
-                    */
-                    CASE 
-                        WHEN det_ar.accountno IS NOT NULL THEN CONCAT(det_ar.accountno, ' - ', det_ar.accountname)
-                        WHEN det_ap.accountno IS NOT NULL THEN CONCAT(det_ap.accountno, ' - ', det_ap.accountname)
-                        WHEN det_je.accountno IS NOT NULL THEN CONCAT(det_je.accountno, ' - ', det_je.accountname)
-                        WHEN det_re.accountno IS NOT NULL THEN CONCAT(det_re.accountno, ' - ', det_re.accountname)
-                        WHEN det_ps.accountno IS NOT NULL THEN CONCAT(det_ps.accountno, ' - ', det_ps.accountname)
-                        ELSE CONCAT(acc_main.accountno, ' - ', acc_main.accountname)
-                    END AS 'LedgerAccount',
-                    a.narration AS 'Description',
-                    CASE WHEN a.crdr = 'D' THEN a.accamount ELSE NULL END AS 'Debit',
-                    CASE WHEN a.crdr = 'C' THEN a.accamount ELSE NULL END AS 'Credit'
+            a.batchno AS 'Audit Trail Number',
+            DATE(a.tradate) AS 'Date',
+            SUBSTRING(a.trabatchotherno, 3) AS 'Reference',
+            SUBSTRING(a.trabatchotherno, 1, 2) AS 'TrCode',
+            /* Priority Logic: Uses grouped detail accounts first, then falls back to main account */
+            CASE 
+                WHEN det_ar.accountno IS NOT NULL THEN CONCAT(det_ar.accountno, ' - ', det_ar.accountname)
+                WHEN det_ap.accountno IS NOT NULL THEN CONCAT(det_ap.accountno, ' - ', det_ap.accountname)
+                WHEN det_je.accountno IS NOT NULL THEN CONCAT(det_je.accountno, ' - ', det_je.accountname)
+                WHEN det_re.accountno IS NOT NULL THEN CONCAT(det_re.accountno, ' - ', det_re.accountname)
+                WHEN det_ps.accountno IS NOT NULL THEN CONCAT(det_ps.accountno, ' - ', det_ps.accountname)
+                ELSE CONCAT(acc_main.accountno, ' - ', acc_main.accountname)
+            END AS 'LedgerAccount',
+            a.narration AS 'Description',
+            CASE WHEN a.crdr = 'D' THEN a.accamount ELSE NULL END AS 'Debit',
+            CASE WHEN a.crdr = 'C' THEN a.accamount ELSE NULL END AS 'Credit'
 
-                FROM tbl_account_transaction a
-                /* 1. Primary Join: Get the main account info directly from the transaction table */
-                INNER JOIN tbl_account acc_main 
-                    ON a.tbl_account_idtbl_account = acc_main.idtbl_account
+        FROM tbl_account_transaction a
+        INNER JOIN tbl_account acc_main 
+            ON a.tbl_account_idtbl_account = acc_main.idtbl_account
 
-                /* 2. Optional Joins: Get detail account info from specific modules ONLY if they match */
-                -- AR Detail
-                LEFT JOIN tbl_account_receivable ar 
-                    ON a.trabatchotherno = ar.batchno AND a.accamount = ar.amount AND a.trabatchotherno LIKE 'AR%'
-                LEFT JOIN tbl_account_detail det_ar 
-                    ON ar.tbl_account_detail_idtbl_account_detail = det_ar.idtbl_account_detail
+        -- AP Detail: Grouped to prevent duplication when multiple items share a batch/amount
+        LEFT JOIN (
+            SELECT ap.batchno, ap.amount, ap.tratype, d.accountno, d.accountname
+            FROM tbl_account_payable ap
+            JOIN tbl_account_detail d ON ap.tbl_account_detail_idtbl_account_detail = d.idtbl_account_detail
+            GROUP BY ap.batchno, ap.amount, ap.tratype
+        ) det_ap ON a.trabatchotherno = det_ap.batchno 
+                AND a.accamount = det_ap.amount 
+                AND a.crdr = det_ap.tratype 
+                AND a.trabatchotherno LIKE 'AP%'
 
-                -- AP Detail
-                LEFT JOIN tbl_account_payable ap 
-                    ON a.trabatchotherno = ap.batchno AND a.accamount = ap.amount AND a.trabatchotherno LIKE 'AP%'
-                LEFT JOIN tbl_account_detail det_ap 
-                    ON ap.tbl_account_detail_idtbl_account_detail = det_ap.idtbl_account_detail
+        -- AR Detail: Grouped to prevent duplication
+        LEFT JOIN (
+            SELECT ar.batchno, ar.amount, ar.tratype, d.accountno, d.accountname
+            FROM tbl_account_receivable ar
+            JOIN tbl_account_detail d ON ar.tbl_account_detail_idtbl_account_detail = d.idtbl_account_detail
+            GROUP BY ar.batchno, ar.amount, ar.tratype
+        ) det_ar ON a.trabatchotherno = det_ar.batchno 
+                AND a.accamount = det_ar.amount 
+                AND a.crdr = det_ar.tratype 
+                AND a.trabatchotherno LIKE 'AR%'
 
-                -- JE Detail
-                LEFT JOIN tbl_account_transaction_manual je 
-                    ON a.trabatchotherno = je.batchno AND a.accamount = je.amount AND a.trabatchotherno LIKE 'JE%'
-                LEFT JOIN tbl_account_detail det_je 
-                    ON je.tbl_account_detail_idtbl_account_detail = det_je.idtbl_account_detail
+        -- JE Detail: Grouped to prevent duplication
+        LEFT JOIN (
+            SELECT je.batchno, je.amount, je.crdr, d.accountno, d.accountname
+            FROM tbl_account_transaction_manual je
+            JOIN tbl_account_detail d ON je.tbl_account_detail_idtbl_account_detail = d.idtbl_account_detail
+            GROUP BY je.batchno, je.amount, je.crdr
+        ) det_je ON a.trabatchotherno = det_je.batchno 
+                AND a.accamount = det_je.amount 
+                AND a.crdr = det_je.crdr 
+                AND a.trabatchotherno LIKE 'JE%'
 
-                -- RE Detail
-                LEFT JOIN tbl_receivable re 
-                    ON a.trabatchotherno = re.batchno AND a.accamount = re.amount AND a.trabatchotherno LIKE 'RE%'
-                LEFT JOIN tbl_account_detail det_re 
-                    ON re.tbl_account_detail_idtbl_account_detail = det_re.idtbl_account_detail
+        -- RE Detail
+        LEFT JOIN tbl_receivable re 
+            ON a.trabatchotherno = re.batchno AND a.accamount = re.amount AND a.trabatchotherno LIKE 'RE%'
+        LEFT JOIN tbl_account_detail det_re 
+            ON re.tbl_account_detail_idtbl_account_detail = det_re.idtbl_account_detail
 
-                -- PS Detail
-                LEFT JOIN tbl_account_paysettle ps 
-                    ON a.trabatchotherno = ps.batchno AND a.accamount = ps.totalpayment AND a.trabatchotherno LIKE 'PS%'
-                LEFT JOIN tbl_account_detail det_ps 
-                    ON ps.tbl_account_detail_idtbl_account_detail = det_ps.idtbl_account_detail
+        -- PS Detail
+        LEFT JOIN tbl_account_paysettle ps 
+            ON a.trabatchotherno = ps.batchno AND a.accamount = ps.totalpayment AND a.trabatchotherno LIKE 'PS%'
+        LEFT JOIN tbl_account_detail det_ps 
+            ON ps.tbl_account_detail_idtbl_account_detail = det_ps.idtbl_account_detail
 
-                WHERE a.trabatchotherno IS NOT NULL 
-                    AND a.trabatchotherno != ''
-                    AND DATE(a.tradate) BETWEEN '$fromdate' AND '$todate'
-                    AND a.tbl_company_idtbl_company = '$companyID'
-                    AND a.tbl_company_branch_idtbl_company_branch = '$branchID'
-                ORDER BY a.batchno, a.tradate, a.seqno;";
+        WHERE a.trabatchotherno IS NOT NULL 
+            AND a.trabatchotherno != ''
+            AND DATE(a.tradate) BETWEEN '$fromdate' AND '$todate'
+            AND a.tbl_company_idtbl_company = '$companyID'
+            AND a.tbl_company_branch_idtbl_company_branch = '$branchID'
+        ORDER BY a.batchno, a.tradate, a.seqno";
         
         $respond = $this->db->query($sql);
         
