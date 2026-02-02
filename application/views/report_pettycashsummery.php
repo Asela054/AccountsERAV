@@ -153,23 +153,40 @@ include "include/topnavbar.php";
                     ],
                     "dom": "<'row'<'col-sm-5'B><'col-sm-2'l><'col-sm-5'f>>" + "<'row'<'col-sm-12'tr>>" + "<'row'<'col-sm-5'i><'col-sm-7'p>>",
                     "buttons": [{
-                            extend: 'csv',
+                            extend: 'excel',
                             className: 'btn btn-success btn-sm',
-                            title: 'Petty Cash Summery Report',
-                            text: '<i class="fas fa-file-csv mr-2"></i> CSV',
+                            title: 'Petty Cash Summary Report', 
+                            messageTop: 'Reporting Period ' + fromdate + ' to ' + todate,
+                            text: '<i class="fas fa-file-csv mr-2"></i> EXCEL',
                             footer: true
                         },
                         {
                             extend: 'pdf',
                             className: 'btn btn-danger btn-sm',
-                            title: 'Petty Cash Summery Report',
+                            title: 'Petty Cash Summary Report',
+                            messageTop: 'Reporting Period ' + fromdate + ' to ' + todate,
                             text: '<i class="fas fa-file-pdf mr-2"></i> PDF',
                             footer: true,
                             orientation: 'landscape',
                             pageSize: 'A4',
                             customize: function(doc) {
-                                // Set the table to 100% width in the PDF
-                                doc.content[1].table.widths = Array(doc.content[1].table.body[0].length + 1).join('*').split('');
+                                // Find the table object in the doc.content array dynamically
+                                var tableNode;
+                                for (var i = 0; i < doc.content.length; i++) {
+                                    if (doc.content[i].table !== undefined) {
+                                        tableNode = doc.content[i];
+                                        break;
+                                    }
+                                }
+
+                                // If table is found, set width to 100%
+                                if (tableNode) {
+                                    tableNode.table.widths = Array(tableNode.table.body[0].length + 1).join('*').split('');
+                                }
+                                
+                                // Optional: Center the titles
+                                doc.styles.title = { color: '#2D3339', fontSize: '16', alignment: 'center' };
+                                doc.styles.message = { alignment: 'center', margin: [0, 5, 0, 10] };
                             }
                         },
                         {

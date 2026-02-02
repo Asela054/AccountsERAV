@@ -23,4 +23,7 @@ class Api extends CI_Controller {
     public function Payrollsalaryprocess(){
         $result=$this->Apiinfo->Payrollsalaryprocess();
 	}
+    public function Costmaterialprocess(){
+        $result=$this->Apiinfo->Costmaterialprocess();
+	}
 }
