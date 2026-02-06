@@ -26,4 +26,7 @@ class Api extends CI_Controller {
     public function Costmaterialprocess(){
         $result=$this->Apiinfo->Costmaterialprocess();
 	}
+    public function JurnalEntryProcess(){
+        $result=$this->Apiinfo->JurnalEntryProcess();
+	}
 }
