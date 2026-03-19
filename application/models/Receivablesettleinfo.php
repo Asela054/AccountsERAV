@@ -369,7 +369,16 @@ class Receivablesettleinfo extends CI_Model{
             $masterdata = get_account_period($company, $branch);
             $batchno = tr_batch_num($prefix, $branch);
             $masterID = $masterdata->idtbl_master;
-            $receiptno = tr_batch_num('REC'.date('y'), $branch);
+
+            $this->db->select('tbl_finacial_year.year');
+            $this->db->from('tbl_master');
+            $this->db->join('tbl_finacial_year', 'tbl_finacial_year.idtbl_finacial_year = tbl_master.tbl_finacial_year_idtbl_finacial_year', 'left');
+            $this->db->where('tbl_master.idtbl_master', $masterID);
+
+            $respond = $this->db->get();
+            $financialYear = substr($respond->row(0)->year, -2);
+            
+            $receiptno = tr_batch_num('REC'.$financialYear, $branch);
             $receiptno = preg_replace('/^(.{5})00/', '$1', $receiptno);
         }
 

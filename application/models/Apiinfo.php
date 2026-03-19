@@ -749,4 +749,139 @@ class Apiinfo extends CI_Model{
             ]);
         }
     }
+    public function Createdetailaccount(){
+        header('Content-Type: application/json');
+
+        try {
+            $optiontype=$this->input->post('optiontype');
+            $optionid=$this->input->post('optionid');  
+            $optiontext=$this->input->post('optiontext');  
+            $userID=$this->input->post('userid');
+            $companyID=$this->input->post('company');
+            $branchID=$this->input->post('branch');
+            $updatedatetime = date('Y-m-d H:i:s');    
+            
+            $this->db->select('COUNT(*) as totalrecord');
+            $this->db->from('tbl_account_detail_other');
+            $this->db->where('tbl_company_idtbl_company', $companyID);
+            $this->db->where('tbl_company_branch_idtbl_company_branch', $branchID);
+            $this->db->where('otheroptiontype', $optiontype);
+            $this->db->where('otheroption', $optionid);
+            $respondcount = $this->db->get();
+
+            if($respondcount->row(0)->totalrecord == 0):
+                $this->db->trans_begin();
+
+                if($optiontype==1):
+                    $chartspecialcate = array('34');
+                elseif($optiontype==2):
+                    $chartspecialcate = array('35');
+                elseif($optiontype==3):
+                    $chartspecialcate = array('37');
+                elseif($optiontype==4):
+                    $chartspecialcate = array('38');
+                endif;
+
+                $this->db->where('tbl_account_allocation.companybank', $companyID);
+                $this->db->where('tbl_account_allocation.branchcompanybank', $branchID);
+                $this->db->where_in('tbl_account.specialcate', $chartspecialcate);
+                $this->db->where('tbl_account.status', 1);
+                $this->db->where('tbl_account_allocation.status', 1);
+                $this->db->where('tbl_account_allocation.tbl_account_idtbl_account is NOT NULL', NULL, FALSE);
+                $this->db->select('`tbl_account`.`idtbl_account`, `tbl_account`.`accountno`, `tbl_account`.`accountname`, `tbl_account`.`specialcate`');
+                $this->db->from('tbl_account');
+                $this->db->join('tbl_account_allocation', 'tbl_account_allocation.tbl_account_idtbl_account = tbl_account.idtbl_account', 'left');
+
+                $respondchart=$this->db->get();
+
+                if($respondchart->num_rows() == 0){
+                    throw new Exception("No chart of account found for the specified option");
+                }
+
+                foreach($respondchart->result() as $rowchart){
+                    $chartofaccount=$rowchart->idtbl_account;
+                    $accountcatecode=$rowchart->accountno;
+
+                    $this->db->select('IFNULL((MAX(`tbl_account_detail`.`code`) + 1), 1) AS `nextaccouontno`');
+                    $this->db->from('tbl_account_detail');
+                    $this->db->join('tbl_account_allocation', 'tbl_account_allocation.tbl_account_detail_idtbl_account_detail = tbl_account_detail.idtbl_account_detail', 'left');
+                    $this->db->where('tbl_account_allocation.companybank', $companyID);
+                    $this->db->where('tbl_account_allocation.branchcompanybank', $branchID);
+                    $this->db->where('tbl_account_detail.status', 1);
+                    $this->db->where('tbl_account_allocation.status', 1);
+                    $this->db->where('tbl_account_allocation.tbl_account_detail_idtbl_account_detail is NOT NULL', NULL, FALSE);
+                    $this->db->where('tbl_account_detail.tbl_account_idtbl_account', $chartofaccount);
+                    $respond=$this->db->get();
+
+                    $detailaccountcode = $respond->row(0)->nextaccouontno;
+                    $detailaccountno='0000'.$detailaccountcode;
+                    $detailaccountno=substr($detailaccountno, -4);
+                    $detailaccountno=$accountcatecode.$detailaccountno;
+
+                    $detailaccount=$optiontext;
+                    
+                    $data = array(
+                        'code'=> $detailaccountcode, 
+                        'accountno'=> $detailaccountno, 
+                        'accountname'=> $detailaccount, 
+                        'status'=> '1', 
+                        'insertdatetime'=> $updatedatetime, 
+                        'tbl_user_idtbl_user'=> $userID,
+                        'tbl_account_idtbl_account'=> $chartofaccount
+                    );
+
+                    $this->db->insert('tbl_account_detail', $data);
+
+                    $chartofdetailaccountID=$this->db->insert_id();
+
+                    $datadetail = array(
+                        'companybank'=> $companyID, 
+                        'branchcompanybank'=> $branchID, 
+                        'status'=> '1', 
+                        'insertdatetime'=> $updatedatetime, 
+                        'tbl_user_idtbl_user'=> $userID,
+                        'tbl_account_detail_idtbl_account_detail'=> $chartofdetailaccountID
+                    );
+                    $this->db->insert('tbl_account_allocation', $datadetail);
+                    
+                    $datadetailother = array(
+                        'otheroptiontype' => $optiontype,
+                        'otheroption' => $optionid,
+                        'tbl_user_idtbl_user' => $userID,
+                        'tbl_account_detail_idtbl_account_detail ' => $chartofdetailaccountID,
+                        'tbl_company_idtbl_company' => $companyID,
+                        'tbl_company_branch_idtbl_company_branch' => $branchID
+                    );
+
+                    $this->db->insert('tbl_account_detail_other', $datadetailother);
+                }
+
+                if ($this->db->trans_status() === FALSE) {
+                    $this->db->trans_rollback();
+                    throw new Exception("Database error occurred");
+                }
+                    
+                $this->db->trans_commit();
+
+                echo json_encode([
+                    'status' => 'success',
+                    'code' => 200,
+                    'message' => 'Create detail account successfully'
+                ]);
+            else:
+                echo json_encode([
+                    'status' => 'success',
+                    'code' => 200,
+                    'message' => 'Already have detail account for this option'
+                ]);
+            endif;
+        } catch (Exception $e) {
+            $this->db->trans_rollback();
+            echo json_encode([
+                'status' => 'error',
+                'code' => 500,
+                'message' => 'An error occurred while creating detail account'
+            ]);
+        }
+    }
 }

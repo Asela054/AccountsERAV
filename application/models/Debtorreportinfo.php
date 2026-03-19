@@ -33,11 +33,23 @@ class Debtorreportinfo extends CI_Model{
                         AND r.tbl_company_idtbl_company = ? 
                         AND r.tbl_company_branch_idtbl_company_branch = ?
                     )
+                    OR EXISTS (
+                        SELECT 1 FROM tbl_batch_transaction bt
+                        JOIN tbl_batch_transaction_main btm ON bt.tbl_batch_transaction_main_idtbl_batch_transaction_main = btm.idtbl_batch_transaction_main
+                        WHERE bt.tbl_customer_idtbl_customer = c.idtbl_customer
+                        AND bt.status = 1
+                        AND btm.status = 1
+                        AND btm.approvestatus = 1
+                        AND bt.transdate BETWEEN ? AND ?
+                        AND bt.tbl_company_idtbl_company = ? 
+                        AND bt.tbl_company_branch_idtbl_company_branch = ?
+                    )
                 )
                 ORDER BY c.customer ASC
             ";
 
             $customers = $this->db->query($sqlCustomers, [
+                $fromdate, $todate, $companyID, $branchID,
                 $fromdate, $todate, $companyID, $branchID,
                 $fromdate, $todate, $companyID, $branchID
             ])->result();
@@ -76,17 +88,51 @@ class Debtorreportinfo extends CI_Model{
                     `tbl_print_invoice`.`inv_no` = `tbl_sales_info`.`invno` 
                     OR 
                     `tbl_print_invoice`.`inv_no` = CONCAT('INV', `tbl_sales_info`.`invno`)
-                ) LEFT JOIN `tbl_print_invoicedetail` ON  `tbl_print_invoicedetail`.`tbl_print_invoice_idtbl_print_invoice` = `tbl_print_invoice`.`idtbl_print_invoice` WHERE `tbl_sales_info`.`tbl_customer_idtbl_customer`=? AND `tbl_sales_info`.`tbl_company_idtbl_company`=? AND `tbl_sales_info`.`tbl_company_branch_idtbl_company_branch`=? AND `tbl_print_invoice`.`tbl_company_idtbl_company`=? AND `tbl_print_invoice`.`tbl_company_branch_idtbl_company_branch`=? AND `tbl_sales_info`.`invdate` BETWEEN ? AND ? AND `tbl_sales_info`.`status`=? GROUP BY `tbl_sales_info`.`invno` UNION ALL 
-                SELECT `tbl_receivable`.`receiptno`, `tbl_receivable`.`recdate` AS `invpaydate`, `tbl_receivable_info`.`amount`, CONCAT(
+                ) 
+                AND `tbl_print_invoice`.`tbl_company_idtbl_company`=? 
+                AND `tbl_print_invoice`.`tbl_company_branch_idtbl_company_branch`=?
+                LEFT JOIN `tbl_print_invoicedetail` ON  `tbl_print_invoicedetail`.`tbl_print_invoice_idtbl_print_invoice` = `tbl_print_invoice`.`idtbl_print_invoice` WHERE `tbl_sales_info`.`tbl_customer_idtbl_customer`=? AND `tbl_sales_info`.`tbl_company_idtbl_company`=? AND `tbl_sales_info`.`tbl_company_branch_idtbl_company_branch`=? AND `tbl_sales_info`.`invdate` BETWEEN ? AND ? AND `tbl_sales_info`.`status`=? AND `tbl_sales_info`.`poststatus`=? AND `tbl_sales_info`.`invno` NOT IN (
+                    SELECT `invoiceno` 
+                    FROM `tbl_batch_transaction` 
+                    WHERE `crdr` = 'C' 
+                    AND `tbl_customer_idtbl_customer` = ?
+                ) GROUP BY `tbl_sales_info`.`invno` UNION ALL 
+                SELECT `tbl_receivable`.`receiptno`, `tbl_receivable`.`recdate` AS `invpaydate`, SUM(`tbl_receivable_info`.`amount`) AS `amount`, CONCAT(
                     `tbl_receivable`.`narration`,
                     ' ',
                     GROUP_CONCAT(`tbl_receivable_info`.`invoiceno` SEPARATOR ', '),
                     ' - ',
                     `tbl_receivable`.`chequeno`
-                ) AS `narration`, 'C' AS `tratype`, `tbl_receivable`.`chequedate`, `tbl_receivable`.`chequeno` FROM `tbl_receivable_info` LEFT JOIN `tbl_receivable` ON `tbl_receivable`.`idtbl_receivable`=`tbl_receivable_info`.`tbl_receivable_idtbl_receivable` WHERE `tbl_receivable`.`recdate` BETWEEN ? AND ? AND `tbl_receivable`.`status`=? AND `tbl_receivable`.`poststatus`=? AND `tbl_receivable`.`payer`=? AND `tbl_receivable`.`tbl_company_idtbl_company`=? AND `tbl_receivable`.`tbl_company_branch_idtbl_company_branch`=? GROUP BY `tbl_receivable`.`idtbl_receivable`) AS `u` ORDER BY `u`.`invpaydate` ASC";
+                ) AS `narration`, 'C' AS `tratype`, `tbl_receivable`.`chequedate`, `tbl_receivable`.`chequeno` FROM `tbl_receivable_info` LEFT JOIN `tbl_receivable` ON `tbl_receivable`.`idtbl_receivable`=`tbl_receivable_info`.`tbl_receivable_idtbl_receivable` WHERE `tbl_receivable`.`recdate` BETWEEN ? AND ? AND `tbl_receivable`.`status`=? AND `tbl_receivable`.`poststatus`=? AND `tbl_receivable`.`payer`=? AND `tbl_receivable`.`tbl_company_idtbl_company`=? AND `tbl_receivable`.`tbl_company_branch_idtbl_company_branch`=? GROUP BY `tbl_receivable`.`idtbl_receivable` UNION ALL
+                SELECT 
+                    `tbl_batch_transaction`.`invoiceno` AS `receiptno`,
+                    `tbl_batch_transaction`.`transdate` AS `invpaydate`,
+                    CASE 
+                        WHEN `tbl_batch_transaction`.`crdr` = 'C' THEN `tbl_batch_transaction`.`creditamount`
+                        WHEN `tbl_batch_transaction`.`crdr` = 'D' THEN `tbl_batch_transaction`.`debitamount`
+                        ELSE 0
+                    END AS `amount`,
+                    `tbl_batch_transaction`.`narration` AS `narration`,
+                    CASE 
+                        WHEN `tbl_batch_transaction`.`crdr` = 'C' THEN 'C'
+                        WHEN `tbl_batch_transaction`.`crdr` = 'D' THEN 'D'
+                        ELSE NULL
+                    END AS `tratype`,
+                    '' AS `chequedate`,
+                    '' AS `chequeno`
+                FROM `tbl_batch_transaction`
+                LEFT JOIN `tbl_batch_transaction_main` ON `tbl_batch_transaction_main`.`idtbl_batch_transaction_main` = `tbl_batch_transaction`.`tbl_batch_transaction_main_idtbl_batch_transaction_main`
+                WHERE `tbl_batch_transaction`.`tbl_company_idtbl_company` = ? 
+                AND `tbl_batch_transaction`.`tbl_company_branch_idtbl_company_branch` = ?
+                AND `tbl_batch_transaction`.`tbl_customer_idtbl_customer` = ?
+                AND `tbl_batch_transaction`.`transdate` BETWEEN ? AND ?
+                AND `tbl_batch_transaction`.`status` = ?
+                AND `tbl_batch_transaction_main`.`status` = ?
+                AND `tbl_batch_transaction_main`.`approvestatus` = ?) AS `u` ORDER BY `u`.`invpaydate` ASC";
                 
-                $transactions = $this->db->query($sql, [$cust->idtbl_customer, $companyID, $branchID, $companyID, $branchID, $fromdate, $todate, 1, $fromdate, $todate, 1, 1, $cust->idtbl_customer, $companyID, $branchID])->result();
-
+                $transactions = $this->db->query($sql, [$companyID, $branchID, $cust->idtbl_customer, $companyID, $branchID, $fromdate, $todate, 1, 1, $cust->idtbl_customer, $fromdate, $todate, 1, 1, $cust->idtbl_customer, $companyID, $branchID, $companyID, $branchID, $cust->idtbl_customer, $fromdate, $todate, 1, 1, 1])->result();
+                // print_r($this->db->last_query()); 
+                
                 // Start customer section  
                 $html .= '<tr>';
                 $html .= '<th colspan="8">' . $cust->customer . ' (' . $cust->ref_no . ')</th>';
