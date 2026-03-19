@@ -29,4 +29,7 @@ class Api extends CI_Controller {
     public function JurnalEntryProcess(){
         $result=$this->Apiinfo->JurnalEntryProcess();
 	}
+    public function Createdetailaccount(){
+        $result=$this->Apiinfo->Createdetailaccount();
+	}
 }

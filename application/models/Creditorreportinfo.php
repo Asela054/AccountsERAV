@@ -72,7 +72,7 @@ class Creditorreportinfo extends CI_Model{
             $grandTotalExpenses = 0;
             $grandTotalPayments = 0;
             $grandTotalBalance = 0;
-
+            
             foreach($creditors as $sup) {
                 // Get Opening Balance for this creditor
                 $sqlOpenBalance = "SELECT ((SELECT COALESCE(SUM(`amount`), 0) FROM `tbl_expence_info` WHERE `status`=? AND `grndate`<? AND `tbl_supplier_idtbl_supplier`=? AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=?)-(SELECT COALESCE(SUM(`totalpayment`), 0) FROM `tbl_account_paysettle` WHERE `status`=? AND `date`<? AND `supplier`=? AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=?)) AS `openbalance`";
@@ -82,9 +82,33 @@ class Creditorreportinfo extends CI_Model{
                 $openingBalance = $respondopenbalance->row()->openbalance;
 
                 // Get Transactions for this creditor
-                $sql = "SELECT * FROM (SELECT `tbl_account_paysettle`.`date` AS `repaydate`, `tbl_account_paysettle`.`paymentno` AS `regrnno`, '' AS `expcode`, `tbl_account_paysettle_info`.`amount`, `tbl_account_paysettle_info`.`narration`, 'D' AS `tratype`, `tbl_cheque_issue`.`chedate`, `tbl_cheque_issue`.`chequeno` FROM `tbl_account_paysettle_info` LEFT JOIN `tbl_account_paysettle` ON `tbl_account_paysettle`.`idtbl_account_paysettle`=`tbl_account_paysettle_info`.`tbl_account_paysettle_idtbl_account_paysettle` LEFT JOIN `tbl_account_paysettle_has_tbl_cheque_issue` ON `tbl_account_paysettle_has_tbl_cheque_issue`.`tbl_account_paysettle_idtbl_account_paysettle`=`tbl_account_paysettle`.`idtbl_account_paysettle` LEFT JOIN `tbl_cheque_issue` ON `tbl_cheque_issue`.`idtbl_cheque_issue`=`tbl_account_paysettle_has_tbl_cheque_issue`.`tbl_cheque_issue_idtbl_cheque_issue` WHERE `tbl_account_paysettle_info`.`status`=? AND `tbl_account_paysettle`.`date` BETWEEN ? AND ? AND `tbl_account_paysettle`.`status`=? AND `tbl_account_paysettle`.`poststatus`=? AND `tbl_account_paysettle`.`supplier`=? AND `tbl_account_paysettle`.`tbl_company_idtbl_company`=? AND `tbl_account_paysettle`.`tbl_company_branch_idtbl_company_branch`=? UNION ALL SELECT `grndate` AS `repaydate`, `grnno` AS `regrnno`, `expcode`, `amount`, '' AS `narration`, 'C' AS `tratype`, '' AS `chedate`, '' AS `chequeno` FROM `tbl_expence_info` WHERE `tbl_supplier_idtbl_supplier`=? AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=? AND `grndate` BETWEEN ? AND ?) AS `u` ORDER BY `u`.`repaydate` ASC";
+                // $sql = "SELECT * FROM (SELECT `tbl_account_paysettle`.`date` AS `repaydate`, `tbl_account_paysettle`.`paymentno` AS `regrnno`, '' AS `expcode`, `tbl_account_paysettle_info`.`amount`, `tbl_account_paysettle_info`.`narration`, 'D' AS `tratype`, `tbl_cheque_issue`.`chedate`, `tbl_cheque_issue`.`chequeno` FROM `tbl_account_paysettle_info` LEFT JOIN `tbl_account_paysettle` ON `tbl_account_paysettle`.`idtbl_account_paysettle`=`tbl_account_paysettle_info`.`tbl_account_paysettle_idtbl_account_paysettle` LEFT JOIN `tbl_account_paysettle_has_tbl_cheque_issue` ON `tbl_account_paysettle_has_tbl_cheque_issue`.`tbl_account_paysettle_idtbl_account_paysettle`=`tbl_account_paysettle`.`idtbl_account_paysettle` LEFT JOIN `tbl_cheque_issue` ON `tbl_cheque_issue`.`idtbl_cheque_issue`=`tbl_account_paysettle_has_tbl_cheque_issue`.`tbl_cheque_issue_idtbl_cheque_issue` WHERE `tbl_account_paysettle_info`.`status`=? AND `tbl_account_paysettle`.`date` BETWEEN ? AND ? AND `tbl_account_paysettle`.`status`=? AND `tbl_account_paysettle`.`poststatus`=? AND `tbl_account_paysettle`.`supplier`=? AND `tbl_account_paysettle`.`tbl_company_idtbl_company`=? AND `tbl_account_paysettle`.`tbl_company_branch_idtbl_company_branch`=? 
+                // UNION ALL 
+                // SELECT `grndate` AS `repaydate`, `grnno` AS `regrnno`, `expcode`, `amount`, '' AS `narration`, 'C' AS `tratype`, '' AS `chedate`, '' AS `chequeno` FROM `tbl_expence_info` WHERE `tbl_supplier_idtbl_supplier`=? AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=? AND `grndate` BETWEEN ? AND ?) AS `u` ORDER BY `u`.`repaydate` ASC";
+                $sql = "SELECT * FROM (SELECT `tbl_account_paysettle`.`date` AS `repaydate`, `tbl_account_paysettle`.`paymentno` AS `regrnno`, '' AS `expcode`, `tbl_account_paysettle_info`.`amount`, `tbl_account_paysettle_info`.`narration`, 'D' AS `tratype`, `tbl_cheque_issue`.`chedate`, `tbl_cheque_issue`.`chequeno` FROM `tbl_account_paysettle_info` LEFT JOIN `tbl_account_paysettle` ON `tbl_account_paysettle`.`idtbl_account_paysettle`=`tbl_account_paysettle_info`.`tbl_account_paysettle_idtbl_account_paysettle` LEFT JOIN `tbl_account_paysettle_has_tbl_cheque_issue` ON `tbl_account_paysettle_has_tbl_cheque_issue`.`tbl_account_paysettle_idtbl_account_paysettle`=`tbl_account_paysettle`.`idtbl_account_paysettle` LEFT JOIN `tbl_cheque_issue` ON `tbl_cheque_issue`.`idtbl_cheque_issue`=`tbl_account_paysettle_has_tbl_cheque_issue`.`tbl_cheque_issue_idtbl_cheque_issue` WHERE `tbl_account_paysettle_info`.`status`=? AND `tbl_account_paysettle`.`date` BETWEEN ? AND ? AND `tbl_account_paysettle`.`status`=? AND `tbl_account_paysettle`.`poststatus`=? AND `tbl_account_paysettle`.`supplier`=? AND `tbl_account_paysettle`.`tbl_company_idtbl_company`=? AND `tbl_account_paysettle`.`tbl_company_branch_idtbl_company_branch`=? 
+                UNION ALL 
+                SELECT
+                    `tbl_expence_info`.`grndate` AS `repaydate`,
+                    `tbl_expence_info`.`grnno` AS `regrnno`,
+                    `tbl_expence_info`.`expcode`,
+                    `tbl_expence_info`.`amount`,
+                    '' AS `narration`,
+                    'C' AS `tratype`,
+                    '' AS `chedate`,
+                    '' AS `chequeno`
+                FROM
+                    `tbl_expence_info`
+
+                    LEFT JOIN `tbl_print_grn` ON (
+                        `tbl_print_grn`.`grn_no` = `tbl_expence_info`.`grnno`
+                        OR
+                        `tbl_print_grn`.`invoicenum` = `tbl_expence_info`.`grnno`
+                    ) 
+                    AND `tbl_print_grn`.`tbl_company_idtbl_company`=? AND `tbl_print_grn`.`tbl_company_branch_idtbl_company_branch`=?
+                WHERE
+                `tbl_expence_info`.`tbl_company_idtbl_company` = ? AND `tbl_expence_info`.`tbl_company_branch_idtbl_company_branch` = ? AND `tbl_expence_info`.`tbl_supplier_idtbl_supplier` = ? AND `tbl_expence_info`.`grndate` BETWEEN ? AND ? AND `tbl_expence_info`.`poststatus`=?) AS `u` ORDER BY `u`.`repaydate` ASC";
                 
-                $transactions = $this->db->query($sql, [1, $fromdate, $todate, 1, 1, $sup->idtbl_supplier, $companyID, $branchID, $sup->idtbl_supplier, $companyID, $branchID, $fromdate, $todate])->result();
+                $transactions = $this->db->query($sql, [1, $fromdate, $todate, 1, 1, $sup->idtbl_supplier, $companyID, $branchID, $companyID, $branchID, $companyID, $branchID, $sup->idtbl_supplier, $fromdate, $todate, 1])->result();
 
                 //Get Post-dated cheque info
                 $this->db->select('tbl_account_paysettle.paymentno, tbl_cheque_issue.amount, tbl_cheque_issue.chedate, tbl_cheque_issue.chequeno, tbl_cheque_issue.narration, tbl_supplier.suppliername');

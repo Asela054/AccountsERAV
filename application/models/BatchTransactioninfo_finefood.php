@@ -1,4 +1,4 @@
-BatchTransaction<?php
+<?php
 class BatchTransactioninfo extends CI_Model{
     public function Getbatchcategory(){
         $this->db->select('`idtbl_batch_category`, `batch_category`');
@@ -24,8 +24,8 @@ class BatchTransactioninfo extends CI_Model{
         echo json_encode($respond->result());
     }
     public function Getuomlist(){
-        $this->db->select('`idtbl_mesurements`, `measure_type`');
-        $this->db->from('tbl_measurements');
+        $this->db->select('`idtbl_unit`, `unitname`');
+        $this->db->from('tbl_unit');
         $this->db->where('status', 1);
 
         return $respond = $this->db->get();
@@ -35,12 +35,13 @@ class BatchTransactioninfo extends CI_Model{
         $companyid = $_SESSION['companyid'];
         $branchid = $_SESSION['branchid'];
 
-        $this->db->select('`batchno`, `qty`, `measure_type_id`, `unitprice`');
-        $this->db->from('tbl_print_stock');
-        $this->db->where('tbl_print_material_info_idtbl_print_material_info', $materialID);
-        $this->db->where('tbl_company_idtbl_company', $companyid);
-        $this->db->where('tbl_company_branch_idtbl_company_branch', $branchid);
-        $this->db->where('status', 1);
+        $this->db->select('`tbl_stock`.`batchno`, `tbl_stock`.`qty`, `tbl_material_info`.`tbl_unit_idtbl_unit`, `tbl_stock`.`unitprice`');
+        $this->db->from('tbl_stock');
+        $this->db->join('tbl_material_info', 'tbl_material_info.idtbl_material_info = tbl_stock.tbl_material_info_idtbl_material_info', 'left');
+        $this->db->where('tbl_stock.tbl_material_info_idtbl_material_info', $materialID);
+        $this->db->where('tbl_stock.tbl_company_idtbl_company', $companyid);
+        $this->db->where('tbl_stock.tbl_company_branch_idtbl_company_branch', $branchid);
+        $this->db->where('tbl_stock.status', 1);
         
         $respond = $this->db->get();
         echo json_encode($respond->result());
@@ -298,12 +299,12 @@ class BatchTransactioninfo extends CI_Model{
         $transcate = $this->input->post('transcate');
 
         if($transcate==1){
-            $this->db->select('tbl_batch_transaction.*, tbl_batch_transaction_main.approvestatus, tbl_batch_transaction_main.completestatus, tbl_batch_category.batch_category, tbl_batch_trans_type.batctranstype, tbl_print_material_info.materialname,  tbl_measurements.measure_type');
+            $this->db->select('tbl_batch_transaction.*, tbl_batch_transaction_main.approvestatus, tbl_batch_transaction_main.completestatus, tbl_batch_category.batch_category, tbl_batch_trans_type.batctranstype, tbl_material_info.materialname,  tbl_measurements.measure_type');
             $this->db->from('tbl_batch_transaction');
             $this->db->join('tbl_batch_transaction_main', 'tbl_batch_transaction_main.idtbl_batch_transaction_main = tbl_batch_transaction.tbl_batch_transaction_main_idtbl_batch_transaction_main', 'left');
             $this->db->join('tbl_batch_category', 'tbl_batch_category.idtbl_batch_category = tbl_batch_transaction_main.tbl_batch_category_idtbl_batch_category', 'left');
             $this->db->join('tbl_batch_trans_type', 'tbl_batch_trans_type.idtbl_batch_trans_type=tbl_batch_transaction.tbl_batch_trans_type_idtbl_batch_trans_type', 'left');
-            $this->db->join('tbl_print_material_info', 'tbl_print_material_info.idtbl_print_material_info=tbl_batch_transaction.tbl_print_material_info_idtbl_print_material_info', 'left');
+            $this->db->join('tbl_material_info', 'tbl_material_info.idtbl_material_info=tbl_batch_transaction.tbl_print_material_info_idtbl_print_material_info', 'left');
             $this->db->join('tbl_measurements', 'tbl_measurements.idtbl_mesurements=tbl_batch_transaction.uom_id', 'left');
             $this->db->where('tbl_batch_transaction.tbl_batch_transaction_main_idtbl_batch_transaction_main', $recordID);
             $this->db->where('tbl_batch_transaction.status', 1);
@@ -609,12 +610,12 @@ class BatchTransactioninfo extends CI_Model{
         $today = date('Y-m-d');   
         $journalmainID = 0;
 
-        $this->db->select('tbl_batch_transaction.*, tbl_batch_transaction_main.approvestatus, tbl_batch_transaction_main.completestatus, tbl_batch_category.batch_category, tbl_batch_category.idtbl_batch_category, tbl_batch_trans_type.batctranstype, tbl_batch_trans_type.idtbl_batch_trans_type, tbl_batch_trans_type.crdr as `batchtypecrdr`, tbl_batch_trans_type.plusminus, tbl_print_material_info.materialname, tbl_print_material_info.tbl_supplier_idtbl_supplier as `grnsupplierid`, tbl_measurements.measure_type');
+        $this->db->select('tbl_batch_transaction.*, tbl_batch_transaction_main.approvestatus, tbl_batch_transaction_main.completestatus, tbl_batch_category.batch_category, tbl_batch_category.idtbl_batch_category, tbl_batch_trans_type.batctranstype, tbl_batch_trans_type.idtbl_batch_trans_type, tbl_batch_trans_type.crdr as `batchtypecrdr`, tbl_batch_trans_type.plusminus, tbl_material_info.materialname, tbl_material_info.tbl_supplier_idtbl_supplier as `grnsupplierid`, tbl_measurements.measure_type');
         $this->db->from('tbl_batch_transaction');
         $this->db->join('tbl_batch_transaction_main', 'tbl_batch_transaction_main.idtbl_batch_transaction_main = tbl_batch_transaction.tbl_batch_transaction_main_idtbl_batch_transaction_main', 'left');
         $this->db->join('tbl_batch_category', 'tbl_batch_category.idtbl_batch_category = tbl_batch_transaction_main.tbl_batch_category_idtbl_batch_category', 'left');
         $this->db->join('tbl_batch_trans_type', 'tbl_batch_trans_type.idtbl_batch_trans_type=tbl_batch_transaction.tbl_batch_trans_type_idtbl_batch_trans_type', 'left');
-        $this->db->join('tbl_print_material_info', 'tbl_print_material_info.idtbl_print_material_info=tbl_batch_transaction.tbl_print_material_info_idtbl_print_material_info', 'left');
+        $this->db->join('tbl_material_info', 'tbl_material_info.idtbl_material_info=tbl_batch_transaction.tbl_print_material_info_idtbl_print_material_info', 'left');
         $this->db->join('tbl_measurements', 'tbl_measurements.idtbl_mesurements=tbl_batch_transaction.uom_id', 'left');
         $this->db->where('tbl_batch_transaction.tbl_batch_transaction_main_idtbl_batch_transaction_main', $recordID);
         $this->db->where('tbl_batch_transaction.status', 1);
@@ -680,10 +681,10 @@ class BatchTransactioninfo extends CI_Model{
                                     $stocktotal = $rowtransactiondata->qtyout * $rowtransactiondata->unitcost;
                                     $this->db->set('qty', "(`qty` - '$rowtransactiondata->qtyout')", FALSE);
                                 endif;
-                                $this->db->where('tbl_print_material_info_idtbl_print_material_info', $rowtransactiondata->tbl_print_material_info_idtbl_print_material_info);
+                                $this->db->where('tbl_material_info_idtbl_material_info', $rowtransactiondata->tbl_print_material_info_idtbl_print_material_info);
                                 $this->db->where('tbl_company_idtbl_company', $companyID);
                                 $this->db->where('tbl_company_branch_idtbl_company_branch', $branchID);
-                                $this->db->update('tbl_print_stock');
+                                $this->db->update('tbl_stock');
 
                                 $totaltransactionamount += $stocktotal;
                             }
@@ -696,20 +697,16 @@ class BatchTransactioninfo extends CI_Model{
                                 // Insert the stock in the transaction data
                                 $datastock = array(
                                     'batchno' => $materialBatchno, 
-                                    'grndate' => $today, 
-                                    'supplier_id' => $rowtransactiondata->grnsupplierid, 
                                     'qty' => $rowtransactiondata->qtyin, 
-                                    'measure_type_id' => $rowtransactiondata->uom_id, 
                                     'unitprice' => $rowtransactiondata->unitcost, 
-                                    'total' => $stocktotal, 
                                     'status' => '1', 
                                     'insertdatetime' => $updatedatetime,
                                     'tbl_user_idtbl_user' => $userID, 
-                                    'tbl_print_material_info_idtbl_print_material_info' => $rowtransactiondata->tbl_print_material_info_idtbl_print_material_info, 
+                                    'tbl_material_info_idtbl_material_info' => $rowtransactiondata->tbl_print_material_info_idtbl_print_material_info, 
                                     'tbl_company_idtbl_company' => $companyID, 
                                     'tbl_company_branch_idtbl_company_branch' => $branchID,
                                 );
-                                $this->db->insert('tbl_print_stock', $datastock);
+                                $this->db->insert('tbl_stock', $datastock);
                             }
                         }
                         

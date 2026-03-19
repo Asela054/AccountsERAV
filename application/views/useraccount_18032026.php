@@ -30,28 +30,19 @@ include "include/topnavbar.php";
                                         <input type="text" class="form-control form-control-sm" name="accountname" id="accountname" required>
                                     </div>
                                     <div class="form-group mb-1">
-                                        <label class="small font-weight-bold">Email*</label>
-                                        <input type="email" class="form-control form-control-sm" name="username" id="username" required>
+                                        <label class="small font-weight-bold">Username*</label>
+                                        <input type="text" class="form-control form-control-sm" name="username" id="username" required>
                                     </div>
                                     <div class="form-group mb-1">
                                         <label class="small font-weight-bold">Password*</label>
                                         <input type="password" class="form-control form-control-sm" name="password" id="password" required>
                                     </div>
-                                    <div class="form-group mb-1">
+                                    <div class="form-group">
                                         <label class="small font-weight-bold">User Type*</label>
                                         <select class="form-control form-control-sm" name="usertype" id="usertype" required>
                                             <option value="">Select</option>
                                             <?php foreach ($usertype->result() as $rowusertype) { ?>
                                             <option value="<?php echo $rowusertype->idtbl_user_type ?>"><?php echo $rowusertype->type ?></option>
-                                            <?php } ?>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="small font-weight-bold">User Roles*</label>
-                                        <select class="form-control form-control-sm" name="userroles[]" id="userroles" multiple required>
-                                            <option value="">Select</option>
-                                            <?php foreach ($userroles->result() as $rowuserroles) { ?>
-                                            <option value="<?php echo $rowuserroles->idtbl_roles ?>"><?php echo $rowuserroles->role ?></option>
                                             <?php } ?>
                                         </select>
                                     </div>
@@ -69,9 +60,8 @@ include "include/topnavbar.php";
                                             <tr>
                                                 <th>#</th>
                                                 <th>NAME</th>
-                                                <th>Email</th>
-                                                <th>User Type</th>
-                                                <th>Roles</th>
+                                                <th>USERNAME</th>
+                                                <th>TYPE</th>
                                                 <th class="text-right">&nbsp;</th>
                                             </tr>
                                         </thead>
@@ -93,11 +83,6 @@ include "include/topnavbar.php";
         var editcheck='<?php echo $editcheck; ?>';
         var statuscheck='<?php echo $statuscheck; ?>';
         var deletecheck='<?php echo $deletecheck; ?>';
-
-        $('#userroles').select2({
-            placeholder: "Select User Roles",
-            allowClear: true
-        });
 
         $('#dataTable').DataTable({
             "destroy": true,
@@ -123,9 +108,6 @@ include "include/topnavbar.php";
                 },
                 {
                     "data": "type"
-                },
-                {
-                    "data": "role"
                 },
                 {
                     "targets": -1,
@@ -165,15 +147,6 @@ include "include/topnavbar.php";
                         $('#accountname').val(obj.name); 
                         $('#username').val(obj.username); 
                         $('#usertype').val(obj.type);  
-
-                        var userroles = obj.roles;
-                        var userrolesoption = [];
-                        $.each(userroles, function(i, item) {
-                            userrolesoption.push(userroles[i].roleID);
-                        });
-                        console.log(userrolesoption);
-                        $('#userroles').val(userrolesoption);
-                        $('#userroles').trigger('change');
                         
                         $('#password').removeAttr("required");
 

@@ -39,7 +39,7 @@ class Welcome extends CI_Controller {
 		if($resultcurrentsch->monthname===date('Y-F')){
 			$currentperiodmatch=1;
 		}
-
+        // print_r($result);
         if($result!=false){
             $user_data=array(
                 'userid'=>$result->idtbl_user,

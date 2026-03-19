@@ -42,7 +42,7 @@ include "include/topnavbar.php";
                                             <div class="input-group-prepend">
                                                 <span class="input-group-text" id="htmlacccate">&nbsp;</span>
                                             </div>
-                                            <input type="text" class="form-control input-integer" name="detailaccountcode" id="detailaccountcode" minlength="2" maxlength="2" required>
+                                            <input type="text" class="form-control input-integer" name="detailaccountcode" id="detailaccountcode" minlength="2" maxlength="4" required>
                                             <div class="input-group-append">
                                                 <button class="btn btn-primary-soft" type="button" id="btnrefresh"><i class="fas fa-sync-alt"></i></button>
                                             </div>
