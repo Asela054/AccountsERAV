@@ -3,6 +3,11 @@ require_once '../external.php';
 
 $CI =& get_instance();
 $CI->load->library('session');
+
+$configdata = getconfigdata('receivable_search');
+$tablename = $configdata->row(0)->tbl_name;
+$column1   = $configdata->row(0)->col_name;
+$column2   = $configdata->row(1)->col_name;
 /*
  * DataTables example server-side processing script.
  *
@@ -42,7 +47,7 @@ $columns = array(
 	array( 'db' => '`ud`.`desc`', 'dt' => 'desc', 'field' => 'desc' ),
 	array( 'db' => '`ue`.`monthname`', 'dt' => 'monthname', 'field' => 'monthname' ),
 	array( 'db' => '`uf`.`invno`', 'dt' => 'invno', 'field' => 'invno' ),
-	array( 'db' => '`ug`.`customer`', 'dt' => 'customer', 'field' => 'customer' ),
+	array( 'db' => "`ug`.$column2", 'dt' => 'customer', 'field' => 'customer' ),
 	array( 'db' => '`u`.`status`', 'dt' => 'status', 'field' => 'status' )
 );
 
@@ -66,7 +71,7 @@ require('ssp.customized.class.php' );
 $companyid=$_SESSION['companyid'];
 $branchid=$_SESSION['branchid'];
 
-$joinQuery = "FROM `tbl_account_receivable_main` AS `u` LEFT JOIN `tbl_company` AS `ua` ON (`ua`.`idtbl_company` = `u`.`tbl_company_idtbl_company`) LEFT JOIN `tbl_company_branch` AS `ub` ON (`ub`.`idtbl_company_branch` = `u`.`tbl_company_branch_idtbl_company_branch`) LEFT JOIN `tbl_master` AS `uc` ON (`uc`.`idtbl_master` = `u`.`tbl_master_idtbl_master`) LEFT JOIN `tbl_finacial_year` AS `ud` ON (`ud`.`idtbl_finacial_year` = `uc`.`tbl_finacial_year_idtbl_finacial_year`) LEFT JOIN `tbl_finacial_month` AS `ue` ON (`ue`.`idtbl_finacial_month` = `uc`.`tbl_finacial_month_idtbl_finacial_month`) LEFT JOIN `tbl_sales_info` AS `uf` ON (`uf`.`invno` = `u`.`receiptno`) LEFT JOIN `tbl_customer` AS `ug` ON (`ug`.`idtbl_customer` = `uf`.`tbl_customer_idtbl_customer`)";
+$joinQuery = "FROM `tbl_account_receivable_main` AS `u` LEFT JOIN `tbl_company` AS `ua` ON (`ua`.`idtbl_company` = `u`.`tbl_company_idtbl_company`) LEFT JOIN `tbl_company_branch` AS `ub` ON (`ub`.`idtbl_company_branch` = `u`.`tbl_company_branch_idtbl_company_branch`) LEFT JOIN `tbl_master` AS `uc` ON (`uc`.`idtbl_master` = `u`.`tbl_master_idtbl_master`) LEFT JOIN `tbl_finacial_year` AS `ud` ON (`ud`.`idtbl_finacial_year` = `uc`.`tbl_finacial_year_idtbl_finacial_year`) LEFT JOIN `tbl_finacial_month` AS `ue` ON (`ue`.`idtbl_finacial_month` = `uc`.`tbl_finacial_month_idtbl_finacial_month`) LEFT JOIN `tbl_sales_info` AS `uf` ON (`uf`.`invno` = `u`.`receiptno`) LEFT JOIN $tablename AS `ug` ON (`ug`.`$column1` = `uf`.`tbl_customer_idtbl_customer`)";
 
 $extraWhere = "`u`.`status` IN (1, 2) AND `u`.`rectype`=0 AND `u`.`tbl_company_idtbl_company`='$companyid' AND `u`.`tbl_company_branch_idtbl_company_branch`='$branchid' AND `uf`.`tbl_company_idtbl_company`='$companyid' AND `uf`.`tbl_company_branch_idtbl_company_branch`='$branchid'";
 

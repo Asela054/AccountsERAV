@@ -57,4 +57,7 @@ class Receivablesettle extends CI_Controller {
     public function Getinvrecno(){
         $result=$this->Receivablesettleinfo->Getinvrecno();
     }
+    public function Getunappliedpaymentaccocustomer(){
+        $result=$this->Receivablesettleinfo->Getunappliedpaymentaccocustomer();
+    }
 }

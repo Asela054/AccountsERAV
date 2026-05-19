@@ -154,6 +154,14 @@ include "include/topnavbar.php";
                                             <input type="text" name="narrationcr" id="narrationcr" class="form-control form-control-sm">
                                         </div>
                                     </div>
+                                    <div class="form-row mb-1">
+                                        <div class="col">
+                                            <div class="custom-control custom-checkbox mt-2">
+                                                <input type="checkbox" class="custom-control-input" id="payableentry" name="payableentry" value="1">
+                                                <label class="custom-control-label font-weight-bold small" for="payableentry">Payable Entry</label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="col-6">
                                     <h6 class="title-style small"><span>Debit Account Information</span></h6>
@@ -569,6 +577,8 @@ include "include/topnavbar.php";
                             lastOptioncr.data = { type: obj.accounttypecr };
                             $('#accountcrno').trigger('change');      
                             $('#narrationcr').val(obj.narrationcr);  
+                            if(obj.payablestatus==1){$('#payableentry').prop('checked', true);}
+                            else{$('#payableentry').prop('checked', false);}
     
                             getaccountlist(obj.accountdr, 'accountdrno', obj.companyid, obj.branchid);     
                             var newOptiondr = new Option(obj.accountdr, obj.accountdrid, true, true);
@@ -665,6 +675,7 @@ include "include/topnavbar.php";
                 var selectedData = $('#accountdrno').select2('data')[0];
                 var accounttypedr = selectedData ? selectedData.data.type : null;
                 var narrationdr = $('#narrationdr').val();
+                var payableentry = $('#payableentry').is(':checked') ? 1 : 0;
 
                 Swal.fire({
                     title: '',
@@ -694,7 +705,8 @@ include "include/topnavbar.php";
                                 accounttypecr: accounttypecr,
                                 accounttypedr: accounttypedr,
                                 recordOption: recordOption,
-                                recordID: recordID
+                                recordID: recordID,
+                                payableentry: payableentry
                             },
                             url: 'Journalentry/Journalentryinsertupdate',
                             success: function (result) { //alert(result);

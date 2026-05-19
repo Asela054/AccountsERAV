@@ -856,6 +856,420 @@ class Userinfo extends CI_Model{
             }
         }
     }
+    public function Userpermissionsinsertupdate(){
+        $this->db->trans_begin();
+
+        $userID=$_SESSION['userid'];
+        $userpermission = $this->input->post('userpermission');
+        $permission = array();
+        if(!empty($this->input->post('permission_create'))){$permission[] = array('name' => strtolower($userpermission).'-create', 'type' => '1');}
+        if(!empty($this->input->post('permission_edit'))){$permission[] = array('name' => strtolower($userpermission).'-edit', 'type' => '2');}
+        if(!empty($this->input->post('permission_status'))){$permission[] = array('name' => strtolower($userpermission).'-status', 'type' => '3');}
+        if(!empty($this->input->post('permission_delete'))){$permission[] = array('name' => strtolower($userpermission).'-delete', 'type' => '4');}
+        if(!empty($this->input->post('permission_approve'))){$permission[] = array('name' => strtolower($userpermission).'-approve', 'type' => '5');}
+        if(!empty($this->input->post('permission_check'))){$permission[] = array('name' => strtolower($userpermission).'-check', 'type' => '6');}
+
+        $updatedatetime=date('Y-m-d h:i:s');
+        foreach($permission as $rowpermission){
+            $data = array(
+                'permission'=>$rowpermission['name'],
+                'guard_name'=>'web-account',
+                'module'=>$userpermission,
+                'permission_type'=>$rowpermission['type'],
+                'insertdatetime'=>$updatedatetime,
+                'tbl_user_idtbl_user'=>$userID
+            );
+
+            $this->db->insert('tbl_permissions', $data);
+        }
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === TRUE) {
+            $this->db->trans_commit();
+            $actionObj=new stdClass();
+            $actionObj->icon='fas fa-save';
+            $actionObj->title='';
+            $actionObj->message='Record Added Successfully';
+            $actionObj->url='';
+            $actionObj->target='_blank';
+            $actionObj->type='success';
+
+            $actionJSON=json_encode($actionObj);
+            $this->session->set_flashdata('msg', $actionJSON);
+            redirect('User/Userpermissions');
+        } else {
+            $this->db->trans_rollback();
+            $actionObj=new stdClass();
+            $actionObj->icon='fas fa-warning';
+            $actionObj->title='';
+            $actionObj->message='Record Error';
+            $actionObj->url='';
+            $actionObj->target='_blank';
+            $actionObj->type='danger';
+
+            $actionJSON=json_encode($actionObj);
+            $this->session->set_flashdata('msg', $actionJSON);
+            redirect('User/Userpermissions');
+        }
+    }
+    public function Userpermissionsstatus($id, $status){
+        $this->db->trans_begin();
+
+        $this->db->delete('tbl_permissions', array('idtbl_permissions' => $id));
+
+        $this->db->trans_complete();
+
+        if ($this->db->trans_status() === TRUE) {
+            $this->db->trans_commit();
+            $actionObj=new stdClass();
+            $actionObj->icon='fas fa-trash-alt';
+            $actionObj->title='';
+            $actionObj->message='Record Removed Successfully';
+            $actionObj->url='';
+            $actionObj->target='_blank';
+            $actionObj->type='success';
+
+            $actionJSON=json_encode($actionObj);
+            $this->session->set_flashdata('msg', $actionJSON);
+            redirect('User/Userpermissions');
+        } else {
+            $this->db->trans_rollback();
+            $actionObj=new stdClass();
+            $actionObj->icon='fas fa-warning';
+            $actionObj->title='';
+            $actionObj->message='Record Error';
+            $actionObj->url='';
+            $actionObj->target='_blank';
+            $actionObj->type='danger';
+
+            $actionJSON=json_encode($actionObj);
+            $this->session->set_flashdata('msg', $actionJSON);
+            redirect('User/Userpermissions');
+        }
+    }
+    public function Getpermissionlist(){
+        $this->db->select('`idtbl_permissions`, `permission`, `guard_name`, `module`, `permission_type`');
+        $this->db->from('tbl_permissions');
+        $this->db->where('guard_name', 'web-account');
+        $this->db->order_by('module', 'ASC');
+
+        $respond=$this->db->get();
+
+        $permissionlistArray=array();
+        foreach($respond->result() as $rowrespond){
+            $grouped_permissions[$rowrespond->module][] = $rowrespond;
+        }
+        return $grouped_permissions;
+    }
+    public function Userrolesinsertupdate(){       
+        $userID=$_SESSION['userid'];
+        $rolename = $this->input->post('rolename');
+        $permission = $this->input->post('permission');
+
+        $recordOption=$this->input->post('recordOption');
+        if(!empty($this->input->post('recordID'))){$recordID=$this->input->post('recordID');}
+
+        $updatedatetime=date('Y-m-d H:i:s');
+
+        if($recordOption==1){
+            $this->db->trans_begin();   
+
+            $data = array(
+                'role'=>$rolename,
+                'guard_name'=>'web-account',
+                'status'=>'1',
+                'insertdatetime'=>$updatedatetime,
+                'tbl_user_idtbl_user'=>$userID
+            );
+
+            $this->db->insert('tbl_roles', $data);
+            $lastID = $this->db->insert_id();
+
+            foreach($permission as $rowpermission){
+                $data = array(
+                    'tbl_roles_idtbl_roles'=>$lastID,
+                    'tbl_permissions_idtbl_permissions'=>$rowpermission,
+                );
+
+                $this->db->insert('tbl_roles_has_tbl_permissions', $data);
+            }
+
+            $this->db->trans_complete();
+
+            if ($this->db->trans_status() === TRUE) {
+                $this->db->trans_commit();
+                
+                $actionObj=new stdClass();
+                $actionObj->icon='fas fa-save';
+                $actionObj->title='';
+                $actionObj->message='Record Added Successfully';
+                $actionObj->url='';
+                $actionObj->target='_blank';
+                $actionObj->type='success';
+
+                $actionJSON=json_encode($actionObj);
+                
+                $this->session->set_flashdata('msg', $actionJSON);
+                redirect('User/Userroles');                
+            } else {
+                $this->db->trans_rollback();
+
+                $actionObj=new stdClass();
+                $actionObj->icon='fas fa-warning';
+                $actionObj->title='';
+                $actionObj->message='Record Error';
+                $actionObj->url='';
+                $actionObj->target='_blank';
+                $actionObj->type='danger';
+
+                $actionJSON=json_encode($actionObj);
+                
+                $this->session->set_flashdata('msg', $actionJSON);
+                redirect('User/Userroles');
+            }
+        }
+        else{
+            $this->db->trans_begin();   
+
+            $data = array(
+                'role'=>$rolename,
+                'guard_name'=>'web-account',
+                'updateuser'=>$updatedatetime,                
+                'updatedatetime'=>$updatedatetime               
+            );
+            $this->db->where('idtbl_roles', $recordID);
+            $this->db->update('tbl_roles', $data);
+
+            $this->db->where('tbl_roles_idtbl_roles', $recordID);
+            $this->db->delete('tbl_roles_has_tbl_permissions');
+
+            foreach($permission as $rowpermission){
+                $data = array(
+                    'tbl_roles_idtbl_roles'=>$recordID,
+                    'tbl_permissions_idtbl_permissions'=>$rowpermission,
+                );
+
+                $this->db->insert('tbl_roles_has_tbl_permissions', $data);
+            }   
+
+            $this->db->trans_complete();
+
+            if ($this->db->trans_status() === TRUE) {
+                $this->db->trans_commit();
+                
+                $actionObj=new stdClass();
+                $actionObj->icon='fas fa-save';
+                $actionObj->title='';
+                $actionObj->message='Record Update Successfully';
+                $actionObj->url='';
+                $actionObj->target='_blank';
+                $actionObj->type='primary';
+
+                $actionJSON=json_encode($actionObj);
+                
+                $this->session->set_flashdata('msg', $actionJSON);
+                redirect('User/Userroles');                
+            } else {
+                $this->db->trans_rollback();
+
+                $actionObj=new stdClass();
+                $actionObj->icon='fas fa-warning';
+                $actionObj->title='';
+                $actionObj->message='Record Error';
+                $actionObj->url='';
+                $actionObj->target='_blank';
+                $actionObj->type='danger';
+
+                $actionJSON=json_encode($actionObj);
+                
+                $this->session->set_flashdata('msg', $actionJSON);
+                redirect('User/Userroles');
+            }
+        }
+    }
+    public function Userrolesedit(){
+        $recordID=$this->input->post('recordID');
+
+        $this->db->select('*');
+        $this->db->from('tbl_roles');
+        $this->db->where('idtbl_roles', $recordID);
+        $this->db->where('status', 1);
+
+        $respond=$this->db->get();
+
+        $permissionArray=array();
+        $this->db->select('tbl_permissions_idtbl_permissions');
+        $this->db->from('tbl_roles_has_tbl_permissions');
+        $this->db->where('tbl_roles_idtbl_roles', $recordID);
+
+        $respondpermission=$this->db->get();
+
+        foreach($respondpermission->result() as $rowrespondpermission){
+            array_push($permissionArray, $rowrespondpermission->tbl_permissions_idtbl_permissions);
+        }
+
+        $obj=new stdClass();
+        $obj->id=$respond->row(0)->idtbl_roles;
+        $obj->role=$respond->row(0)->role;
+        $obj->guard_name=$respond->row(0)->guard_name;
+        $obj->status=$respond->row(0)->status;
+        $obj->permission=$permissionArray;
+
+        echo json_encode($obj);
+    }
+    public function Userrolesstatus($x, $y){
+        $userID=$_SESSION['userid'];
+        $recordID=$x;
+        $type=$y;
+        $updatedatetime=date('Y-m-d H:i:s');
+
+        if($type==1){
+            $this->db->trans_begin();
+
+            $data = array(
+                'status' => '1',
+                'updateuser'=> $userID, 
+                'updatedatetime'=> $updatedatetime
+            );
+
+            $this->db->where('idtbl_roles', $recordID);
+            $this->db->update('tbl_roles', $data);
+
+            $this->db->trans_complete();
+
+            if ($this->db->trans_status() === TRUE) {
+                $this->db->trans_commit();
+                
+                $actionObj=new stdClass();
+                $actionObj->icon='fas fa-check';
+                $actionObj->title='';
+                $actionObj->message='Record Activate Successfully';
+                $actionObj->url='';
+                $actionObj->target='_blank';
+                $actionObj->type='success';
+
+                $actionJSON=json_encode($actionObj);
+                
+                $this->session->set_flashdata('msg', $actionJSON);
+                redirect('User/Userroles');                
+            } else {
+                $this->db->trans_rollback();
+
+                $actionObj=new stdClass();
+                $actionObj->icon='fas fa-warning';
+                $actionObj->title='';
+                $actionObj->message='Record Error';
+                $actionObj->url='';
+                $actionObj->target='_blank';
+                $actionObj->type='danger';
+
+                $actionJSON=json_encode($actionObj);
+                
+                $this->session->set_flashdata('msg', $actionJSON);
+                redirect('User/Userroles');
+            }
+        }
+        else if($type==2){
+            $this->db->trans_begin();
+
+            $data = array(
+                'status' => '2',
+                'updateuser'=> $userID, 
+                'updatedatetime'=> $updatedatetime
+            );
+
+            $this->db->where('idtbl_roles', $recordID);
+            $this->db->update('tbl_roles', $data);
+
+            $this->db->trans_complete();
+
+            if ($this->db->trans_status() === TRUE) {
+                $this->db->trans_commit();
+                
+                $actionObj=new stdClass();
+                $actionObj->icon='fas fa-times';
+                $actionObj->title='';
+                $actionObj->message='Record Deactivate Successfully';
+                $actionObj->url='';
+                $actionObj->target='_blank';
+                $actionObj->type='warning';
+
+                $actionJSON=json_encode($actionObj);
+                
+                $this->session->set_flashdata('msg', $actionJSON);
+                redirect('User/Userroles');                
+            } else {
+                $this->db->trans_rollback();
+
+                $actionObj=new stdClass();
+                $actionObj->icon='fas fa-warning';
+                $actionObj->title='';
+                $actionObj->message='Record Error';
+                $actionObj->url='';
+                $actionObj->target='_blank';
+                $actionObj->type='danger';
+
+                $actionJSON=json_encode($actionObj);
+                
+                $this->session->set_flashdata('msg', $actionJSON);
+                redirect('User/Userroles');
+            }
+        }
+        else if($type==3){
+            $this->db->trans_begin();
+
+            $data = array(
+                'status' => '3',
+                'updateuser'=> $userID, 
+                'updatedatetime'=> $updatedatetime
+            );
+
+            $this->db->where('idtbl_roles', $recordID);
+            $this->db->update('tbl_roles', $data);
+
+            $this->db->trans_complete();
+
+            if ($this->db->trans_status() === TRUE) {
+                $this->db->trans_commit();
+                
+                $actionObj=new stdClass();
+                $actionObj->icon='fas fa-trash-alt';
+                $actionObj->title='';
+                $actionObj->message='Record Remove Successfully';
+                $actionObj->url='';
+                $actionObj->target='_blank';
+                $actionObj->type='danger';
+
+                $actionJSON=json_encode($actionObj);
+                
+                $this->session->set_flashdata('msg', $actionJSON);
+                redirect('User/Userroles');                
+            } else {
+                $this->db->trans_rollback();
+
+                $actionObj=new stdClass();
+                $actionObj->icon='fas fa-warning';
+                $actionObj->title='';
+                $actionObj->message='Record Error';
+                $actionObj->url='';
+                $actionObj->target='_blank';
+                $actionObj->type='danger';
+
+                $actionJSON=json_encode($actionObj);
+                
+                $this->session->set_flashdata('msg', $actionJSON);
+                redirect('User/Userroles');
+            }
+        }
+    }
+    public function Getuserroles(){
+        $this->db->select('idtbl_roles, role');
+        $this->db->from('tbl_roles');
+        $this->db->where('status', 1);
+
+        return $respond=$this->db->get();
+    }   
     public function Companybranchinfo(){
         $company=$this->input->post('company');
 		$branch=$this->input->post('branch');

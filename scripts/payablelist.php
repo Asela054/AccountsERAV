@@ -3,6 +3,11 @@ require_once '../external.php';
 
 $CI =& get_instance();
 $CI->load->library('session');
+
+$configdata = getconfigdata('payable_search');
+$tablename = $configdata->row(0)->tbl_name;
+$column1   = $configdata->row(0)->col_name;
+$column2   = $configdata->row(1)->col_name;
 /*
  * DataTables example server-side processing script.
  *
@@ -37,7 +42,7 @@ $columns = array(
 	array( 'db' => '`u`.`batchno`', 'dt' => 'batchno', 'field' => 'batchno' ),
 	array( 'db' => '`u`.`totalpayment`', 'dt' => 'totalpayment', 'field' => 'totalpayment' ),
 	array( 'db' => '`u`.`poststatus`', 'dt' => 'poststatus', 'field' => 'poststatus' ),
-	array( 'db' => '`ui`.`suppliername`', 'dt' => 'suppliername', 'field' => 'suppliername' ),
+	array( 'db' => "`ui`.$column2", 'dt' => 'suppliername', 'field' => 'suppliername' ),
 	array( 'db' => '`ua`.`company`', 'dt' => 'company', 'field' => 'company' ),
 	array( 'db' => '`ub`.`branch`', 'dt' => 'branch', 'field' => 'branch' ),
 	array( 'db' => '`ud`.`desc`', 'dt' => 'desc', 'field' => 'desc' ),
@@ -53,7 +58,17 @@ $columns = array(
 	array( 'db' => '`u`.`postdatedstatus`', 'dt' => 'postdatedstatus', 'field' => 'postdatedstatus' ),
 	array( 'db' => '`uk`.`chedate`', 'dt' => 'chedate', 'field' => 'chedate' ),
 	array( 'db' => '`u`.`paymentno`', 'dt' => 'paymentno', 'field' => 'paymentno' ),
-	array( 'db' => '`u`.`status`', 'dt' => 'status', 'field' => 'status' )
+	array( 'db' => '`u`.`status`', 'dt' => 'status', 'field' => 'status' ),
+	array( 
+		'db' => "(CASE 
+                WHEN u.paysettlefiltertype = 1 THEN 'Payment Supplier' 
+                WHEN u.paysettlefiltertype = 2 THEN 'Payment Journal' 
+                WHEN u.paysettlefiltertype = 3 THEN 'Payment voucher' 
+                ELSE 'Unknown' 
+              END) AS paymentfiltertype", 
+		'dt' => 'paymentfiltertype', 
+		'field' => 'paymentfiltertype' 
+	)
 );
 
 // SQL server connection information
@@ -76,7 +91,7 @@ require('ssp.customized.class.php' );
 $companyid=$_SESSION['companyid'];
 $branchid=$_SESSION['branchid'];
 
-$joinQuery = "FROM `tbl_account_paysettle` AS `u` LEFT JOIN `tbl_company` AS `ua` ON (`ua`.`idtbl_company` = `u`.`tbl_company_idtbl_company`) LEFT JOIN `tbl_company_branch` AS `ub` ON (`ub`.`idtbl_company_branch` = `u`.`tbl_company_branch_idtbl_company_branch`) LEFT JOIN `tbl_master` AS `uc` ON (`uc`.`idtbl_master` = `u`.`tbl_master_idtbl_master`) LEFT JOIN `tbl_finacial_year` AS `ud` ON (`ud`.`idtbl_finacial_year` = `uc`.`tbl_finacial_year_idtbl_finacial_year`) LEFT JOIN `tbl_finacial_month` AS `ue` ON (`ue`.`idtbl_finacial_month` = `uc`.`tbl_finacial_month_idtbl_finacial_month`) LEFT JOIN `tbl_receivable_type` AS `uf` ON (`uf`.`idtbl_receivable_type` = `u`.`tbl_receivable_type_idtbl_receivable_type`) LEFT JOIN `tbl_account` AS `ug` ON (`ug`.`idtbl_account` = `u`.`tbl_account_idtbl_account`) LEFT JOIN `tbl_account_detail` AS `uh` ON (`uh`.`idtbl_account_detail` = `u`.`tbl_account_detail_idtbl_account_detail`) LEFT JOIN `tbl_supplier` AS `ui` ON (`ui`.`idtbl_supplier` = `u`.`supplier`) LEFT JOIN `tbl_account_paysettle_has_tbl_cheque_issue` AS `uj` ON (`uj`.`tbl_account_paysettle_idtbl_account_paysettle` = `u`.`idtbl_account_paysettle`) LEFT JOIN `tbl_cheque_issue` AS `uk` ON (`uk`.`idtbl_cheque_issue` = `uj`.`tbl_cheque_issue_idtbl_cheque_issue`) LEFT JOIN `tbl_cheque_info` AS `ul` ON (`ul`.`idtbl_cheque_info` = `uk`.`tbl_cheque_info_idtbl_cheque_info`) LEFT JOIN `tbl_bank` AS `um` ON (`um`.`idtbl_bank` = `ul`.`tbl_bank_idtbl_bank`)";
+$joinQuery = "FROM `tbl_account_paysettle` AS `u` LEFT JOIN `tbl_company` AS `ua` ON (`ua`.`idtbl_company` = `u`.`tbl_company_idtbl_company`) LEFT JOIN `tbl_company_branch` AS `ub` ON (`ub`.`idtbl_company_branch` = `u`.`tbl_company_branch_idtbl_company_branch`) LEFT JOIN `tbl_master` AS `uc` ON (`uc`.`idtbl_master` = `u`.`tbl_master_idtbl_master`) LEFT JOIN `tbl_finacial_year` AS `ud` ON (`ud`.`idtbl_finacial_year` = `uc`.`tbl_finacial_year_idtbl_finacial_year`) LEFT JOIN `tbl_finacial_month` AS `ue` ON (`ue`.`idtbl_finacial_month` = `uc`.`tbl_finacial_month_idtbl_finacial_month`) LEFT JOIN `tbl_receivable_type` AS `uf` ON (`uf`.`idtbl_receivable_type` = `u`.`tbl_receivable_type_idtbl_receivable_type`) LEFT JOIN `tbl_account` AS `ug` ON (`ug`.`idtbl_account` = `u`.`tbl_account_idtbl_account`) LEFT JOIN `tbl_account_detail` AS `uh` ON (`uh`.`idtbl_account_detail` = `u`.`tbl_account_detail_idtbl_account_detail`) LEFT JOIN $tablename AS `ui` ON (`ui`.$column1 = `u`.`supplier`) LEFT JOIN `tbl_account_paysettle_has_tbl_cheque_issue` AS `uj` ON (`uj`.`tbl_account_paysettle_idtbl_account_paysettle` = `u`.`idtbl_account_paysettle`) LEFT JOIN `tbl_cheque_issue` AS `uk` ON (`uk`.`idtbl_cheque_issue` = `uj`.`tbl_cheque_issue_idtbl_cheque_issue`) LEFT JOIN `tbl_cheque_info` AS `ul` ON (`ul`.`idtbl_cheque_info` = `uk`.`tbl_cheque_info_idtbl_cheque_info`) LEFT JOIN `tbl_bank` AS `um` ON (`um`.`idtbl_bank` = `ul`.`tbl_bank_idtbl_bank`)";
 
 if($_POST['filterpost']==1){$extraWhere = "`u`.`status` IN (1, 2) AND `u`.`tbl_company_idtbl_company`='$companyid' AND `u`.`tbl_company_branch_idtbl_company_branch`='$branchid' AND `u`.`postdatedstatus`=1 AND `u`.`poststatus`=0";}
 else{$extraWhere = "`u`.`status` IN (1, 2, 3) AND `u`.`tbl_company_idtbl_company`='$companyid' AND `u`.`tbl_company_branch_idtbl_company_branch`='$branchid'";}

@@ -182,7 +182,7 @@ class Apiinfo extends CI_Model{
                 'tbl_company_branch_idtbl_company_branch'=> $branch,
                 'tbl_master_idtbl_master'=> $masterID
             );
-
+            
             $this->db->insert('tbl_account_payable_main', $data);
             $payablemainID=$this->db->insert_id();
 
@@ -206,7 +206,7 @@ class Apiinfo extends CI_Model{
 
                 $this->db->insert('tbl_account_payable', $datasub);
             }
-
+            
             if ($this->db->trans_status() === FALSE) {
                 throw new Exception("Database error occurred");
             }
@@ -802,7 +802,7 @@ class Apiinfo extends CI_Model{
                     $chartofaccount=$rowchart->idtbl_account;
                     $accountcatecode=$rowchart->accountno;
 
-                    $this->db->select('IFNULL((MAX(`tbl_account_detail`.`code`) + 1), 1) AS `nextaccouontno`');
+                    $this->db->select('IFNULL((MAX(CAST(`tbl_account_detail`.`code` AS UNSIGNED)) + 1), 1) AS `nextaccouontno`');
                     $this->db->from('tbl_account_detail');
                     $this->db->join('tbl_account_allocation', 'tbl_account_allocation.tbl_account_detail_idtbl_account_detail = tbl_account_detail.idtbl_account_detail', 'left');
                     $this->db->where('tbl_account_allocation.companybank', $companyID);
@@ -881,6 +881,105 @@ class Apiinfo extends CI_Model{
                 'status' => 'error',
                 'code' => 500,
                 'message' => 'An error occurred while creating detail account'
+            ]);
+        }
+    }
+    public function Creditnoteprocess(){
+        header('Content-Type: application/json');
+
+        try {
+            $userID=$this->input->post('userid');
+            $company=$this->input->post('company');
+            $branch=$this->input->post('branch');
+            $fullnarration=$this->input->post('fullnarration');
+            $fulltotal=$this->input->post('fulltotal');
+            $segregationdata=json_decode($this->input->post('jurnalentrydata'));
+
+            $prefix=pay_prefix($company, $branch);
+            $masterdata=get_account_period($company, $branch);
+            $batchno=tr_batch_num($prefix, $branch);
+
+            if (empty($batchno)) {
+                throw new Exception("Failed to generate batch number");
+            }
+            
+            $masterID=$masterdata->idtbl_master;
+            $updatedatetime=date('Y-m-d H:i:s');
+            $today=date('Y-m-d');
+
+            $this->db->trans_begin();
+
+            $data = array(
+                'tradate'=> $today, 
+                'batchno'=> $batchno, 
+                'amount'=> $fulltotal, 
+                'narration'=> $fullnarration, 
+                'poststatus'=> '0', 
+                'status'=> '1', 
+                'insertdatetime'=> $updatedatetime, 
+                'tbl_user_idtbl_user'=> $userID,
+                'tbl_master_idtbl_master'=> $masterID,
+                'tbl_company_idtbl_company'=> $company,
+                'tbl_company_branch_idtbl_company_branch'=> $branch
+            );
+            
+            $this->db->insert('tbl_account_transaction_manual_main', $data);
+
+            $journalmainID=$this->db->insert_id();
+
+            $i=1;
+            $jurnalnettotal=0;
+            foreach($segregationdata as $rowsegregationdata){
+                $jurnalnettotal += $rowsegregationdata->amount;
+
+                $data1 = array(
+                    'tradate'=> $today, 
+                    'batchno'=> $batchno, 
+                    'tratype'=> 'J', 
+                    'seqno'=> $i, 
+                    'crdr'=> $rowsegregationdata->crder, 
+                    'amount'=> $rowsegregationdata->amount, 
+                    'narration'=> $rowsegregationdata->narration, 
+                    'status'=> '1', 
+                    'insertdatetime'=> $updatedatetime, 
+                    'tbl_user_idtbl_user'=> $userID,
+                    'tbl_account_idtbl_account'=> $rowsegregationdata->chartaccount,
+                    'tbl_account_detail_idtbl_account_detail'=> $rowsegregationdata->detailaccount,
+                    'tbl_master_idtbl_master'=> $masterID,
+                    'tbl_company_idtbl_company'=> $company,
+                    'tbl_company_branch_idtbl_company_branch'=> $branch,
+                    'manualtrans_main_id'=> $journalmainID
+                );
+
+                $this->db->insert('tbl_account_transaction_manual', $data1);
+            }
+
+            if ($this->db->trans_status() === FALSE) {
+                throw new Exception("Database error occurred");
+            }
+
+            $this->db->trans_commit();
+
+            // Return success response
+            echo json_encode([
+                'status' => 'success',
+                'code' => 200,
+                'message' => 'Transaction completed successfully',
+                'data' => [
+                    'batch_no' => $batchno,
+                    'journal_main_id' => $journalmainID
+                ]
+            ]);
+        } catch (Exception $e) {
+            $this->db->trans_rollback();
+            
+            // Return error response
+            http_response_code(500); // Set proper HTTP status code
+            echo json_encode([
+                'status' => 'error',
+                'code' => 500,
+                'message' => $e->getMessage(),
+                'data' => null
             ]);
         }
     }

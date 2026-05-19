@@ -328,6 +328,14 @@ class Receivablecreateinfo extends CI_Model{
         $userID=$_SESSION['userid'];
         $updatedatetime=date('Y-m-d H:i:s');
 
+        $configdata = getconfigdata('receivable_search');
+
+		$tablename = $configdata->row(0)->tbl_name;
+		$column1   = $configdata->row(0)->col_name;
+		$column2   = $configdata->row(1)->col_name;
+
+        $has_table = !empty($tablename) ? 1 : 0;
+
         $data = array(
             'editstatus' => '1',
             'updateuser'=> $userID, 
@@ -337,11 +345,13 @@ class Receivablecreateinfo extends CI_Model{
         $this->db->where('idtbl_sales_info', $recordID);
         $this->db->update('tbl_sales_info', $data);
 
-        $this->db->select('tbl_sales_info.*, tbl_company.company, tbl_company_branch.branch, tbl_customer.customer');
+        $this->db->select("tbl_sales_info.*, tbl_company.company, tbl_company_branch.branch, IF($has_table = 0, '', $tablename.$column2) AS customer");
         $this->db->from('tbl_sales_info');
         $this->db->join('tbl_company', 'tbl_company.idtbl_company = tbl_sales_info.tbl_company_idtbl_company', 'left');
         $this->db->join('tbl_company_branch', 'tbl_company_branch.idtbl_company_branch = tbl_sales_info.tbl_company_branch_idtbl_company_branch', 'left');
-        $this->db->join('tbl_customer', 'tbl_customer.idtbl_customer = tbl_sales_info.tbl_customer_idtbl_customer', 'left');
+        if(!empty($tablename)){
+            $this->db->join("$tablename", "$tablename.$column1 = tbl_sales_info.tbl_customer_idtbl_customer", 'left');
+        }
         $this->db->where('tbl_sales_info.idtbl_sales_info', $recordID);
         $this->db->where('tbl_sales_info.status', 1);
 
@@ -362,212 +372,212 @@ class Receivablecreateinfo extends CI_Model{
 
         echo json_encode($obj);
     }
-    public function Getviewprintinfo(){
-        $recordID=$this->input->post('recordID');
-        $updatedatetime=date('Y-m-d H:i:s');
+    // public function Getviewprintinfo(){
+    //     $recordID=$this->input->post('recordID');
+    //     $updatedatetime=date('Y-m-d H:i:s');
 
-        $this->db->select('`tbl_expence_info`.*, `tbl_company`.`company`, `tbl_company`.`address1`, `tbl_company`.`address2`, `tbl_company`.`mobile`, `tbl_company`.`phone`, `tbl_company`.`email`, `tbl_supplier`.`suppliername`, `tbl_supplier`.`telephone_no`, CONCAT(`address_line1`, " ", `address_line2`, " ", `city`) AS `address`, `tbl_supplier`.`email`');
-        $this->db->from('tbl_expence_info');
-        $this->db->join('tbl_company', 'tbl_company.idtbl_company=tbl_expence_info.tbl_company_idtbl_company', 'left');
-        $this->db->join('tbl_supplier', 'tbl_supplier.idtbl_supplier=tbl_expence_info.tbl_supplier_idtbl_supplier', 'left');
-        $this->db->where('tbl_expence_info.idtbl_expence_info', $recordID);
-        // $this->db->where_in('tbl_pettycash.status', array(1, 2));
+    //     $this->db->select('`tbl_expence_info`.*, `tbl_company`.`company`, `tbl_company`.`address1`, `tbl_company`.`address2`, `tbl_company`.`mobile`, `tbl_company`.`phone`, `tbl_company`.`email`, `tbl_supplier`.`suppliername`, `tbl_supplier`.`telephone_no`, CONCAT(`address_line1`, " ", `address_line2`, " ", `city`) AS `address`, `tbl_supplier`.`email`');
+    //     $this->db->from('tbl_expence_info');
+    //     $this->db->join('tbl_company', 'tbl_company.idtbl_company=tbl_expence_info.tbl_company_idtbl_company', 'left');
+    //     $this->db->join('tbl_supplier', 'tbl_supplier.idtbl_supplier=tbl_expence_info.tbl_supplier_idtbl_supplier', 'left');
+    //     $this->db->where('tbl_expence_info.idtbl_expence_info', $recordID);
+    //     // $this->db->where_in('tbl_pettycash.status', array(1, 2));
 
-        $respond=$this->db->get();
+    //     $respond=$this->db->get();
 
-        $rupeetext=$this->Paymentcreateinfo->ConvertRupeeToText(round($respond->row(0)->amount, 2));
+    //     $rupeetext=$this->Paymentcreateinfo->ConvertRupeeToText(round($respond->row(0)->amount, 2));
 
-        $html='';
-        $html.='
-        <h2 class="font-weight-bold text-dark text-center mb-3"><u>Payment Voucher</u></h2>
-        <div class="row">
-            <div class="col-6">
-                <h5 class="font-weight-bold text-darkm my-0">'.$respond->row(0)->company.'</h5>
-                <p class="my-0 small font-weight-normal text-dark">'.$respond->row(0)->address1.' '.$respond->row(0)->address2.'</p>
-                <p class="my-0 small font-weight-normal text-dark">Tel: '.$respond->row(0)->mobile.'</p>
-                <p class="my-0 small font-weight-normal text-dark">Email - '.$respond->row(0)->email.'</p>
-            </div>
-            <div class="col-6">
-                <h5 class="font-weight-bold text-darkm my-0">'.$respond->row(0)->suppliername.'</h5>
-                <p class="my-0 small font-weight-normal text-dark">'.$respond->row(0)->address.'</p>
-                <p class="my-0 small font-weight-normal text-dark">Tel: '.$respond->row(0)->telephone_no.'</p>
-                <p class="my-0 small font-weight-normal text-dark">Email - '.$respond->row(0)->email.'</p>
-            </div>
-        </div>
-        <div class="row mt-3">
-            <div class="col-12">
-                <table class="table table-bordered table-striped table-sm small">
-                    <thead>
-                        <tr>
-                            <th class="border border-dark">Invoice No</th>
-                            <th class="border border-dark">Date</th>
-                            <th class="border border-dark text-right">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="border border-dark">'.$respond->row(0)->grnno.'</td>
-                            <td class="border border-dark">'.$respond->row(0)->grndate.'</td>
-                            <td class="border border-dark text-right">'.number_format($respond->row(0)->amount, 2).'</td>
-                        </tr>
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <th class="border border-dark" colspan="2">Total Amount</th>
-                            <th class="border border-dark text-right">'.number_format($respond->row(0)->amount, 2).'</th>
-                        </tr>
-                        <tr>
-                            <td class="border border-dark" colspan="3">Rupees: '.$rupeetext.'</td>
-                        </tr>
-                    </tfoot>
-                </table>
-                <div class="card border border-dark shadow-none bg-transparent">
-                    <div class="card-body p-2 small">
-                        <div class="row">
-                            <div class="col-6">
-                                <table class="table table-borderless table-sm">
-                                    <tr>
-                                        <th width="30%">Prepared By</th>
-                                        <th width="5%">:</th>
-                                        <td class="border border-top-0 border-left-0 border-right-0 border-dark"></td>
-                                    </tr>
-                                    <tr>
-                                        <th width="30%">Checked By</th>
-                                        <th width="5%">:</th>
-                                        <td class="border border-top-0 border-left-0 border-right-0 border-dark"></td>
-                                    </tr>
-                                    <tr>
-                                        <th width="30%">Authorized By</th>
-                                        <th width="5%">:</th>
-                                        <td class="border border-top-0 border-left-0 border-right-0 border-dark"></td>
-                                    </tr>
-                                    <tr>
-                                        <th width="30%">Approved By</th>
-                                        <th width="5%">:</th>
-                                        <td class="border border-top-0 border-left-0 border-right-0 border-dark"></td>
-                                    </tr>
-                                </table>
-                            </div>
-                            <div class="col-6">
-                                <table class="table table-borderless table-sm">
-                                    <tr>
-                                        <th width="30%">Received By</th>
-                                        <th width="5%">:</th>
-                                        <td class="border border-top-0 border-left-0 border-right-0 border-dark"></td>
-                                    </tr>
-                                    <tr>
-                                        <th width="30%">Date</th>
-                                        <th width="5%">:</th>
-                                        <td class="border border-top-0 border-left-0 border-right-0 border-dark"></td>
-                                    </tr>
-                                    <tr>
-                                        <th width="30%">Signature</th>
-                                        <th width="5%">:</th>
-                                        <td class="border border-top-0 border-left-0 border-right-0 border-dark"></td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        ';
+    //     $html='';
+    //     $html.='
+    //     <h2 class="font-weight-bold text-dark text-center mb-3"><u>Payment Voucher</u></h2>
+    //     <div class="row">
+    //         <div class="col-6">
+    //             <h5 class="font-weight-bold text-darkm my-0">'.$respond->row(0)->company.'</h5>
+    //             <p class="my-0 small font-weight-normal text-dark">'.$respond->row(0)->address1.' '.$respond->row(0)->address2.'</p>
+    //             <p class="my-0 small font-weight-normal text-dark">Tel: '.$respond->row(0)->mobile.'</p>
+    //             <p class="my-0 small font-weight-normal text-dark">Email - '.$respond->row(0)->email.'</p>
+    //         </div>
+    //         <div class="col-6">
+    //             <h5 class="font-weight-bold text-darkm my-0">'.$respond->row(0)->suppliername.'</h5>
+    //             <p class="my-0 small font-weight-normal text-dark">'.$respond->row(0)->address.'</p>
+    //             <p class="my-0 small font-weight-normal text-dark">Tel: '.$respond->row(0)->telephone_no.'</p>
+    //             <p class="my-0 small font-weight-normal text-dark">Email - '.$respond->row(0)->email.'</p>
+    //         </div>
+    //     </div>
+    //     <div class="row mt-3">
+    //         <div class="col-12">
+    //             <table class="table table-bordered table-striped table-sm small">
+    //                 <thead>
+    //                     <tr>
+    //                         <th class="border border-dark">Invoice No</th>
+    //                         <th class="border border-dark">Date</th>
+    //                         <th class="border border-dark text-right">Amount</th>
+    //                     </tr>
+    //                 </thead>
+    //                 <tbody>
+    //                     <tr>
+    //                         <td class="border border-dark">'.$respond->row(0)->grnno.'</td>
+    //                         <td class="border border-dark">'.$respond->row(0)->grndate.'</td>
+    //                         <td class="border border-dark text-right">'.number_format($respond->row(0)->amount, 2).'</td>
+    //                     </tr>
+    //                 </tbody>
+    //                 <tfoot>
+    //                     <tr>
+    //                         <th class="border border-dark" colspan="2">Total Amount</th>
+    //                         <th class="border border-dark text-right">'.number_format($respond->row(0)->amount, 2).'</th>
+    //                     </tr>
+    //                     <tr>
+    //                         <td class="border border-dark" colspan="3">Rupees: '.$rupeetext.'</td>
+    //                     </tr>
+    //                 </tfoot>
+    //             </table>
+    //             <div class="card border border-dark shadow-none bg-transparent">
+    //                 <div class="card-body p-2 small">
+    //                     <div class="row">
+    //                         <div class="col-6">
+    //                             <table class="table table-borderless table-sm">
+    //                                 <tr>
+    //                                     <th width="30%">Prepared By</th>
+    //                                     <th width="5%">:</th>
+    //                                     <td class="border border-top-0 border-left-0 border-right-0 border-dark"></td>
+    //                                 </tr>
+    //                                 <tr>
+    //                                     <th width="30%">Checked By</th>
+    //                                     <th width="5%">:</th>
+    //                                     <td class="border border-top-0 border-left-0 border-right-0 border-dark"></td>
+    //                                 </tr>
+    //                                 <tr>
+    //                                     <th width="30%">Authorized By</th>
+    //                                     <th width="5%">:</th>
+    //                                     <td class="border border-top-0 border-left-0 border-right-0 border-dark"></td>
+    //                                 </tr>
+    //                                 <tr>
+    //                                     <th width="30%">Approved By</th>
+    //                                     <th width="5%">:</th>
+    //                                     <td class="border border-top-0 border-left-0 border-right-0 border-dark"></td>
+    //                                 </tr>
+    //                             </table>
+    //                         </div>
+    //                         <div class="col-6">
+    //                             <table class="table table-borderless table-sm">
+    //                                 <tr>
+    //                                     <th width="30%">Received By</th>
+    //                                     <th width="5%">:</th>
+    //                                     <td class="border border-top-0 border-left-0 border-right-0 border-dark"></td>
+    //                                 </tr>
+    //                                 <tr>
+    //                                     <th width="30%">Date</th>
+    //                                     <th width="5%">:</th>
+    //                                     <td class="border border-top-0 border-left-0 border-right-0 border-dark"></td>
+    //                                 </tr>
+    //                                 <tr>
+    //                                     <th width="30%">Signature</th>
+    //                                     <th width="5%">:</th>
+    //                                     <td class="border border-top-0 border-left-0 border-right-0 border-dark"></td>
+    //                                 </tr>
+    //                             </table>
+    //                         </div>
+    //                     </div>
+    //                 </div>
+    //             </div>
+    //         </div>
+    //     </div>
+    //     ';
 
-        echo $html;
-    }
-    public function ConvertRupeeToText($amount) {
-        $ones = array(
-            0 => '',
-            1 => 'One',
-            2 => 'Two',
-            3 => 'Three',
-            4 => 'Four',
-            5 => 'Five',
-            6 => 'Six',
-            7 => 'Seven',
-            8 => 'Eight',
-            9 => 'Nine',
-            10 => 'Ten',
-            11 => 'Eleven',
-            12 => 'Twelve',
-            13 => 'Thirteen',
-            14 => 'Fourteen',
-            15 => 'Fifteen',
-            16 => 'Sixteen',
-            17 => 'Seventeen',
-            18 => 'Eighteen',
-            19 => 'Nineteen'
-        );
+    //     echo $html;
+    // }
+    // public function ConvertRupeeToText($amount) {
+    //     $ones = array(
+    //         0 => '',
+    //         1 => 'One',
+    //         2 => 'Two',
+    //         3 => 'Three',
+    //         4 => 'Four',
+    //         5 => 'Five',
+    //         6 => 'Six',
+    //         7 => 'Seven',
+    //         8 => 'Eight',
+    //         9 => 'Nine',
+    //         10 => 'Ten',
+    //         11 => 'Eleven',
+    //         12 => 'Twelve',
+    //         13 => 'Thirteen',
+    //         14 => 'Fourteen',
+    //         15 => 'Fifteen',
+    //         16 => 'Sixteen',
+    //         17 => 'Seventeen',
+    //         18 => 'Eighteen',
+    //         19 => 'Nineteen'
+    //     );
     
-        $tens = array(
-            0 => '',
-            2 => 'Twenty',
-            3 => 'Thirty',
-            4 => 'Forty',
-            5 => 'Fifty',
-            6 => 'Sixty',
-            7 => 'Seventy',
-            8 => 'Eighty',
-            9 => 'Ninety'
-        );
+    //     $tens = array(
+    //         0 => '',
+    //         2 => 'Twenty',
+    //         3 => 'Thirty',
+    //         4 => 'Forty',
+    //         5 => 'Fifty',
+    //         6 => 'Sixty',
+    //         7 => 'Seventy',
+    //         8 => 'Eighty',
+    //         9 => 'Ninety'
+    //     );
     
-        $amount = number_format($amount, 2, '.', '');
-        $rupees = intval($amount);
-        $paisa = intval(($amount - $rupees) * 100);
+    //     $amount = number_format($amount, 2, '.', '');
+    //     $rupees = intval($amount);
+    //     $paisa = intval(($amount - $rupees) * 100);
     
-        $words = '';
+    //     $words = '';
     
-        if ($rupees > 0) {
-            if ($rupees >= 10000000) {
-                $crore = intval($rupees / 10000000);
-                $words .= $ones[$crore] . ' Crore ';
-                $rupees %= 10000000;
-            }
+    //     if ($rupees > 0) {
+    //         if ($rupees >= 10000000) {
+    //             $crore = intval($rupees / 10000000);
+    //             $words .= $ones[$crore] . ' Crore ';
+    //             $rupees %= 10000000;
+    //         }
     
-            if ($rupees >= 100000) {
-                $lakh = intval($rupees / 100000);
-                $words .= $ones[$lakh] . ' Lakh ';
-                $rupees %= 100000;
-            }
+    //         if ($rupees >= 100000) {
+    //             $lakh = intval($rupees / 100000);
+    //             $words .= $ones[$lakh] . ' Lakh ';
+    //             $rupees %= 100000;
+    //         }
     
-            if ($rupees >= 1000) {
-                $thousand = intval($rupees / 1000);
-                $words .= $ones[$thousand] . ' Thousand ';
-                $rupees %= 1000;
-            }
+    //         if ($rupees >= 1000) {
+    //             $thousand = intval($rupees / 1000);
+    //             $words .= $ones[$thousand] . ' Thousand ';
+    //             $rupees %= 1000;
+    //         }
     
-            if ($rupees >= 100) {
-                $hundred = intval($rupees / 100);
-                $words .= $ones[$hundred] . ' Hundred ';
-                $rupees %= 100;
-            }
+    //         if ($rupees >= 100) {
+    //             $hundred = intval($rupees / 100);
+    //             $words .= $ones[$hundred] . ' Hundred ';
+    //             $rupees %= 100;
+    //         }
     
-            if ($rupees > 0) {
-                if ($rupees < 20) {
-                    $words .= $ones[$rupees];
-                } else {
-                    $words .= $tens[intval($rupees / 10)];
-                    $words .= ' ' . $ones[$rupees % 10];
-                }
-            }
+    //         if ($rupees > 0) {
+    //             if ($rupees < 20) {
+    //                 $words .= $ones[$rupees];
+    //             } else {
+    //                 $words .= $tens[intval($rupees / 10)];
+    //                 $words .= ' ' . $ones[$rupees % 10];
+    //             }
+    //         }
     
-            $words .= ' Rupees ';
-        }
+    //         $words .= ' Rupees ';
+    //     }
     
-        if ($paisa > 0) {
-            if ($paisa < 20) {
-                $words .= $ones[$paisa];
-            } else {
-                $words .= $tens[intval($paisa / 10)];
-                $words .= ' ' . $ones[$paisa % 10];
-            }
+    //     if ($paisa > 0) {
+    //         if ($paisa < 20) {
+    //             $words .= $ones[$paisa];
+    //         } else {
+    //             $words .= $tens[intval($paisa / 10)];
+    //             $words .= ' ' . $ones[$paisa % 10];
+    //         }
     
-            $words .= ' Paisa';
-        } else {
-            $words .= 'Only';
-        }
+    //         $words .= ' Paisa';
+    //     } else {
+    //         $words .= 'Only';
+    //     }
     
-        return ucwords(strtolower(trim($words)));
-    }  
+    //     return ucwords(strtolower(trim($words)));
+    // }  
 }

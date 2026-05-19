@@ -248,6 +248,7 @@
 .title-style span {
   background-color: white;
   padding-right: 10px;
+  color: #485260;
 }
 
 .title-style:after {
@@ -257,7 +258,7 @@
   left: 0;
   right: 0;
   height: 0.5em;
-  border-top: 1px solid black;
+  border-top: 1px solid rgba(31, 45, 65, 0.125);
   z-index: -1;
 }
 

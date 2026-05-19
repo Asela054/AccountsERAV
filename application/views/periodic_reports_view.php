@@ -37,7 +37,7 @@ include "include/topnavbar.php";
 										<option value="">Select</option>
 									</select>
 								</div>
-								<?php if($functionmenu=='ledger_folio'){ ?>
+								<?php if($functionmenu2=='ledger_folio'){ ?>
 								<div class="col">
 									<label class="small font-weight-bold">Account</label>
 									<select class="form-control form-control-sm" id="drp_filter_chart_of_acc" name="chart_acc_id">

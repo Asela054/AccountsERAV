@@ -11,53 +11,120 @@ class Paymentsettleinfo extends CI_Model{
     }
     public function Getinvoiceaccosupplier(){
         $recordID=$this->input->post('recordID');
+        $payablefilter=$this->input->post('payablefilter');
+        $accounttype=$this->input->post('accounttype');
 
-        // $this->db->select('`tbl_sales_info`.`idtbl_sales_info`, `tbl_sales_info`.`invno`, `tbl_sales_info`.`amount`, IFNULL(SUM(`tbl_receivable_info`.`amount`), 0) AS `sumpay`, (`tbl_sales_info`.`amount`-IFNULL(SUM(`tbl_receivable_info`.`amount`), 0)) AS `balpay`, `tbl_sales_info`.`tbl_customer_idtbl_customer`, `tbl_customer`.`customer`');
-        $this->db->select('`tbl_expence_info`.`idtbl_expence_info`, `tbl_expence_info`.`grnno`, `tbl_expence_info`.`amount`, `tbl_expence_info`.`invamount`, IFNULL(SUM(CASE WHEN `tbl_account_paysettle_info`.`status` = 1 THEN `tbl_account_paysettle_info`.`amount` ELSE 0 END), 0) AS `sumpay`, (`tbl_expence_info`.`invamount`-IFNULL(SUM(CASE WHEN `tbl_account_paysettle_info`.`status` = 1 THEN `tbl_account_paysettle_info`.`amount` ELSE 0 END), 0)) AS `balpay`, `tbl_expence_info`.`tbl_supplier_idtbl_supplier`, `tbl_supplier`.`suppliername`');
-        $this->db->from('tbl_expence_info');
-        $this->db->join('tbl_account_paysettle_info', 'tbl_account_paysettle_info.invoiceno = tbl_expence_info.grnno', 'left');
-        $this->db->join('tbl_supplier', 'tbl_supplier.idtbl_supplier = tbl_expence_info.tbl_supplier_idtbl_supplier', 'left');
-        $this->db->where('tbl_expence_info.status', 1);
-        $this->db->where('tbl_expence_info.paystatus', 0);
-        $this->db->where('tbl_expence_info.poststatus', 1);
-        $this->db->where('tbl_expence_info.tbl_supplier_idtbl_supplier', $recordID);
-        $this->db->group_by('`tbl_expence_info`.`idtbl_expence_info`');
+        $configdata = getconfigdata('payable_search');
+        
+        $tablename = $configdata->row(0)->tbl_name;
+        $column1   = $configdata->row(0)->col_name;
+        $column2   = $configdata->row(1)->col_name;
 
-        $respond=$this->db->get();
-        // print_r($this->db->last_query());
+        $has_table = !empty($tablename) ? 1 : 0;
 
-        $html='';
-        $i=1;
-        foreach($respond->result() as $rowdatalist){
-            $this->db->select('IFNULL(SUM(`amount`), 0) AS `returnsum`');
-            $this->db->from('tbl_account_paysettle_info');
-            $this->db->where('status', 2);
-            $this->db->where('invoiceno', $rowdatalist->grnno);
+        if($payablefilter==1):
+            // $this->db->select('`tbl_sales_info`.`idtbl_sales_info`, `tbl_sales_info`.`invno`, `tbl_sales_info`.`amount`, IFNULL(SUM(`tbl_receivable_info`.`amount`), 0) AS `sumpay`, (`tbl_sales_info`.`amount`-IFNULL(SUM(`tbl_receivable_info`.`amount`), 0)) AS `balpay`, `tbl_sales_info`.`tbl_customer_idtbl_customer`, `tbl_customer`.`customer`');
+            $this->db->select("`tbl_expence_info`.`idtbl_expence_info`, `tbl_expence_info`.`grnno`, `tbl_expence_info`.`amount`, `tbl_expence_info`.`invamount`, IFNULL(SUM(CASE WHEN `tbl_account_paysettle_info`.`status` = 1 THEN `tbl_account_paysettle_info`.`amount` ELSE 0 END), 0) AS `sumpay`, (`tbl_expence_info`.`invamount`-IFNULL(SUM(CASE WHEN `tbl_account_paysettle_info`.`status` = 1 THEN `tbl_account_paysettle_info`.`amount` ELSE 0 END), 0)) AS `balpay`, `tbl_expence_info`.`tbl_supplier_idtbl_supplier`, IF($has_table = 0, '', $tablename.$column2) AS suppliername");
+            $this->db->from('tbl_expence_info');
+            $this->db->join('tbl_account_paysettle_info', 'tbl_account_paysettle_info.invoiceno = tbl_expence_info.grnno', 'left');
+            if(!empty($tablename)):
+                $this->db->join("$tablename", "$tablename.$column1 = tbl_expence_info.tbl_supplier_idtbl_supplier", 'left');
+            endif;
+            $this->db->where('tbl_expence_info.status', 1);
+            $this->db->where('tbl_expence_info.paystatus', 0);
+            $this->db->where('tbl_expence_info.poststatus', 1);
+            $this->db->where('tbl_expence_info.tbl_supplier_idtbl_supplier', $recordID);
+            $this->db->group_by('`tbl_expence_info`.`idtbl_expence_info`');
 
-            $respondreturn=$this->db->get();
-            
-            $netbalpay=$rowdatalist->balpay+$respondreturn->row(0)->returnsum;
+            $respond=$this->db->get();
+            // print_r($this->db->last_query());
 
-            if($netbalpay>0){
-                $html.='
-                <tr>
-                    <td class="text-center" width="5%">
-                        <div class="custom-control custom-checkbox">
-                            <input type="checkbox" class="custom-control-input checkclick" id="customCheck'.$i.'">
-                            <label class="custom-control-label m-0" for="customCheck'.$i.'"></label>
-                        </div>
-                    </td>
-                    <td class="d-none">'.$rowdatalist->tbl_supplier_idtbl_supplier.'</td>
-                    <td>'.$rowdatalist->suppliername.'</td>
-                    <td class="d-none">'.$rowdatalist->grnno.'</td>
-                    <td>'.$rowdatalist->grnno.'</td>
-                    <td class="text-right">'.number_format($rowdatalist->invamount, 2).'</td>
-                    <td class="text-right invbalamount">'.number_format($netbalpay, 2).'</td>
-                </tr>
-                ';
-                $i++;
+            $html='';
+            $i=1;
+            foreach($respond->result() as $rowdatalist){
+                $this->db->select('IFNULL(SUM(`amount`), 0) AS `returnsum`');
+                $this->db->from('tbl_account_paysettle_info');
+                $this->db->where('status', 2);
+                $this->db->where('invoiceno', $rowdatalist->grnno);
+
+                $respondreturn=$this->db->get();
+                
+                $netbalpay=$rowdatalist->balpay+$respondreturn->row(0)->returnsum;
+
+                if($netbalpay>0){
+                    $html.='
+                    <tr>
+                        <td class="text-center" width="5%">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input checkclick" id="customCheck'.$i.'">
+                                <label class="custom-control-label m-0" for="customCheck'.$i.'"></label>
+                            </div>
+                        </td>
+                        <td class="d-none">'.$rowdatalist->tbl_supplier_idtbl_supplier.'</td>
+                        <td>'.$rowdatalist->suppliername.'</td>
+                        <td class="d-none">'.$rowdatalist->grnno.'</td>
+                        <td>'.$rowdatalist->grnno.'</td>
+                        <td class="text-right">'.number_format($rowdatalist->invamount, 2).'</td>
+                        <td class="text-right invbalamount">'.number_format($netbalpay, 2).'</td>
+                    </tr>
+                    ';
+                    $i++;
+                }
             }
-        }
+        else:
+            $this->db->select('`tbl_account_transaction_manual`.`idtbl_account_transaction_manual`, `tbl_account_transaction_manual`.`batchno`, `tbl_account_transaction_manual`.`amount`, IFNULL(SUM(CASE WHEN `tbl_account_paysettle_info`.`status` = 1 THEN `tbl_account_paysettle_info`.`amount` ELSE 0 END), 0) AS `sumpay`, (`tbl_account_transaction_manual`.`amount`-IFNULL(SUM(CASE WHEN `tbl_account_paysettle_info`.`status` = 1 THEN `tbl_account_paysettle_info`.`amount` ELSE 0 END), 0)) AS `balpay`, `tbl_account_transaction_manual`.`narration`, `tbl_account_transaction_manual`.`tbl_account_idtbl_account`, `tbl_account_transaction_manual`.`tbl_account_detail_idtbl_account_detail`, `tbl_account`.`accountno` AS `chartaccountno`, `tbl_account.accountname` AS `chartaccountname`, `tbl_account_detail.accountno` AS `detailaccountno`, `tbl_account_detail.accountname` AS `detailaccountname`');
+            $this->db->from('tbl_account_transaction_manual');
+            $this->db->join('tbl_account_paysettle_info', 'tbl_account_paysettle_info.invoiceno = tbl_account_transaction_manual.batchno', 'left');
+            $this->db->join('tbl_account', 'tbl_account.idtbl_account = tbl_account_transaction_manual.tbl_account_idtbl_account', 'left');
+            $this->db->join('tbl_account_detail', 'tbl_account_detail.idtbl_account_detail = tbl_account_transaction_manual.tbl_account_detail_idtbl_account_detail', 'left');
+            $this->db->where('tbl_account_transaction_manual.status', 1);
+            $this->db->where('tbl_account_transaction_manual.payablestatus', 1);
+            $this->db->where('tbl_account_transaction_manual.payablesettle', 0);
+            $this->db->where('tbl_account_transaction_manual.poststatus', 1);
+            if($accounttype == 1){
+                $this->db->where('tbl_account_transaction_manual.tbl_account_idtbl_account', $recordID);
+            }
+            else if($accounttype == 2){
+                $this->db->where('tbl_account_transaction_manual.tbl_account_detail_idtbl_account_detail', $recordID);
+            }
+            $this->db->group_by('`tbl_account_transaction_manual`.`idtbl_account_transaction_manual`');
+
+            $respond=$this->db->get();
+            print_r($this->db->last_query()); 
+            if($respond->row(0)->tbl_account_detail_idtbl_account_detail>0){
+                $accountno=$respond->row(0)->detailaccountno; 
+                $accountname=$respond->row(0)->detailaccountname;
+            }
+            else{
+                $accountno=$respond->row(0)->chartaccountno; 
+                $accountname=$respond->row(0)->chartaccountname;
+            }
+
+            $html='';
+            $i=1;
+            foreach($respond->result() as $rowdatalist){
+                if($rowdatalist->balpay>0){
+                    $html.='
+                    <tr>
+                        <td class="text-center" width="5%">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input checkclick" id="customCheck'.$i.'">
+                                <label class="custom-control-label m-0" for="customCheck'.$i.'"></label>
+                            </div>
+                        </td>
+                        <td class="d-none">'.$rowdatalist->idtbl_account_transaction_manual.'</td>
+                        <td>'.$accountno.' - '.$accountname.'</td>
+                        <td class="d-none">'.$rowdatalist->batchno.'</td>
+                        <td>'.$rowdatalist->batchno.'</td>
+                        <td class="text-right">'.number_format($rowdatalist->amount, 2).'</td>
+                        <td class="text-right invbalamount">'.number_format($rowdatalist->balpay, 2).'</td>
+                    </tr>
+                    ';
+                    $i++;
+                }
+            }            
+        endif;
+
         echo $html;
     }
     public function Paymentsettleinsertupdate(){
@@ -80,6 +147,8 @@ class Paymentsettleinfo extends CI_Model{
         $paidamount=str_replace(',', '', $this->input->post('paidamount'));
         $invoicedata=json_decode($this->input->post('tableData'));
         $postdated= $this->input->post('postdated');
+        $payablefilter=$this->input->post('payablefilter');
+        $supplierAccountType = $this->input->post('supplierAccountType');
         
         $chequecashamount=$paidamount;
 
@@ -187,18 +256,59 @@ class Paymentsettleinfo extends CI_Model{
             $chequeissuestatus=1;
         }
         //Choose cheque no end
-    
+
+        //Get Creditor Account
+        $this->db->where('tbl_account_allocation.companybank', $company);
+        $this->db->where('tbl_account_allocation.branchcompanybank', $branch);
+        // $this->db->where('tbl_account.tbl_account_type_idtbl_account_type', 2);
+        $this->db->where('tbl_account.specialcate', 34);
+        $this->db->where('tbl_account.status', 1);
+        $this->db->where('tbl_account_allocation.status', 1);
+        $this->db->where('tbl_account_allocation.tbl_account_idtbl_account is NOT NULL', NULL, FALSE);
+        $this->db->select('`tbl_account`.`idtbl_account`, `tbl_account`.`accountno`, `tbl_account`.`accountname`');
+        $this->db->from('tbl_account');
+        $this->db->join('tbl_account_allocation', 'tbl_account_allocation.tbl_account_idtbl_account = tbl_account.idtbl_account', 'left');
+
+        $respondcreditor=$this->db->get();
+
+        if($payablefilter == 1){
+            $this->db->select('tbl_account_detail_idtbl_account_detail as accountid');
+            $this->db->from('tbl_account_detail_other');
+            $this->db->where('tbl_company_idtbl_company', $company);
+            $this->db->where('tbl_company_branch_idtbl_company_branch', $branch);
+            $this->db->where('otheroptiontype', 1);
+            $this->db->where('otheroption', $supplier);
+            $respondcreditacc = $this->db->get();
+        }
+        else if($payablefilter == 2 || $payablefilter == 3){
+            if($supplierAccountType == 1){
+                $this->db->select('idtbl_account as accountid');
+                $this->db->from('tbl_account');
+                $this->db->where('idtbl_account', $supplier);
+                $this->db->where('status', 1);
+                $respondcreditacc = $this->db->get();
+            }
+            else if($supplierAccountType == 2){
+                $this->db->select('idtbl_account_detail as accountid');
+                $this->db->from('tbl_account_detail');
+                $this->db->where('idtbl_account_detail', $supplier);
+                $this->db->where('status', 1);
+                $respondcreditacc = $this->db->get();
+            }
+        }
+        
         if($chequeissuestatus==1){
             if(!empty($batchno)){
                 $data = array(
                     'date'=> $paiddate, 
                     'paymentno'=> $payreceiptno, 
                     'batchno'=> $batchno, 
-                    'supplier'=> $supplier, 
+                    'supplier'=> $payablefilter == 1 ? $supplier : '', 
                     'totalpayment'=> $paidamount, 
                     'remark'=> $narration, 
                     'postdatedstatus'=> $postdated, 
                     'poststatus'=> '0', 
+                    'paysettlefiltertype'=> $payablefilter, 
                     'status'=> '1', 
                     'insertdatetime'=> $updatedatetime, 
                     'tbl_user_idtbl_user'=> $userID,
@@ -214,41 +324,109 @@ class Paymentsettleinfo extends CI_Model{
 
                 $payableID=$this->db->insert_id();
 
-                foreach($invoicedata as $rowinvoicedata){
-                    $narration=$rowinvoicedata->supplier.' - '.$rowinvoicedata->invoiceno;
-                    $invoicetotal=str_replace(',', '', $rowinvoicedata->amount);
+                // Debit entry start
+                $dataentrylist[] = [
+                    'tratype' => 'C',
+                    'amount' => $paidamount,
+                    'narration' => $narration,
+                    'chartaccount' => $chartaccount,
+                    'detailaccount' => $detailaccount
+                ];
+                // Debit entry end
 
-                    if($chequecashamount>=$invoicetotal){
-                        $invoicepayamount=$invoicetotal;
-                        $chequecashamount=$chequecashamount-$invoicetotal;
+                // Credit entry start                       
+                if(empty($respondcreditacc->result())):
+                    if(empty($respondcreditor->result())){
+                        throw new Exception("You don't have trade creditor account or creditor account");
                     }
-                    else{
-                        $invoicepayamount=$chequecashamount;
-                        $chequecashamount=0;
+
+                    $dataentrylist[] = [
+                        'tratype' => 'D',
+                        'amount' => $paidamount,
+                        'narration' => $narration,
+                        'chartaccount' => $respondcreditor->row(0)->idtbl_account,
+                        'detailaccount' => 0
+                    ];
+                else:
+                    if($supplierAccountType == 1){
+                        $chartaccount=$respondcreditacc->row(0)->accountid;
+                        $detailaccount=0;
                     }
+                    else if($supplierAccountType == 2){
+                        $chartaccount=0;
+                        $detailaccount=$respondcreditacc->row(0)->accountid;
+                    }   
+                    $dataentrylist[] = [
+                        'tratype' => 'D',
+                        'amount' => $paidamount,
+                        'narration' => $narration,
+                        'chartaccount' => $chartaccount,
+                        'detailaccount' => $detailaccount
+                    ];
+                endif;
+                // Credit entry end
 
-                    $datasub = array(
-                        'batchno'=> $batchno, 
-                        'narration'=> $narration, 
-                        'amount'=> $invoicepayamount, 
-                        'invoiceno'=> $rowinvoicedata->invid, 
-                        'status'=> '1', 
-                        'insertdatetime'=> $updatedatetime, 
-                        'tbl_user_idtbl_user'=> $userID,
-                        'tbl_account_paysettle_idtbl_account_paysettle'=> $payableID,
-                    );
-
-                    $this->db->insert('tbl_account_paysettle_info', $datasub);
+                foreach($dataentrylist as $rowdataentrylist){
+                    $datalist = [
+                        'transdate' => $paiddate, 
+                        'batchno' => $batchno, 
+                        'tratype' => $rowdataentrylist['tratype'], 
+                        'amount' => $rowdataentrylist['amount'], 
+                        'narration' => $rowdataentrylist['narration'], 
+                        'poststatus' => '0', 
+                        'status' => '1', 
+                        'insertdatetime' => $updatedatetime, 
+                        'tbl_user_idtbl_user' => $userID, 
+                        'tbl_company_idtbl_company' => $company, 
+                        'tbl_company_branch_idtbl_company_branch' => $branch, 
+                        'tbl_master_idtbl_master' => $masterID, 
+                        'tbl_account_paysettle_idtbl_account_paysettle' => $payableID, 
+                        'tbl_account_idtbl_account' => $rowdataentrylist['chartaccount'], 
+                        'tbl_account_detail_idtbl_account_detail' => $rowdataentrylist['detailaccount']
+                    ];
+                    
+                    $this->db->insert('tbl_account_paysettle_entry', $datalist);
                 }
 
-                $datachequehas = array(
-                    'tbl_account_paysettle_idtbl_account_paysettle'=> $payableID, 
-                    'tbl_cheque_issue_idtbl_cheque_issue'=> $issuechequeID,
-                );
+                if(!empty($invoicedata)){
+                    foreach($invoicedata as $rowinvoicedata){
+                        $narration=$rowinvoicedata->supplier.' - '.$rowinvoicedata->invoiceno;
+                        $invoicetotal=str_replace(',', '', $rowinvoicedata->amount);
 
-                $this->db->insert('tbl_account_paysettle_has_tbl_cheque_issue', $datachequehas);
+                        if($chequecashamount>=$invoicetotal){
+                            $invoicepayamount=$invoicetotal;
+                            $chequecashamount=$chequecashamount-$invoicetotal;
+                        }
+                        else{
+                            $invoicepayamount=$chequecashamount;
+                            $chequecashamount=0;
+                        }
+
+                        $datasub = array(
+                            'batchno'=> $batchno, 
+                            'narration'=> $narration, 
+                            'amount'=> $invoicepayamount, 
+                            'invoiceno'=> $rowinvoicedata->invid, 
+                            'status'=> '1', 
+                            'insertdatetime'=> $updatedatetime, 
+                            'tbl_user_idtbl_user'=> $userID,
+                            'tbl_account_paysettle_idtbl_account_paysettle'=> $payableID,
+                        );
+
+                        $this->db->insert('tbl_account_paysettle_info', $datasub);
+                    }
+                }
+
+                if($issuechequeID != 0):
+                    $datachequehas = array(
+                        'tbl_account_paysettle_idtbl_account_paysettle'=> $payableID, 
+                        'tbl_cheque_issue_idtbl_cheque_issue'=> $issuechequeID,
+                    );
+                    $this->db->insert('tbl_account_paysettle_has_tbl_cheque_issue', $datachequehas);
+                endif;
 
                 $this->db->trans_complete();
+
                 if ($this->db->trans_status() === TRUE) {
                     $this->db->trans_commit();
                     
@@ -331,6 +509,14 @@ class Paymentsettleinfo extends CI_Model{
         $recordID=$this->input->post('recordID');
         $updatedatetime=date('Y-m-d H:i:s');
 
+        $configdata = getconfigdata('payable_search');
+        
+        $tablename = $configdata->row(0)->tbl_name;
+        $column1   = $configdata->row(0)->col_name;
+        $column2   = $configdata->row(1)->col_name;
+
+        $has_table = !empty($tablename) ? 1 : 0;
+
         $data = array(
             'postviewtime'=> $updatedatetime
         );
@@ -339,11 +525,13 @@ class Paymentsettleinfo extends CI_Model{
         $this->db->where('poststatus', 0);
         $this->db->update('tbl_account_paysettle', $data);
 
-        $this->db->select('tbl_account_paysettle.*, tbl_company.company, tbl_company_branch.branch, tbl_supplier.suppliername, tbl_account.accountno AS `chartaccount`, tbl_account.accountname AS `chartaccountname`, tbl_account_detail.accountno AS `detailaccount`, tbl_account_detail.accountname AS `detailaccountname, tbl_cheque_issue.chedate, tbl_cheque_issue.chequeno');
+        $this->db->select("tbl_account_paysettle.*, tbl_company.company, tbl_company_branch.branch, IF($has_table = 0, '', $tablename.$column2) AS suppliername, tbl_account.accountno AS `chartaccount`, tbl_account.accountname AS `chartaccountname`, tbl_account_detail.accountno AS `detailaccount`, tbl_account_detail.accountname AS `detailaccountname`, tbl_cheque_issue.chedate, tbl_cheque_issue.chequeno");
         $this->db->from('tbl_account_paysettle');
         $this->db->join('tbl_company', 'tbl_company.idtbl_company = tbl_account_paysettle.tbl_company_idtbl_company', 'left');
         $this->db->join('tbl_company_branch', 'tbl_company_branch.idtbl_company_branch = tbl_account_paysettle.tbl_company_branch_idtbl_company_branch', 'left');
-        $this->db->join('tbl_supplier', 'tbl_supplier.idtbl_supplier = tbl_account_paysettle.supplier', 'left');
+        if(!empty($tablename)):
+            $this->db->join("$tablename", "$tablename.$column1 = tbl_account_paysettle.supplier", 'left');
+        endif;
         $this->db->join('tbl_account', 'tbl_account.idtbl_account = tbl_account_paysettle.tbl_account_idtbl_account', 'left');
         $this->db->join('tbl_account_detail', 'tbl_account_detail.idtbl_account_detail = tbl_account_paysettle.tbl_account_detail_idtbl_account_detail', 'left');
         $this->db->join('tbl_account_paysettle_has_tbl_cheque_issue', 'tbl_account_paysettle_has_tbl_cheque_issue.tbl_account_paysettle_idtbl_account_paysettle = tbl_account_paysettle.idtbl_account_paysettle', 'left');
@@ -352,6 +540,15 @@ class Paymentsettleinfo extends CI_Model{
         // $this->db->where('tbl_account_payable_main.status', 1);
 
         $respond=$this->db->get();
+
+        $this->db->select('tbl_account_paysettle_entry.*, tbl_account_detail.accountno, tbl_account_detail.accountname, tbl_account.accountno AS chartaccountno, tbl_account.accountname AS chartaccountname');
+        $this->db->from('tbl_account_paysettle_entry');
+        $this->db->join('tbl_account_detail', 'tbl_account_detail.idtbl_account_detail = tbl_account_paysettle_entry.tbl_account_detail_idtbl_account_detail', 'left');
+        $this->db->join('tbl_account', 'tbl_account.idtbl_account = tbl_account_paysettle_entry.tbl_account_idtbl_account', 'left');
+        $this->db->where('tbl_account_paysettle_entry.tbl_account_paysettle_idtbl_account_paysettle', $recordID);
+        // $this->db->where('tbl_account_receivable.status', 1);
+
+        $respondpayinfo=$this->db->get();
 
         $this->db->select('`invoiceno`, `narration`, `amount`');
         $this->db->from('tbl_account_paysettle_info');
@@ -429,8 +626,8 @@ class Paymentsettleinfo extends CI_Model{
                 <label class="small my-0">'.$accountno.' - '.$accountname.'</label>
             </div>
             <div class="col">
-                <label class="small font-weight-bold my-0">Supplier: </label>
-                <label class="small my-0">'.$respond->row(0)->suppliername.'</label><br>
+                <label class="small font-weight-bold my-0">Supplier/ Account: </label>
+                <label class="small my-0">' . ($respond->row(0)->paysettlefiltertype == 2 ? 'Journal payment' : ($respond->row(0)->paysettlefiltertype == 3 ? 'Voucher payment' : $respond->row(0)->suppliername)) . '</label><br>
                 <label class="small font-weight-bold my-0">Cheque Date: </label>
                 <label class="small my-0">'.$chequedate.'</label><br>
                 <label class="small font-weight-bold my-0">Cheque No: </label>
@@ -441,22 +638,42 @@ class Paymentsettleinfo extends CI_Model{
         </div>
         <div class="row">
             <div class="col">
-                <h6 class="small title-style my-3"><span>Receivable Invoice Information</span></h6>
+                <h6 class="small title-style my-3"><span>Segregation Information</span></h6>
                 <table class="table  table-striped table-sm nowrap small">
                     <thead>
                         <tr>
-                            <th>Supplier</th>
-                            <th>Invoice No</th>
-                            <th class="text-right">Amount</th>
+                            <th>Account</th>
+                            <th>Narration</th>
+                            <th class="text-center">C/D</th>
+                            <th class="text-right">Debit</th>
+                            <th class="text-right">Credit</th>
                         </tr>
                     </thead>
                     <tbody>';
-                    foreach($respondinvoiceinfo->result() as $rowdatainfo){
+                    foreach($respondpayinfo->result() as $rowdatainfo){
+                        if($rowdatainfo->tratype=='D'){
+                            $debitamount=$rowdatainfo->amount;
+                            $creditamount=0;
+                        }
+                        else if($rowdatainfo->tratype=='C'){
+                            $creditamount=$rowdatainfo->amount;
+                            $debitamount=0;
+                        }
+
                         $html.='
                         <tr>
-                            <td>'.$respond->row(0)->suppliername.'</td>
-                            <td>'.$rowdatainfo->invoiceno.'</td>
-                            <td class="text-right">'.number_format($rowdatainfo->amount, 2).'</td>
+                            <td>';
+                            if(!empty($rowdatainfo->tbl_account_detail_idtbl_account_detail)){
+                                $html.=$rowdatainfo->accountname.' - '.$rowdatainfo->accountno;
+                            }
+                            else{
+                                $html.=$rowdatainfo->chartaccountname.' - '.$rowdatainfo->chartaccountno;
+                            }
+                            $html.='</td>
+                            <td>'.$rowdatainfo->narration.'</td>
+                            <td class="text-center">'.$rowdatainfo->tratype.'</td>
+                            <td class="text-right">'.($debitamount != 0 ? number_format($debitamount, 2) : '').'</td>
+                            <td class="text-right">'.($creditamount != 0 ? number_format($creditamount, 2) : '').'</td>
                         </tr>
                         ';
                     }
@@ -464,6 +681,33 @@ class Paymentsettleinfo extends CI_Model{
                 </table>
             </div>
         </div>';
+        if(!empty($respondinvoiceinfo->result())){
+            $html.='<div class="row">
+                <div class="col">
+                    <h6 class="small title-style my-3"><span>Payable Invoice Information</span></h6>
+                    <table class="table  table-striped table-sm nowrap small">
+                        <thead>
+                            <tr>
+                                <th>Supplier | Journal</th>
+                                <th>Invoice No</th>
+                                <th class="text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>';
+                        foreach($respondinvoiceinfo->result() as $rowdatainfo){
+                            $html.='
+                            <tr>
+                                <td>' . ($respond->row(0)->paysettlefiltertype == 2 ? 'Journal payment' : $respond->row(0)->suppliername) . '</td>
+                                <td>'.$rowdatainfo->invoiceno.'</td>
+                                <td class="text-right">'.number_format($rowdatainfo->amount, 2).'</td>
+                            </tr>
+                            ';
+                        }
+                        $html.='</tbody>
+                    </table>
+                </div>
+            </div>';
+        }
         if($respond->row(0)->poststatus==1){
             $html.='<div class="alert alert-success" role="alert">
                 <h4 class="alert-heading">Posted!</h4>
@@ -530,108 +774,193 @@ class Paymentsettleinfo extends CI_Model{
                     $prefix=trans_prefix($respond->row(0)->tbl_company_idtbl_company, $respond->row(0)->tbl_company_branch_idtbl_company_branch);
                     $batchno=tr_batch_num($prefix, $respond->row(0)->tbl_company_branch_idtbl_company_branch);
 
-                    //Get Creditor Account
-                    $this->db->where('tbl_account_allocation.companybank', $respond->row(0)->tbl_company_idtbl_company);
-                    $this->db->where('tbl_account_allocation.branchcompanybank', $respond->row(0)->tbl_company_branch_idtbl_company_branch);
-                    // $this->db->where('tbl_account.tbl_account_type_idtbl_account_type', 2);
-                    $this->db->where('tbl_account.specialcate', 34);
-                    $this->db->where('tbl_account.status', 1);
-                    $this->db->where('tbl_account_allocation.status', 1);
-                    $this->db->where('tbl_account_allocation.tbl_account_idtbl_account is NOT NULL', NULL, FALSE);
-                    $this->db->select('`tbl_account`.`idtbl_account`, `tbl_account`.`accountno`, `tbl_account`.`accountname`');
-                    $this->db->from('tbl_account');
-                    $this->db->join('tbl_account_allocation', 'tbl_account_allocation.tbl_account_idtbl_account = tbl_account.idtbl_account', 'left');
+                    $this->db->select('`idtbl_account_paysettle_entry`, `transdate`, `batchno`, `tratype`, `amount`, `narration`, `tbl_master_idtbl_master`, `tbl_company_idtbl_company`, `tbl_company_branch_idtbl_company_branch`, `tbl_account_idtbl_account`, `tbl_account_detail_idtbl_account_detail`');
+                    $this->db->from('tbl_account_paysettle_entry');
+                    $this->db->where('tbl_account_paysettle_idtbl_account_paysettle', $recordID);
+                    $this->db->where('status', 1);
 
-                    $respondcreditor=$this->db->get();
+                    $responddetail=$this->db->get();
 
-                    $datacredit = array(
-                        'tradate'=> $respond->row(0)->date, 
-                        'batchno'=> $batchno, 
-                        'trabatchotherno'=> $respond->row(0)->batchno, 
-                        'tratype'=> 'I', 
-                        'seqno'=> $i, 
-                        'crdr'=> 'D', 
-                        'accamount'=> $respond->row(0)->totalpayment, 
-                        'narration'=> $respond->row(0)->remark, 
-                        'totamount'=> $respond->row(0)->totalpayment, 
-                        'status'=> '1', 
-                        'insertdatetime'=> $updatedatetime, 
-                        'tbl_user_idtbl_user'=> $userID,
-                        'tbl_account_idtbl_account'=> $respondcreditor->row(0)->idtbl_account,
-                        'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
-                        'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
-                        'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
-                    );
-                    $this->db->insert('tbl_account_transaction', $datacredit);
+                    foreach($responddetail->result() AS $rowdetail){
+                        $i++;
+
+                        $receivedetailID=$rowdetail->idtbl_account_paysettle_entry;
+                        $tradate=$rowdetail->transdate;
+                        $segbatchno=$rowdetail->batchno;
+                        $detailaccount=$rowdetail->tbl_account_detail_idtbl_account_detail;
+                        $chartaccount=$rowdetail->tbl_account_idtbl_account;
+                        $company=$rowdetail->tbl_company_idtbl_company;
+                        $branch=$rowdetail->tbl_company_branch_idtbl_company_branch;
+                        $masterID=$rowdetail->tbl_master_idtbl_master;
+                        $amount=$rowdetail->amount;
+                        $narration=$rowdetail->narration;
+                        $tratype=$rowdetail->tratype;
+                        
+                        if(!empty($detailaccount)){
+                            $chartofaccountinfo=get_chart_account_acco_child_account($company, $branch, $detailaccount);
+                            $chartofaccountID=$chartofaccountinfo->row(0)->idtbl_account;
+                        }
+                        else{
+                            $chartofaccountID=$chartaccount;
+                        }
+
+                        $data = array(
+                            'tradate'=> $tradate, 
+                            'batchno'=> $batchno, 
+                            'trabatchotherno'=> $segbatchno, 
+                            'tratype'=> 'R', 
+                            'seqno'=> $i, 
+                            'crdr'=> $tratype, 
+                            'accamount'=> $amount, 
+                            'narration'=> $narration, 
+                            'totamount'=> $amount, 
+                            'status'=> '1', 
+                            'insertdatetime'=> $updatedatetime, 
+                            'tbl_user_idtbl_user'=> $userID,
+                            'tbl_account_idtbl_account'=> $chartofaccountID,
+                            'tbl_master_idtbl_master'=> $masterID,
+                            'tbl_company_idtbl_company'=> $company,
+                            'tbl_company_branch_idtbl_company_branch'=> $branch
+                        );
+        
+                        $this->db->insert('tbl_account_transaction', $data);                    
+
+                        $datafull = array(
+                            'tradate'=> $tradate, 
+                            'batchno'=> $batchno, 
+                            'tratype'=> 'R', 
+                            'crdr'=> $tratype, 
+                            'accamount'=> $amount, 
+                            'narration'=> $narration, 
+                            'totamount'=> $amount, 
+                            'status'=> '1', 
+                            'insertdatetime'=> $updatedatetime, 
+                            'tbl_user_idtbl_user'=> $userID,
+                            'tbl_account_idtbl_account'=> $chartofaccountID,
+                            'tbl_master_idtbl_master'=> $masterID,
+                            'tbl_company_idtbl_company'=> $company,
+                            'tbl_company_branch_idtbl_company_branch'=> $branch
+                        );
+        
+                        $this->db->insert('tbl_account_transaction_full', $datafull);
+
+                        //Update POST Status Detail
+                        $datadetail = array(
+                            'poststatus'=> '1',
+                            'postuser'=> $userID
+                        );
+                
+                        $this->db->where('idtbl_account_paysettle_entry', $receivedetailID);
+                        $this->db->update('tbl_account_paysettle_entry', $datadetail);
+                    }
+
+
+                    // //Creditor account Transaction
+                    // $prefix=trans_prefix($respond->row(0)->tbl_company_idtbl_company, $respond->row(0)->tbl_company_branch_idtbl_company_branch);
+                    // $batchno=tr_batch_num($prefix, $respond->row(0)->tbl_company_branch_idtbl_company_branch);
+
+                    // //Get Creditor Account
+                    // $this->db->where('tbl_account_allocation.companybank', $respond->row(0)->tbl_company_idtbl_company);
+                    // $this->db->where('tbl_account_allocation.branchcompanybank', $respond->row(0)->tbl_company_branch_idtbl_company_branch);
+                    // // $this->db->where('tbl_account.tbl_account_type_idtbl_account_type', 2);
+                    // $this->db->where('tbl_account.specialcate', 34);
+                    // $this->db->where('tbl_account.status', 1);
+                    // $this->db->where('tbl_account_allocation.status', 1);
+                    // $this->db->where('tbl_account_allocation.tbl_account_idtbl_account is NOT NULL', NULL, FALSE);
+                    // $this->db->select('`tbl_account`.`idtbl_account`, `tbl_account`.`accountno`, `tbl_account`.`accountname`');
+                    // $this->db->from('tbl_account');
+                    // $this->db->join('tbl_account_allocation', 'tbl_account_allocation.tbl_account_idtbl_account = tbl_account.idtbl_account', 'left');
+
+                    // $respondcreditor=$this->db->get();
+
+                    // $datacredit = array(
+                    //     'tradate'=> $respond->row(0)->date, 
+                    //     'batchno'=> $batchno, 
+                    //     'trabatchotherno'=> $respond->row(0)->batchno, 
+                    //     'tratype'=> 'I', 
+                    //     'seqno'=> $i, 
+                    //     'crdr'=> 'D', 
+                    //     'accamount'=> $respond->row(0)->totalpayment, 
+                    //     'narration'=> $respond->row(0)->remark, 
+                    //     'totamount'=> $respond->row(0)->totalpayment, 
+                    //     'status'=> '1', 
+                    //     'insertdatetime'=> $updatedatetime, 
+                    //     'tbl_user_idtbl_user'=> $userID,
+                    //     'tbl_account_idtbl_account'=> $respondcreditor->row(0)->idtbl_account,
+                    //     'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
+                    //     'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
+                    //     'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
+                    // );
+                    // $this->db->insert('tbl_account_transaction', $datacredit);
             
-                    $datacreditfull = array(
-                        'tradate'=> $respond->row(0)->date, 
-                        'batchno'=> $batchno, 
-                        'tratype'=> 'I', 
-                        'crdr'=> 'D', 
-                        'accamount'=> $respond->row(0)->totalpayment, 
-                        'narration'=> $respond->row(0)->remark, 
-                        'totamount'=> $respond->row(0)->totalpayment, 
-                        'status'=> '1', 
-                        'insertdatetime'=> $updatedatetime, 
-                        'tbl_user_idtbl_user'=> $userID,
-                        'tbl_account_idtbl_account'=> $respondcreditor->row(0)->idtbl_account,
-                        'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
-                        'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
-                        'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
-                    );
-                    $this->db->insert('tbl_account_transaction_full', $datacreditfull);
+                    // $datacreditfull = array(
+                    //     'tradate'=> $respond->row(0)->date, 
+                    //     'batchno'=> $batchno, 
+                    //     'tratype'=> 'I', 
+                    //     'crdr'=> 'D', 
+                    //     'accamount'=> $respond->row(0)->totalpayment, 
+                    //     'narration'=> $respond->row(0)->remark, 
+                    //     'totamount'=> $respond->row(0)->totalpayment, 
+                    //     'status'=> '1', 
+                    //     'insertdatetime'=> $updatedatetime, 
+                    //     'tbl_user_idtbl_user'=> $userID,
+                    //     'tbl_account_idtbl_account'=> $respondcreditor->row(0)->idtbl_account,
+                    //     'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
+                    //     'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
+                    //     'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
+                    // );
+                    // $this->db->insert('tbl_account_transaction_full', $datacreditfull);
 
-                    //Debit account Transaction
+                    // //Debit account Transaction
 
-                    if(!empty($respond->row(0)->tbl_account_detail_idtbl_account_detail)){
-                        $chartofaccountinfo=get_chart_account_acco_child_account($respond->row(0)->tbl_company_idtbl_company, $respond->row(0)->tbl_company_branch_idtbl_company_branch, $respond->row(0)->tbl_account_detail_idtbl_account_detail);
-                        $chartofaccountID=$chartofaccountinfo->row(0)->idtbl_account;
-                    }
-                    else{
-                        $chartofaccountID=$respond->row(0)->tbl_account_idtbl_account;
-                    }
+                    // if(!empty($respond->row(0)->tbl_account_detail_idtbl_account_detail)){
+                    //     $chartofaccountinfo=get_chart_account_acco_child_account($respond->row(0)->tbl_company_idtbl_company, $respond->row(0)->tbl_company_branch_idtbl_company_branch, $respond->row(0)->tbl_account_detail_idtbl_account_detail);
+                    //     $chartofaccountID=$chartofaccountinfo->row(0)->idtbl_account;
+                    // }
+                    // else{
+                    //     $chartofaccountID=$respond->row(0)->tbl_account_idtbl_account;
+                    // }
 
-                    $i++;
-                    $data = array(
-                        'tradate'=> $respond->row(0)->date, 
-                        'batchno'=> $batchno, 
-                        'trabatchotherno'=> $respond->row(0)->batchno, 
-                        'tratype'=> 'I', 
-                        'seqno'=> $i, 
-                        'crdr'=> 'C', 
-                        'accamount'=> $respond->row(0)->totalpayment, 
-                        'narration'=> $respond->row(0)->remark, 
-                        'totamount'=> $respond->row(0)->totalpayment,
-                        'status'=> '1', 
-                        'insertdatetime'=> $updatedatetime, 
-                        'tbl_user_idtbl_user'=> $userID,
-                        'tbl_account_idtbl_account'=> $chartofaccountID,
-                        'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
-                        'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
-                        'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
-                    );
+                    // $i++;
+                    // $data = array(
+                    //     'tradate'=> $respond->row(0)->date, 
+                    //     'batchno'=> $batchno, 
+                    //     'trabatchotherno'=> $respond->row(0)->batchno, 
+                    //     'tratype'=> 'I', 
+                    //     'seqno'=> $i, 
+                    //     'crdr'=> 'C', 
+                    //     'accamount'=> $respond->row(0)->totalpayment, 
+                    //     'narration'=> $respond->row(0)->remark, 
+                    //     'totamount'=> $respond->row(0)->totalpayment,
+                    //     'status'=> '1', 
+                    //     'insertdatetime'=> $updatedatetime, 
+                    //     'tbl_user_idtbl_user'=> $userID,
+                    //     'tbl_account_idtbl_account'=> $chartofaccountID,
+                    //     'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
+                    //     'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
+                    //     'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
+                    // );
 
-                    $this->db->insert('tbl_account_transaction', $data);
+                    // $this->db->insert('tbl_account_transaction', $data);
 
-                    $datafull = array(
-                        'tradate'=> $respond->row(0)->date, 
-                        'batchno'=> $batchno, 
-                        'tratype'=> 'I', 
-                        'crdr'=> 'C', 
-                        'accamount'=> $respond->row(0)->totalpayment, 
-                        'narration'=> $respond->row(0)->remark, 
-                        'totamount'=> $respond->row(0)->totalpayment,
-                        'status'=> '1', 
-                        'insertdatetime'=> $updatedatetime, 
-                        'tbl_user_idtbl_user'=> $userID,
-                        'tbl_account_idtbl_account'=> $respond->row(0)->tbl_account_idtbl_account,
-                        'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
-                        'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
-                        'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
-                    );
+                    // $datafull = array(
+                    //     'tradate'=> $respond->row(0)->date, 
+                    //     'batchno'=> $batchno, 
+                    //     'tratype'=> 'I', 
+                    //     'crdr'=> 'C', 
+                    //     'accamount'=> $respond->row(0)->totalpayment, 
+                    //     'narration'=> $respond->row(0)->remark, 
+                    //     'totamount'=> $respond->row(0)->totalpayment,
+                    //     'status'=> '1', 
+                    //     'insertdatetime'=> $updatedatetime, 
+                    //     'tbl_user_idtbl_user'=> $userID,
+                    //     'tbl_account_idtbl_account'=> $respond->row(0)->tbl_account_idtbl_account,
+                    //     'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
+                    //     'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
+                    //     'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
+                    // );
 
-                    $this->db->insert('tbl_account_transaction_full', $datafull);
+                    // $this->db->insert('tbl_account_transaction_full', $datafull);
 
                     $this->db->trans_complete();
 

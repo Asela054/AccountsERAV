@@ -39,6 +39,7 @@ include "include/topnavbar.php";
                                         <thead>
                                             <tr>
                                                 <th>#</th>
+                                                <th>Payment Filter Type</th>
                                                 <th>Payment No</th>
                                                 <th>Pay Type</th>
                                                 <th>Company</th>
@@ -131,12 +132,23 @@ include "include/topnavbar.php";
                                     <label class="small font-weight-bold">Branch*</label>
                                     <input type="text" name="showbranch" id="showbranch" class="form-control form-control-sm" readonly>
                                 </div>
+                            </div>
+                            <div class="form-row mt-2">
                                 <div class="col">
                                     <label class="small font-weight-bold">Paid Date*</label>
                                     <input type="date" name="paiddate" id="paiddate" class="form-control form-control-sm" value="<?php echo date('Y-m-d'); ?>" max="<?php echo date('Y-m-d'); ?>" required>
                                 </div>
                                 <div class="col">
-                                    <label class="small font-weight-bold">Supplier*</label><br>
+                                    <label class="small font-weight-bold">Payble Filter</label>
+                                    <select name="payablefilter" id="payablefilter" class="form-control form-control-sm" style="width:100%;" required>
+                                        <option value="">Select</option>
+                                        <option value="1">Payment Supplier</option>
+                                        <option value="2">Payment Journal</option>
+                                        <option value="3">Payment Voucher</option>
+                                    </select>
+                                </div>
+                                <div class="col">
+                                    <label class="small font-weight-bold">Supplier | Account no*</label><br>
                                     <select name="supplier" id="supplier" class="form-control form-control-sm" style="width:100%;" required>
                                         <option value="">Select</option>
                                     </select>
@@ -144,21 +156,25 @@ include "include/topnavbar.php";
                             </div>                        
                             <div class="row mt-3">
                                 <div class="col-12">
-                                    <h6 class="small title-style"><span>Invoice Information</span></h6>
-                                    <table class="table table-striped table-bordered table-sm small" id="tableinvoicepayment">
-                                        <thead>
-                                            <tr>
-                                                <th class="text-center">&nbsp;</th>
-                                                <th class="d-none">Supplier ID</th>
-                                                <th>Supplier</th>
-                                                <th class="d-none">Invoice ID</th>
-                                                <th>Bill / Invoice No</th>
-                                                <th class="text-right">Total</th>
-                                                <th class="text-right">Balance Amount</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
+                                    <div class="collapse" id="collapseInvoiceInfo">
+                                        <div class="card card-body shadow-none border-0 p-0">
+                                            <h6 class="small title-style"><span>Invoice Information</span></h6>
+                                            <table class="table table-striped table-bordered table-sm small" id="tableinvoicepayment">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="text-center">&nbsp;</th>
+                                                        <th class="d-none">Supplier ID</th>
+                                                        <th>Supplier | Account no</th>
+                                                        <th class="d-none">Invoice ID</th>
+                                                        <th>Bill / Invoice No</th>
+                                                        <th class="text-right">Total</th>
+                                                        <th class="text-right">Balance Amount</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="row mt-3">
@@ -328,6 +344,23 @@ include "include/topnavbar.php";
             $('#dataTable').DataTable().ajax.reload(null, false);
         });
 
+        $('#payablefilter').change(function() {
+            var payablefilter = $(this).val();
+
+            if(payablefilter == 1 || payablefilter == 2){ 
+                $('#collapseInvoiceInfo').collapse('show');
+                $('#invoicepayamount').prop('readonly', true).val('0');
+            }
+            else if(payablefilter == 3){
+                $('#collapseInvoiceInfo').collapse('hide');
+                $('#invoicepayamount').prop('readonly', false).val('');
+            }
+            else{
+                $('#collapseInvoiceInfo').collapse('hide');
+                $('#invoicepayamount').prop('readonly', true).val('0');
+            }
+        });
+
         $('#dataTable').DataTable({
             "destroy": true,
             "processing": true,
@@ -344,6 +377,9 @@ include "include/topnavbar.php";
             "columns": [
                 {
                     "data": "idtbl_account_paysettle"
+                },
+                {
+                    "data": "paymentfiltertype"
                 },
                 {
                     "data": "paymentno"
@@ -633,10 +669,27 @@ include "include/topnavbar.php";
                 delay: 250,
                 data: function (params) {
                     return {
-                        searchTerm: params.term // search term
+                        searchTerm: params.term, // search term
+                        payablefilter : $('#payablefilter').val()
                     };
                 },
                 processResults: function (response) {
+                    var payablefilter = $('#payablefilter').val();
+
+                    if (payablefilter == 2 || payablefilter == 3) {
+                        return {
+                            results: response.map(function (item) {
+                                return {
+                                    id: item.id,
+                                    text: item.text,
+                                    data: {
+                                        type: item.acctype
+                                    }
+                                };
+                            })
+                        };
+                    }
+
                     return {
                         results: response
                     };
@@ -646,16 +699,28 @@ include "include/topnavbar.php";
         });
         $('#supplier').change(function(){
             var id = $(this).val();
-            $.ajax({
-                type: "POST",
-                data: {
-                    recordID: id
-                },
-                url: '<?php echo base_url() ?>Paymentsettle/Getinvoiceaccosupplier',
-                success: function(result) { // alert(result);
-                    $('#tableinvoicepayment tbody').empty().append(result);
-                }
-            });
+            var payablefilter = $('#payablefilter').val();
+            var accounttype = '';
+            if(payablefilter == 2){
+                var selectedData = $('#supplier').select2('data')[0];
+                // var accounttype = selectedData ? selectedData.data.type : null;
+                var accounttype = (selectedData && selectedData.data) ? selectedData.data.type : null;
+            }
+
+            if(payablefilter < 3){
+                $.ajax({
+                    type: "POST",
+                    data: {
+                        recordID: id,
+                        payablefilter : payablefilter,
+                        accounttype : accounttype
+                    },
+                    url: '<?php echo base_url() ?>Paymentsettle/Getinvoiceaccosupplier',
+                    success: function(result) { // alert(result);
+                        $('#tableinvoicepayment tbody').empty().append(result);
+                    }
+                });
+            }
         });
         
         $('#tableinvoicepayment tbody').on('click', '.checkclick', function() {
@@ -682,8 +747,9 @@ include "include/topnavbar.php";
             } else {
                 $('#btnfullinvoicepayment').prop('disabled', true).html('<i class="fas fa-circle-notch fa-spin mr-2"></i> Complete');
                 var tablelist = $("#tableinvoicepayment tbody input[type=checkbox]:checked");
+                var payablefilter = $('#payablefilter').val();
 
-                if (tablelist.length > 0) {
+                if (payablefilter == 3 || tablelist.length > 0) {
                     $('#customer').attr('disabled', false);
                     jsonObj = [];
                     tablelist.each(function() {
@@ -703,6 +769,13 @@ include "include/topnavbar.php";
                     var company = $('#company').val();
                     var branch = $('#branch').val();
                     var supplierID = $('#supplier').val();
+                    if($('#payablefilter').val() == 2 || $('#payablefilter').val() == 3){
+                        var selectedSupplierData = $('#supplier').select2('data')[0];
+                        var supplierAccountType = selectedSupplierData ? selectedSupplierData.data.type : null;
+                    }
+                    else{
+                        var supplierAccountType = '';
+                    }
                     var payabletype = $('#payabletype').val();
                     var chequedate = $('#chequedate').val();
                     // var chequeno = $('#chequeno').val();
@@ -747,6 +820,8 @@ include "include/topnavbar.php";
                                     accounttype: accounttype,
                                     paiddate: paiddate,
                                     postdated: postdated,
+                                    payablefilter: payablefilter,
+                                    supplierAccountType: supplierAccountType,
                                     recordOption: recordOption,
                                     recordID: recordID
                                 },
@@ -792,6 +867,14 @@ include "include/topnavbar.php";
                             document.body.style.overflow = 'visible';
                         }
                     });
+                }
+                else {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'No invoice selected',
+                        text: 'Please select at least one invoice to proceed.'
+                    });
+                    $('#btnfullinvoicepayment').prop('disabled', false).html('<i class="fas fa-save mr-2"></i> Complete');
                 }
             }
         }); 
@@ -972,7 +1055,7 @@ include "include/topnavbar.php";
         
         var sum = 0;
         var tablelist = $("#tableinvoicepayment tbody input[type=checkbox]:checked");
-                
+           
         if(tablelist.length>0){
             tablelist.each(function() {
                 item = {}
@@ -984,6 +1067,7 @@ include "include/topnavbar.php";
         $('#invoicepayamount').val(addCommas(parseFloat(sum).toFixed(2)));
 
         var invamount = parseFloat($('#invoicepayamount').val());
+        
         if(invamount>0){
             $('#btnfullinvoicepayment').prop('disabled', false);
         }

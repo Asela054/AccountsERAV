@@ -54,7 +54,7 @@ $sql_details = array(
 // require( 'ssp.class.php' );
 require('ssp.customized.class.php' );
 
-$joinQuery = "FROM `tbl_user` AS `u` JOIN `tbl_user_type` AS `ua` ON (`ua`.`idtbl_user_type` = `u`.`tbl_user_type_idtbl_user_type`) LEFT JOIN `tbl_user_has_tbl_roles` AS `ur` ON (`ur`.`tbl_user_idtbl_user` = `u`.`idtbl_user`) LEFT JOIN `tbl_roles` AS `r` ON (`r`.`idtbl_roles` = `ur`.`tbl_roles_idtbl_roles`)";
+$joinQuery = "FROM `tbl_user` AS `u` LEFT JOIN `tbl_user_type` AS `ua` ON (`ua`.`idtbl_user_type` = `u`.`tbl_user_type_idtbl_user_type`) LEFT JOIN `tbl_user_has_tbl_roles` AS `ur` ON (`ur`.`tbl_user_idtbl_user` = `u`.`idtbl_user`) LEFT JOIN `tbl_roles` AS `r` ON (`r`.`idtbl_roles` = `ur`.`tbl_roles_idtbl_roles`)";
 
 if($_POST['userID']==1){
     $extraWhere = "`u`.`status` IN (1, 2)";

@@ -48,7 +48,17 @@ class Paymentsettle extends CI_Controller {
     }
     public function Getsupplierlist(){
         $searchTerm=$this->input->post('searchTerm');
-        $result=get_supplier_search_list($searchTerm);
+        $payablefilter=$this->input->post('payablefilter');
+        $companyid=$_SESSION['companyid'];
+		$branchid=$_SESSION['branchid'];
+
+        if($payablefilter == '1'){
+            $result=get_supplier_search_list($searchTerm);
+        } else if($payablefilter == '2'){
+            $result=get_payable_account_list($searchTerm);
+        }else if($payablefilter == '3'){
+            $result=get_all_accounts($searchTerm, $companyid, $branchid);
+        }
 	}
     public function Paymentsettlecancel(){
         $result=$this->Paymentsettleinfo->Paymentsettlecancel();

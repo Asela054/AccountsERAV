@@ -36,10 +36,12 @@ class Welcome extends CI_Controller {
 
 		// print_r($resultcurrentsch);
 
-		if($resultcurrentsch->monthname===date('Y-F')){
-			$currentperiodmatch=1;
-		}
-        // print_r($result);
+        if(!empty($resultcurrentsch)){
+            if($resultcurrentsch->monthname===date('Y-F')){
+                $currentperiodmatch=1;
+            }
+        }
+        
         if($result!=false){
             $user_data=array(
                 'userid'=>$result->idtbl_user,
@@ -117,7 +119,12 @@ class Welcome extends CI_Controller {
     }
 	public function Dashboard(){
 		$this->load->model('Commeninfo');
+        $this->load->model('Dashboard_modal');
 		$result['menuaccess']=$this->Commeninfo->Getmenuprivilege();
+		$result['dataForChart']=$this->Dashboard_modal->getCashFlowData();
+		$result['dataForExpencesChart']=$this->Dashboard_modal->getExpencesData();
+		$result['dataForSalesIncomeChart']=$this->Dashboard_modal->getSalesIncomeData();
+		$result['dataForInvoiceSalesChart']=$this->Dashboard_modal->getInvoiceSalesData();
 		$this->load->view('dashboard', $result);
 	}
 	public function Getbranchaccocompany(){
