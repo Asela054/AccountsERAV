@@ -50,38 +50,21 @@
 		echo json_encode($CI->db->get()->result());
 	}
 	
-	function get_supplier_list() {
+	function get_supplier_list(){
 		$CI = get_instance();
-
-		$configdata = getconfigdata('supplier_search');
-
-		$tablename = $configdata->row(0)->tbl_name;
-		$column1   = $configdata->row(0)->col_name;
-		$column2   = $configdata->row(1)->col_name;
-		$column3   = $configdata->row(2)->col_name;
-		$column4   = $configdata->row(3)->col_name;
-
 		$CI->db->where('status', 1);
-		$CI->db->select("$column1 AS `idtbl_supplier`, $column2 AS `suppliername`, $column3 AS supcode, $column4 AS contactone", FALSE);
-		$CI->db->select("$column1 AS form_key, $column2 AS form_val", FALSE);
-		$CI->db->from($tablename);
-
+		$CI->db->select('idtbl_supplier, suppliername AS `suppliername`,  suppliercode AS supcode, primarycontactno AS contactone');
+		$CI->db->select('idtbl_supplier AS form_key, suppliername AS form_val');
+		$CI->db->from('tbl_supplier');
 		return $CI->db->get()->result();
 	}
 
 	function get_customer_list(){
 		$CI = get_instance();
-
-		$configdata = getconfigdata('customer_search');
-
-		$tablename = $configdata->row(0)->tbl_name;
-		$column1   = $configdata->row(0)->col_name;
-		$column2   = $configdata->row(1)->col_name;
-
 		$CI->db->where('status', 1);
-		$CI->db->select("$column1 AS `idtbl_customer`, $column2 AS `customer`", FALSE);
-		$CI->db->select("$column1 AS form_key, $column2 AS form_val", FALSE);
-		$CI->db->from($tablename);
+		$CI->db->select('idtbl_customer, name AS customer');
+		$CI->db->select('idtbl_customer AS form_key, customer AS form_val');
+		$CI->db->from('tbl_customer');
 		return $CI->db->get()->result();
 	}
 	
@@ -401,37 +384,52 @@
 		echo json_encode($CI->db->get()->result());  
 	}
 
-	function get_customer_search_list($searchTerm) {
-		$companyid = $_SESSION['companyid'];
-		$branchid  = $_SESSION['branchid'];
+	function get_customer_search_list($searchTerm){
+		$companyid=$_SESSION['companyid'];
+		$branchid=$_SESSION['branchid'];
 
-		$configdata = getconfigdata('customer_search');
-
-		$tablename = $configdata->row(0)->tbl_name;
-		$column1   = $configdata->row(0)->col_name;
-		$column2   = $configdata->row(1)->col_name;
-
-		$CI = get_instance();
-		$CI->db->where('status', 1);
-		$CI->db->where('tbl_company_idtbl_company', $companyid);
-		$CI->db->where('tbl_company_branch_idtbl_company_branch', $branchid);
-		$CI->db->select("$column1 AS idtbl_customer, $column2 AS customer", FALSE);
-		$CI->db->from($tablename);
-
-		if (isset($searchTerm) && !empty($searchTerm)) {
-			$CI->db->like($column2, $searchTerm, 'both');
-		} else {
+        if(!isset($searchTerm)){
+            $CI = get_instance();
+			$CI->db->where('status', 1);
+			$CI->db->where('tbl_company_idtbl_company', $companyid);
+			$CI->db->where('tbl_company_branch_idtbl_company_branch', $branchid);
+			$CI->db->select('idtbl_customer, name AS customer');
+			$CI->db->from('tbl_customer');
 			$CI->db->limit(5);
-		}
+			$respond=$CI->db->get();
+        }
+        else{            
+            if(!empty($searchTerm)){
+                $CI = get_instance();
+				$CI->db->where('status', 1);
+				$CI->db->where('tbl_company_idtbl_company', $companyid);
+				$CI->db->where('tbl_company_branch_idtbl_company_branch', $branchid);
+				$CI->db->select('idtbl_customer, name AS customer');
+				$CI->db->from('tbl_customer');
+				$CI->db->like('customer', $searchTerm, 'both'); 
+				$respond=$CI->db->get();
 
-		$respond = $CI->db->get();
-
-		$data = array();
-		foreach ($respond->result() as $row) {
-			$data[] = array("id" => $row->idtbl_customer, "text" => $row->customer);
-		}
-
-		echo json_encode($data);
+				// print_r($CI->db->last_query()); 
+            }
+            else{
+                $CI = get_instance();
+				$CI->db->where('status', 1);
+				$CI->db->where('tbl_company_idtbl_company', $companyid);
+				$CI->db->where('tbl_company_branch_idtbl_company_branch', $branchid);
+				$CI->db->select('idtbl_customer, name AS customer');
+				$CI->db->from('tbl_customer');
+				$CI->db->limit(5);
+				$respond=$CI->db->get();             
+            }
+        }
+        
+        $data=array();
+        
+        foreach ($respond->result() as $row) {
+            $data[]=array("id"=>$row->idtbl_customer, "text"=>$row->customer);
+        }
+        
+        echo json_encode($data);
 	}
 
 	function receiv_prefix($companyid, $branchid){
@@ -575,39 +573,50 @@
 		echo json_encode($CI->db->get()->result());
 	}
 
-	function get_supplier_search_list($searchTerm) {
-		$companyid = $_SESSION['companyid'];
-		$branchid  = $_SESSION['branchid'];
+	function get_supplier_search_list($searchTerm){
+		$companyid=$_SESSION['companyid'];
+		$branchid=$_SESSION['branchid'];
 
-		$configdata = getconfigdata('supplier_search');
-
-		$tablename = $configdata->row(0)->tbl_name;
-		$column1   = $configdata->row(0)->col_name;
-		$column2   = $configdata->row(1)->col_name;
-		$column3   = $configdata->row(2)->col_name;
-		$column4   = $configdata->row(3)->col_name;
-
-		$CI = get_instance();
-		$CI->db->where('status', 1);
-		$CI->db->where('tbl_company_idtbl_company', $companyid);
-		$CI->db->where('tbl_company_branch_idtbl_company_branch', $branchid);
-		$CI->db->select("$column1 AS idtbl_supplier, $column2 AS `suppliername`, $column3 AS supcode, $column4 AS contactone", FALSE);
-		$CI->db->from($tablename);
-
-		if (isset($searchTerm) && !empty($searchTerm)) {
-			$CI->db->like($column2, $searchTerm, 'both'); 
-		} else {
+        if(!isset($searchTerm)){
+            $CI = get_instance();
+			$CI->db->where('status', 1);
+			// $CI->db->where('tbl_company_idtbl_company', $companyid);
+			// $CI->db->where('tbl_company_branch_idtbl_company_branch', $branchid);
+			$CI->db->select('idtbl_supplier, suppliername AS `suppliername`,  suppliercode AS supcode, primarycontactno AS contactone');
+			$CI->db->from('tbl_supplier');
 			$CI->db->limit(5);
-		}
-
-		$respond = $CI->db->get();
-
-		$data = array();
-		foreach ($respond->result() as $row) {
-			$data[] = array("id" => $row->idtbl_supplier, "text" => $row->suppliername);
-		}
-
-		echo json_encode($data);
+			$respond=$CI->db->get();
+        }
+        else{            
+            if(!empty($searchTerm)){
+                $CI = get_instance();
+				$CI->db->where('status', 1);
+				// $CI->db->where('tbl_company_idtbl_company', $companyid);
+				// $CI->db->where('tbl_company_branch_idtbl_company_branch', $branchid);
+				$CI->db->select('idtbl_supplier, suppliername AS `suppliername`,  suppliercode AS supcode, primarycontactno AS contactone');
+				$CI->db->from('tbl_supplier');
+				$CI->db->like('suppliername', $searchTerm, 'both'); 
+				$respond=$CI->db->get();
+            }
+            else{
+                $CI = get_instance();
+				$CI->db->where('status', 1);
+				// $CI->db->where('tbl_company_idtbl_company', $companyid);
+				// $CI->db->where('tbl_company_branch_idtbl_company_branch', $branchid);
+				$CI->db->select('idtbl_supplier, suppliername AS `suppliername`,  suppliercode AS supcode, primarycontactno AS contactone');
+				$CI->db->from('tbl_supplier');
+				$CI->db->limit(5);
+				$respond=$CI->db->get();             
+            }
+        }
+        
+        $data=array();
+        
+        foreach ($respond->result() as $row) {
+            $data[]=array("id"=>$row->idtbl_supplier, "text"=>$row->suppliername);
+        }
+        
+        echo json_encode($data);
 	}
 
 	function get_chart_acount_select2($searchTerm, $companyid, $branchid){
@@ -644,24 +653,16 @@
 
 	function get_material_search_list($searchTerm, $companyid, $branchid){
 		$CI = get_instance();
-
-		$configdata = getconfigdata('material_search');
-
-		$tablename = $configdata->row(0)->tbl_name;
-		$column1   = $configdata->row(0)->col_name;
-		$column2   = $configdata->row(1)->col_name;
-		$column3   = $configdata->row(2)->col_name;
-
-		$CI->db->select("$column1 AS idtbl_print_material_info, $column2 AS materialname, $column3 AS materialinfocode", FALSE);
-		$CI->db->from($tablename);
+		$CI->db->select('idtbl_print_material_info, materialname, materialinfocode');
+		$CI->db->from('tbl_print_material_info');
 		$CI->db->where('status', 1);
 		$CI->db->where('tbl_company_idtbl_company', $companyid);
 		$CI->db->where('tbl_company_branch_idtbl_company_branch', $branchid);
 		
 		if(!empty($searchTerm)) {
 			$CI->db->group_start(); 
-			$CI->db->like($column2, $searchTerm, 'both');
-			$CI->db->or_like($column3, $searchTerm, 'both');
+			$CI->db->like('materialname', $searchTerm, 'both');
+			$CI->db->or_like('materialinfocode', $searchTerm, 'both');
 			$CI->db->group_end(); 
 		}
 		if(empty($searchTerm)) {
@@ -724,56 +725,30 @@
 		return false;
 	}
 
-	function getSpecialCateDetailAccount($searchTerm) {
+	function getSpecialCateDetailAccount($searchTerm){
 		$CI = get_instance();
-
-		$configdata = getconfigdata('chartdetail_special');
-		$rows = $configdata->result();
-
-		$unionParts = [];
-		$bindings   = [];
-		$cateID     = 1;
-
-		for ($i = 0; $i < count($rows); $i += 2) {
-			$matchRow   = $rows[$i];      
-			$displayRow = $rows[$i + 1];  
-
-			$tablename  = $matchRow->tbl_name;   
-			$idCol      = $matchRow->col_name;   
-			$displayCol = $displayRow->col_name; 
-
-			$sql = "SELECT `$idCol` AS `typeid`, `$displayCol` AS `type`, '$cateID' AS `typecate` 
-					FROM `$tablename` 
-					WHERE `status` = ?";
-			$bindings[] = 1;
-
-			if (!empty($searchTerm)) {
-				$sql .= " AND `$displayCol` LIKE ?";
-				$bindings[] = '%' . $searchTerm . '%';
-			}
-
-			$unionParts[] = $sql;
-			$cateID++;
+		$sql="SELECT `idtbl_product_category` AS `typeid`, `category` AS `type`, '1' AS `typecate` FROM `tbl_product_category` WHERE `status`=?";
+		if(!empty($searchTerm)){
+			$sql.=" AND `category` LIKE '%$searchTerm%'";
+		}
+		$sql.=" UNION ALL ";
+		$sql.="SELECT `idtbl_group_category` AS `typeid`, `category` AS `type`, '2' AS `typecate` FROM `tbl_group_category` WHERE `status`=?";
+		if(!empty($searchTerm)){
+			$sql.=" AND `category` LIKE '%$searchTerm%'";
 		}
 
-		$fullSql = implode(" UNION ALL ", $unionParts);
-
-		if (empty($searchTerm)) {
-			$fullSql .= " LIMIT 5";
+		if(empty($searchTerm)){
+			$sql.=" LIMIT 5";
 		}
+		$respond=$CI->db->query($sql, array(1, 1));
 
-		$respond = $CI->db->query($fullSql, $bindings);
-
-		$data = array();
-		foreach ($respond->result() as $row) {
-			$data[] = array(
-				"id"       => $row->typeid,
-				"text"     => $row->type,
-				"catetype" => $row->typecate
-			);
-		}
-
-		echo json_encode($data);
+		$data=array();
+        
+        foreach ($respond->result() as $row) {
+            $data[]=array("id"=>$row->typeid, "text"=>$row->type, "catetype" => $row->typecate);
+        }
+        
+        echo json_encode($data);
 	}
 
 	function payset_prefix($companyid, $branchid){
@@ -790,99 +765,5 @@
 		$date = DateTime::createFromFormat('!m', $respond->row(0)->month);
 		$monthName = $date->format('M');
 		return 'PS'.$respond->row(0)->year.strtoupper($monthName);
-	}
-
-	function get_payable_account_list($searchTerm) {
-		$companyid=$_SESSION['companyid'];
-		$branchid=$_SESSION['branchid'];
-
-		$CI = get_instance();
-
-		// Get distinct account_detail and account IDs where payable is unsettled
-		$payable_sql = "SELECT DISTINCT 
-							`tbl_account_transaction_manual`.`tbl_account_detail_idtbl_account_detail`,
-							`tbl_account_transaction_manual`.`tbl_account_idtbl_account`
-						FROM `tbl_account_transaction_manual`
-						WHERE `tbl_account_transaction_manual`.`tbl_company_idtbl_company` = ?
-						AND `tbl_account_transaction_manual`.`tbl_company_branch_idtbl_company_branch` = ?
-						AND `tbl_account_transaction_manual`.`payablestatus` = 1
-						AND `tbl_account_transaction_manual`.`payablesettle` = 0";
-
-		$payable_result = $CI->db->query($payable_sql, array($companyid, $branchid))->result();
-
-		// Separate into detail IDs and account IDs
-		$detail_ids = array_filter(array_unique(array_column($payable_result, 'tbl_account_detail_idtbl_account_detail')));
-		$account_ids = array_filter(array_unique(array_column($payable_result, 'tbl_account_idtbl_account')));
-
-		if (empty($detail_ids) && empty($account_ids)) {
-			echo json_encode(array());
-			return;
-		}
-
-		$detail_ids_str  = implode(',', array_map('intval', $detail_ids));
-		$account_ids_str = implode(',', array_map('intval', $account_ids));
-
-		$search_condition_account = !empty($searchTerm)
-			? " AND (`tbl_account`.`accountno` LIKE '%$searchTerm%' OR `tbl_account`.`accountname` LIKE '%$searchTerm%')"
-			: "";
-
-		$search_condition_detail = !empty($searchTerm)
-			? " AND (`tbl_account_detail`.`accountno` LIKE '%$searchTerm%' OR `tbl_account_detail`.`accountname` LIKE '%$searchTerm%')"
-			: "";
-
-		$sql = "";
-
-		// Chart of Accounts
-		if (!empty($account_ids_str)) {
-			$sql .= "SELECT 
-						`tbl_account`.`idtbl_account` AS `accountid`,
-						`tbl_account`.`accountno`,
-						`tbl_account`.`accountname`,
-						'1' AS `acctype`
-					FROM `tbl_account`
-					WHERE `tbl_account`.`status` = 1
-					AND `tbl_account`.`idtbl_account` IN ($account_ids_str)
-					$search_condition_account";
-		}
-
-		// Chart of detail accounts
-		if (!empty($detail_ids_str)) {
-			if (!empty($sql)) { $sql .= " UNION ALL "; }
-			$sql .= "SELECT 
-						`tbl_account_detail`.`idtbl_account_detail` AS `accountid`,
-						`tbl_account_detail`.`accountno`,
-						`tbl_account_detail`.`accountname`,
-						'2' AS `acctype`
-					FROM `tbl_account_detail`
-					WHERE `tbl_account_detail`.`status` = 1
-					AND `tbl_account_detail`.`idtbl_account_detail` IN ($detail_ids_str)
-					$search_condition_detail";
-		}
-
-		if (empty($searchTerm)) {
-			$sql .= " LIMIT 5";
-		}
-
-		$respond = $CI->db->query($sql);
-
-		$data = array();
-		foreach ($respond->result() as $row) {
-			$data[] = array(
-				"id"      => $row->accountid,
-				"text"    => $row->accountname . ' - ' . $row->accountno,
-				"acctype" => $row->acctype
-			);
-		}
-
-		echo json_encode($data);
-	}
-
-	function getconfigdata($config_key){
-		$CI = get_instance();
-		$CI->db->where('config_key', $config_key);
-		$CI->db->select('`config_key`, `tbl_name`, `col_name`');
-		$CI->db->from('tbl_account_config');
-		
-		return $CI->db->get();
 	}
 ?>

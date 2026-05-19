@@ -3,6 +3,11 @@ require_once '../external.php';
 
 $CI =& get_instance();
 $CI->load->library('session');
+
+$configdata = getconfigdata('payable_search');
+$tablename = $configdata->row(0)->tbl_name;
+$column1   = $configdata->row(0)->col_name;
+$column2   = $configdata->row(1)->col_name;
 /*
  * DataTables example server-side processing script.
  *
@@ -41,7 +46,7 @@ $columns = array(
 	array( 'db' => '`u`.`remark`', 'dt' => 'remark', 'field' => 'remark' ),
 	array( 'db' => '`ua`.`company`', 'dt' => 'company', 'field' => 'company' ),
 	array( 'db' => '`ub`.`branch`', 'dt' => 'branch', 'field' => 'branch' ),
-	array( 'db' => '`uc`.`suppliername`', 'dt' => 'suppliername', 'field' => 'suppliername' ),
+	array( 'db' => "`uc`.$column2", 'dt' => 'suppliername', 'field' => 'suppliername' ),
 	array( 'db' => '`u`.`status`', 'dt' => 'status', 'field' => 'status' )
 );
 
@@ -65,7 +70,7 @@ require('ssp.customized.class.php' );
 $companyid=$_SESSION['companyid'];
 $branchid=$_SESSION['branchid'];
 
-$joinQuery = "FROM `tbl_expence_info` AS `u` LEFT JOIN `tbl_company` AS `ua` ON (`ua`.`idtbl_company` = `u`.`tbl_company_idtbl_company`) LEFT JOIN `tbl_company_branch` AS `ub` ON (`ub`.`idtbl_company_branch` = `u`.`tbl_company_branch_idtbl_company_branch`) LEFT JOIN `tbl_supplier` AS `uc` ON (`uc`.`idtbl_supplier` = `u`.`tbl_supplier_idtbl_supplier`)";
+$joinQuery = "FROM `tbl_expence_info` AS `u` LEFT JOIN `tbl_company` AS `ua` ON (`ua`.`idtbl_company` = `u`.`tbl_company_idtbl_company`) LEFT JOIN `tbl_company_branch` AS `ub` ON (`ub`.`idtbl_company_branch` = `u`.`tbl_company_branch_idtbl_company_branch`) LEFT JOIN $tablename AS `uc` ON (`uc`.`$column1` = `u`.`tbl_supplier_idtbl_supplier`)";
 
 $extraWhere = "`u`.`status` IN (1, 2) AND `u`.`tbl_company_idtbl_company`='$companyid' AND `u`.`tbl_company_branch_idtbl_company_branch`='$branchid' AND `u`.`exptype`=4";
 

@@ -13,7 +13,6 @@ class Journalentryinfo extends CI_Model{
         $narrationdr=$this->input->post('narrationdr');
         $accounttypecr=$this->input->post('accounttypecr');
         $accounttypedr=$this->input->post('accounttypedr');
-        $payableentry=$this->input->post('payableentry');
 
         $fullnarration=$narrationcr.' & '.$narrationdr;
         
@@ -73,7 +72,6 @@ class Journalentryinfo extends CI_Model{
                     'crdr'=> 'C', 
                     'amount'=> $traamount, 
                     'narration'=> $narrationcr, 
-                    'payablestatus'=> $payableentry, 
                     'status'=> '1', 
                     'insertdatetime'=> $updatedatetime, 
                     'tbl_user_idtbl_user'=> $userID,
@@ -201,7 +199,6 @@ class Journalentryinfo extends CI_Model{
                     'crdr'=> 'C', 
                     'amount'=> $traamount, 
                     'narration'=> $narrationcr, 
-                    'payablestatus'=> $payableentry, 
                     'status'=> '1', 
                     'insertdatetime'=> $updatedatetime, 
                     'tbl_user_idtbl_user'=> $userID,
@@ -505,7 +502,7 @@ class Journalentryinfo extends CI_Model{
             
             $respond=$this->db->get();
             
-            $this->db->select('tbl_account_transaction_manual.narration, tbl_account_transaction_manual.crdr, tbl_account_detail.idtbl_account_detail, tbl_account_detail.accountno, tbl_account_detail.accountname, tbl_account.idtbl_account, tbl_account.accountno AS chartaccountno, tbl_account.accountname AS chartaccountname, tbl_account_transaction_manual.payablestatus');
+            $this->db->select('tbl_account_transaction_manual.narration, tbl_account_transaction_manual.crdr, tbl_account_detail.idtbl_account_detail, tbl_account_detail.accountno, tbl_account_detail.accountname, tbl_account.idtbl_account, tbl_account.accountno AS chartaccountno, tbl_account.accountname AS chartaccountname');
             $this->db->from('tbl_account_transaction_manual');
             $this->db->join('tbl_account', 'tbl_account.idtbl_account = tbl_account_transaction_manual.tbl_account_idtbl_account', 'left');
             $this->db->join('tbl_account_detail', 'tbl_account_detail.idtbl_account_detail = tbl_account_transaction_manual.tbl_account_detail_idtbl_account_detail', 'left');
@@ -538,7 +535,6 @@ class Journalentryinfo extends CI_Model{
                         $obj->accounttypecr=1;
                     }
                     $obj->narrationcr=$rowdetail->narration;
-                    $obj->payablestatus=$rowdetail->payablestatus;
                 }
                 else if($rowdetail->crdr=='D'){
                     // $obj->accounttypedr=$rowdetail->tbl_account_type_idtbl_account_type;
@@ -785,15 +781,6 @@ class Journalentryinfo extends CI_Model{
         
                 $this->db->where('idtbl_account_transaction_manual_main', $recordID);
                 $this->db->update('tbl_account_transaction_manual_main', $data);
-
-                $data = array(
-                    'poststatus'=> '1',
-                    'postuser'=> $userID,
-                    'postviewtime'=> NULL
-                );
-        
-                $this->db->where('manualtrans_main_id', $recordID);
-                $this->db->update('tbl_account_transaction_manual', $data);
 
                 $i=1;
                 
@@ -1046,43 +1033,13 @@ class Journalentryinfo extends CI_Model{
     public function Getglpassdatalist(){
         $updatedatetime=date('Y-m-d H:i:s');
 
-        $configdata = getconfigdata('journal_passgl');
-        $rows = $configdata->result();
-
-        $this->db->select('tbl_other_payincome.*', FALSE);
+        $this->db->select('tbl_other_payincome.*, tbl_customer.name as customer, tbl_supplier.suppliername');
         $this->db->from('tbl_other_payincome');
-
-        $joinedTables = []; 
-        $selectFields = [];
-
-        for ($i = 0; $i < count($rows); $i += 2) {
-            $matchRow   = $rows[$i];       
-            $displayRow = $rows[$i + 1];   
-
-            $tablename  = $matchRow->tbl_name;   
-            $idCol      = $matchRow->col_name;   
-            $displayCol = $displayRow->col_name; 
-
-            $fkCol = str_replace('tbl_', '', $tablename); 
-
-            if (!in_array($tablename, $joinedTables)) {
-                $this->db->join(
-                    $tablename,
-                    "$tablename.$idCol = tbl_other_payincome.$fkCol",
-                    'left'
-                );
-                $joinedTables[] = $tablename;
-            }
-
-            $selectFields[] = "$tablename.$displayCol";
-        }
-
-        $this->db->select(implode(', ', $selectFields), FALSE);
-
+        $this->db->join('tbl_customer', 'tbl_customer.idtbl_customer = tbl_other_payincome.customer', 'left');
+        $this->db->join('tbl_supplier', 'tbl_supplier.idtbl_supplier = tbl_other_payincome.supplier', 'left');
         $this->db->where('tbl_other_payincome.status', 1);
         $this->db->where('tbl_other_payincome.glapply', 0);
-
-        $respond = $this->db->get();
+        $respond=$this->db->get();
 
         $html='';
         foreach($respond->result() as $rowdatainfo){

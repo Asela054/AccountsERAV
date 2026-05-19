@@ -550,7 +550,7 @@ class Chartofaccountinfo extends CI_Model{
     public function Getnextaccountno(){
         $recordID=$this->input->post('recordID');
 
-        $this->db->select('IFNULL((MAX(`tbl_account`.`code`) + 1), 1) AS `nextaccouontno`');
+        $this->db->select('IFNULL((MAX(CAST(`tbl_account`.`code` AS UNSIGNED)) + 1), 1) AS `nextaccouontno`');
         $this->db->from('tbl_account');
         $this->db->join('tbl_account_allocation', 'tbl_account_allocation.tbl_account_idtbl_account = tbl_account.idtbl_account', 'left');
         $this->db->where('tbl_account_allocation.companybank', $_SESSION['companyid']);

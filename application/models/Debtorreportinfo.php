@@ -7,19 +7,27 @@ class Debtorreportinfo extends CI_Model{
         $companyID = $_SESSION['companyid'];
         $branchID = $_SESSION['branchid'];
 
+        $configdata = getconfigdata('debtor_report');
+
+		$tablename = $configdata->row(0)->tbl_name;
+		$column1   = $configdata->row(0)->col_name;
+		$column2   = $configdata->row(1)->col_name;
+		$column3   = $configdata->row(2)->col_name;
+
         $html = '';
 
         // If no customer selected, show all customers with their transactions
-        if(empty($customer)) {
+        // if(empty($customer)) {
             // Get all customers with transactions in the period
             $sqlCustomers = "
-                SELECT DISTINCT c.idtbl_customer, c.customer, c.ref_no
-                FROM tbl_customer c
+                SELECT DISTINCT c.$column1 AS idtbl_customer, c.$column2 AS customer, c.$column3 AS ref_no
+                FROM $tablename c
                 WHERE c.status = 1
+                " . (!empty($customer) ? "AND c.$column1 = " . (int)$customer . " " : "") . "
                 AND (
                     EXISTS (
                         SELECT 1 FROM tbl_sales_info s 
-                        WHERE s.tbl_customer_idtbl_customer = c.idtbl_customer 
+                        WHERE s.tbl_customer_idtbl_customer = c.$column1 
                         AND s.status = 1 
                         AND s.invdate BETWEEN ? AND ?
                         AND s.tbl_company_idtbl_company = ? 
@@ -27,7 +35,7 @@ class Debtorreportinfo extends CI_Model{
                     )
                     OR EXISTS (
                         SELECT 1 FROM tbl_receivable r 
-                        WHERE r.payer = c.idtbl_customer 
+                        WHERE r.payer = c.$column1 
                         AND r.status = 1 
                         AND r.recdate BETWEEN ? AND ?
                         AND r.tbl_company_idtbl_company = ? 
@@ -36,7 +44,7 @@ class Debtorreportinfo extends CI_Model{
                     OR EXISTS (
                         SELECT 1 FROM tbl_batch_transaction bt
                         JOIN tbl_batch_transaction_main btm ON bt.tbl_batch_transaction_main_idtbl_batch_transaction_main = btm.idtbl_batch_transaction_main
-                        WHERE bt.tbl_customer_idtbl_customer = c.idtbl_customer
+                        WHERE bt.tbl_customer_idtbl_customer = c.$column1
                         AND bt.status = 1
                         AND btm.status = 1
                         AND btm.approvestatus = 1
@@ -45,7 +53,7 @@ class Debtorreportinfo extends CI_Model{
                         AND bt.tbl_company_branch_idtbl_company_branch = ?
                     )
                 )
-                ORDER BY c.customer ASC
+                ORDER BY c.$column2 ASC
             ";
 
             $customers = $this->db->query($sqlCustomers, [
@@ -83,54 +91,460 @@ class Debtorreportinfo extends CI_Model{
                 $respondopenbalance = $this->db->query($sqlOpenBalance, $params);
                 $openingBalance = $respondopenbalance->row()->openbalance;
 
-                // Get Transactions for this customer
-                $sql = "SELECT * FROM (SELECT `invno` AS `receiptno`, `invdate` AS `invpaydate`, `invamount` AS `amount`, GROUP_CONCAT(`tbl_print_invoicedetail`.`job`) AS `narration`, 'D' AS `tratype`, '' AS `chequedate`, '' AS `chequeno` FROM `tbl_sales_info` LEFT JOIN `tbl_print_invoice` ON (
-                    `tbl_print_invoice`.`inv_no` = `tbl_sales_info`.`invno` 
-                    OR 
-                    `tbl_print_invoice`.`inv_no` = CONCAT('INV', `tbl_sales_info`.`invno`)
-                ) 
-                AND `tbl_print_invoice`.`tbl_company_idtbl_company`=? 
-                AND `tbl_print_invoice`.`tbl_company_branch_idtbl_company_branch`=?
-                LEFT JOIN `tbl_print_invoicedetail` ON  `tbl_print_invoicedetail`.`tbl_print_invoice_idtbl_print_invoice` = `tbl_print_invoice`.`idtbl_print_invoice` WHERE `tbl_sales_info`.`tbl_customer_idtbl_customer`=? AND `tbl_sales_info`.`tbl_company_idtbl_company`=? AND `tbl_sales_info`.`tbl_company_branch_idtbl_company_branch`=? AND `tbl_sales_info`.`invdate` BETWEEN ? AND ? AND `tbl_sales_info`.`status`=? AND `tbl_sales_info`.`poststatus`=? AND `tbl_sales_info`.`invno` NOT IN (
-                    SELECT `invoiceno` 
-                    FROM `tbl_batch_transaction` 
-                    WHERE `crdr` = 'C' 
-                    AND `tbl_customer_idtbl_customer` = ?
-                ) GROUP BY `tbl_sales_info`.`invno` UNION ALL 
-                SELECT `tbl_receivable`.`receiptno`, `tbl_receivable`.`recdate` AS `invpaydate`, SUM(`tbl_receivable_info`.`amount`) AS `amount`, CONCAT(
-                    `tbl_receivable`.`narration`,
-                    ' ',
-                    GROUP_CONCAT(`tbl_receivable_info`.`invoiceno` SEPARATOR ', '),
-                    ' - ',
-                    `tbl_receivable`.`chequeno`
-                ) AS `narration`, 'C' AS `tratype`, `tbl_receivable`.`chequedate`, `tbl_receivable`.`chequeno` FROM `tbl_receivable_info` LEFT JOIN `tbl_receivable` ON `tbl_receivable`.`idtbl_receivable`=`tbl_receivable_info`.`tbl_receivable_idtbl_receivable` WHERE `tbl_receivable`.`recdate` BETWEEN ? AND ? AND `tbl_receivable`.`status`=? AND `tbl_receivable`.`poststatus`=? AND `tbl_receivable`.`payer`=? AND `tbl_receivable`.`tbl_company_idtbl_company`=? AND `tbl_receivable`.`tbl_company_branch_idtbl_company_branch`=? GROUP BY `tbl_receivable`.`idtbl_receivable` UNION ALL
-                SELECT 
-                    `tbl_batch_transaction`.`invoiceno` AS `receiptno`,
-                    `tbl_batch_transaction`.`transdate` AS `invpaydate`,
-                    CASE 
-                        WHEN `tbl_batch_transaction`.`crdr` = 'C' THEN `tbl_batch_transaction`.`creditamount`
-                        WHEN `tbl_batch_transaction`.`crdr` = 'D' THEN `tbl_batch_transaction`.`debitamount`
-                        ELSE 0
-                    END AS `amount`,
-                    `tbl_batch_transaction`.`narration` AS `narration`,
-                    CASE 
-                        WHEN `tbl_batch_transaction`.`crdr` = 'C' THEN 'C'
-                        WHEN `tbl_batch_transaction`.`crdr` = 'D' THEN 'D'
-                        ELSE NULL
-                    END AS `tratype`,
-                    '' AS `chequedate`,
-                    '' AS `chequeno`
-                FROM `tbl_batch_transaction`
-                LEFT JOIN `tbl_batch_transaction_main` ON `tbl_batch_transaction_main`.`idtbl_batch_transaction_main` = `tbl_batch_transaction`.`tbl_batch_transaction_main_idtbl_batch_transaction_main`
-                WHERE `tbl_batch_transaction`.`tbl_company_idtbl_company` = ? 
-                AND `tbl_batch_transaction`.`tbl_company_branch_idtbl_company_branch` = ?
-                AND `tbl_batch_transaction`.`tbl_customer_idtbl_customer` = ?
-                AND `tbl_batch_transaction`.`transdate` BETWEEN ? AND ?
-                AND `tbl_batch_transaction`.`status` = ?
-                AND `tbl_batch_transaction_main`.`status` = ?
-                AND `tbl_batch_transaction_main`.`approvestatus` = ?) AS `u` ORDER BY `u`.`invpaydate` ASC";
+                // // Get Transactions for this customer
+                // $sql = "SELECT * FROM (SELECT `invno` AS `receiptno`, `invdate` AS `invpaydate`, `invamount` AS `amount`, GROUP_CONCAT(`tbl_print_invoicedetail`.`job`) AS `narration`, 'D' AS `tratype`, '' AS `chequedate`, '' AS `chequeno` FROM `tbl_sales_info` LEFT JOIN `tbl_print_invoice` ON (
+                //     `tbl_print_invoice`.`inv_no` = `tbl_sales_info`.`invno` 
+                //     OR 
+                //     `tbl_print_invoice`.`inv_no` = CONCAT('INV', `tbl_sales_info`.`invno`)
+                // ) 
+                // AND `tbl_print_invoice`.`tbl_company_idtbl_company`=? 
+                // AND `tbl_print_invoice`.`tbl_company_branch_idtbl_company_branch`=?
+                // LEFT JOIN `tbl_print_invoicedetail` ON  `tbl_print_invoicedetail`.`tbl_print_invoice_idtbl_print_invoice` = `tbl_print_invoice`.`idtbl_print_invoice` WHERE `tbl_sales_info`.`tbl_customer_idtbl_customer`=? AND `tbl_sales_info`.`tbl_company_idtbl_company`=? AND `tbl_sales_info`.`tbl_company_branch_idtbl_company_branch`=? AND `tbl_sales_info`.`invdate` BETWEEN ? AND ? AND `tbl_sales_info`.`status`=? AND `tbl_sales_info`.`poststatus`=? AND `tbl_sales_info`.`invno` NOT IN (
+                //     SELECT `invoiceno` 
+                //     FROM `tbl_batch_transaction` 
+                //     WHERE `crdr` = 'C' 
+                //     AND `tbl_customer_idtbl_customer` = ?
+                // ) GROUP BY `tbl_sales_info`.`invno` UNION ALL 
+                // SELECT `tbl_receivable`.`receiptno`, `tbl_receivable`.`recdate` AS `invpaydate`, SUM(`tbl_receivable_info`.`amount`) AS `amount`, CONCAT(
+                //     `tbl_receivable`.`narration`,
+                //     ' ',
+                //     GROUP_CONCAT(`tbl_receivable_info`.`invoiceno` SEPARATOR ', '),
+                //     ' - ',
+                //     `tbl_receivable`.`chequeno`
+                // ) AS `narration`, 'C' AS `tratype`, `tbl_receivable`.`chequedate`, `tbl_receivable`.`chequeno` FROM `tbl_receivable_info` LEFT JOIN `tbl_receivable` ON `tbl_receivable`.`idtbl_receivable`=`tbl_receivable_info`.`tbl_receivable_idtbl_receivable` WHERE `tbl_receivable`.`recdate` BETWEEN ? AND ? AND `tbl_receivable`.`status`=? AND `tbl_receivable`.`poststatus`=? AND `tbl_receivable`.`payer`=? AND `tbl_receivable`.`tbl_company_idtbl_company`=? AND `tbl_receivable`.`tbl_company_branch_idtbl_company_branch`=? GROUP BY `tbl_receivable`.`idtbl_receivable` UNION ALL
+                // SELECT 
+                //     `tbl_batch_transaction`.`invoiceno` AS `receiptno`,
+                //     `tbl_batch_transaction`.`transdate` AS `invpaydate`,
+                //     CASE 
+                //         WHEN `tbl_batch_transaction`.`crdr` = 'C' THEN `tbl_batch_transaction`.`creditamount`
+                //         WHEN `tbl_batch_transaction`.`crdr` = 'D' THEN `tbl_batch_transaction`.`debitamount`
+                //         ELSE 0
+                //     END AS `amount`,
+                //     `tbl_batch_transaction`.`narration` AS `narration`,
+                //     CASE 
+                //         WHEN `tbl_batch_transaction`.`crdr` = 'C' THEN 'C'
+                //         WHEN `tbl_batch_transaction`.`crdr` = 'D' THEN 'D'
+                //         ELSE NULL
+                //     END AS `tratype`,
+                //     '' AS `chequedate`,
+                //     '' AS `chequeno`
+                // FROM `tbl_batch_transaction`
+                // LEFT JOIN `tbl_batch_transaction_main` ON `tbl_batch_transaction_main`.`idtbl_batch_transaction_main` = `tbl_batch_transaction`.`tbl_batch_transaction_main_idtbl_batch_transaction_main`
+                // WHERE `tbl_batch_transaction`.`tbl_company_idtbl_company` = ? 
+                // AND `tbl_batch_transaction`.`tbl_company_branch_idtbl_company_branch` = ?
+                // AND `tbl_batch_transaction`.`tbl_customer_idtbl_customer` = ?
+                // AND `tbl_batch_transaction`.`transdate` BETWEEN ? AND ?
+                // AND `tbl_batch_transaction`.`status` = ?
+                // AND `tbl_batch_transaction_main`.`status` = ?
+                // AND `tbl_batch_transaction_main`.`approvestatus` = ?) AS `u` ORDER BY `u`.`invpaydate` ASC";
                 
-                $transactions = $this->db->query($sql, [$companyID, $branchID, $cust->idtbl_customer, $companyID, $branchID, $fromdate, $todate, 1, 1, $cust->idtbl_customer, $fromdate, $todate, 1, 1, $cust->idtbl_customer, $companyID, $branchID, $companyID, $branchID, $cust->idtbl_customer, $fromdate, $todate, 1, 1, 1])->result();
+                // $transactions = $this->db->query($sql, [$companyID, $branchID, $cust->idtbl_customer, $companyID, $branchID, $fromdate, $todate, 1, 1, $cust->idtbl_customer, $fromdate, $todate, 1, 1, $cust->idtbl_customer, $companyID, $branchID, $companyID, $branchID, $cust->idtbl_customer, $fromdate, $todate, 1, 1, 1])->result();
+
+                // Get Transactions for this customer
+                // $sql = "SELECT * FROM (
+                //     -- Sales Invoices (Debit transactions)
+                //     SELECT 
+                //         `invno` AS `receiptno`, 
+                //         `invdate` AS `invpaydate`, 
+                //         `invamount` AS `amount`, 
+                //         GROUP_CONCAT(DISTINCT `tbl_print_invoicedetail`.`job`) AS `narration`, 
+                //         'D' AS `tratype`, 
+                //         '' AS `chequedate`, 
+                //         '' AS `chequeno`,
+                //         0 AS `overpayment`,
+                //         '' AS `overpayment_balance`,
+                //         0 AS `is_overpayment_only`
+                //     FROM `tbl_sales_info` 
+                //     LEFT JOIN `tbl_print_invoice` ON (
+                //         `tbl_print_invoice`.`inv_no` = `tbl_sales_info`.`invno` 
+                //         OR 
+                //         `tbl_print_invoice`.`inv_no` = CONCAT('INV', `tbl_sales_info`.`invno`)
+                //     ) 
+                //     AND `tbl_print_invoice`.`tbl_company_idtbl_company`=? 
+                //     AND `tbl_print_invoice`.`tbl_company_branch_idtbl_company_branch`=?
+                //     LEFT JOIN `tbl_print_invoicedetail` ON `tbl_print_invoicedetail`.`tbl_print_invoice_idtbl_print_invoice` = `tbl_print_invoice`.`idtbl_print_invoice` 
+                //     WHERE `tbl_sales_info`.`tbl_customer_idtbl_customer`=? 
+                //     AND `tbl_sales_info`.`tbl_company_idtbl_company`=? 
+                //     AND `tbl_sales_info`.`tbl_company_branch_idtbl_company_branch`=? 
+                //     AND `tbl_sales_info`.`invdate` BETWEEN ? AND ? 
+                //     AND `tbl_sales_info`.`status`=? 
+                //     AND `tbl_sales_info`.`poststatus`=? 
+                //     AND `tbl_sales_info`.`invno` NOT IN (
+                //         SELECT `invoiceno` 
+                //         FROM `tbl_batch_transaction` 
+                //         WHERE `crdr` = 'C' 
+                //         AND `tbl_customer_idtbl_customer` = ?
+                //     ) 
+                //     GROUP BY `tbl_sales_info`.`invno` 
+                    
+                //     UNION ALL 
+                    
+                //     -- Receivable Payments (Credit transactions) with overpayment info
+                //     SELECT 
+                //         `tbl_receivable`.`receiptno`, 
+                //         `tbl_receivable`.`recdate` AS `invpaydate`, 
+                //         SUM(`tbl_receivable_info`.`amount`) AS `amount`, 
+                //         CONCAT(
+                //             `tbl_receivable`.`narration`,
+                //             ' ',
+                //             GROUP_CONCAT(
+                //                 DISTINCT 
+                //                 CASE 
+                //                     WHEN `tbl_receivable_info`.`overpayment` > 0 AND `tbl_receivable_info`.`invoiceno` > 0 
+                //                     THEN CONCAT(`tbl_receivable_info`.`invoiceno`, ' (Overpaid: ', FORMAT(`tbl_receivable_info`.`overpayment`, 2), ')')
+                //                     WHEN `tbl_receivable_info`.`overpayment` > 0 AND `tbl_receivable_info`.`invoiceno` = 0 
+                //                     THEN CONCAT('Overpayment Only: ', FORMAT(`tbl_receivable_info`.`overpayment`, 2))
+                //                     ELSE `tbl_receivable_info`.`invoiceno`
+                //                 END 
+                //                 SEPARATOR ', '
+                //             ),
+                //             ' - ',
+                //             `tbl_receivable`.`chequeno`
+                //         ) AS `narration`, 
+                //         'C' AS `tratype`, 
+                //         `tbl_receivable`.`chequedate`, 
+                //         `tbl_receivable`.`chequeno`,
+                //         SUM(`tbl_receivable_info`.`overpayment`) AS `overpayment`,
+                //         GROUP_CONCAT(
+                //             DISTINCT
+                //             CASE 
+                //                 WHEN `tbl_receivable_info`.`overpayment` > 0 AND `tbl_receivable_info`.`invoiceno` > 0
+                //                 THEN CONCAT('Invoice: ', `tbl_receivable_info`.`invoiceno`, ' Overpaid: ', FORMAT(`tbl_receivable_info`.`overpayment`, 2))
+                //                 WHEN `tbl_receivable_info`.`overpayment` > 0 AND `tbl_receivable_info`.`invoiceno` = 0
+                //                 THEN CONCAT('Unapplied Overpayment: ', FORMAT(`tbl_receivable_info`.`overpayment`, 2))
+                //                 ELSE NULL
+                //             END 
+                //             SEPARATOR ' | '
+                //         ) AS `overpayment_balance`,
+                //         0 AS `is_overpayment_only`
+                //     FROM `tbl_receivable_info` 
+                //     LEFT JOIN `tbl_receivable` ON `tbl_receivable`.`idtbl_receivable` = `tbl_receivable_info`.`tbl_receivable_idtbl_receivable` 
+                //     WHERE `tbl_receivable`.`recdate` BETWEEN ? AND ? 
+                //     AND `tbl_receivable`.`status`=? 
+                //     AND `tbl_receivable`.`poststatus`=? 
+                //     AND `tbl_receivable`.`payer`=? 
+                //     AND `tbl_receivable`.`tbl_company_idtbl_company`=? 
+                //     AND `tbl_receivable`.`tbl_company_branch_idtbl_company_branch`=? 
+                //     GROUP BY `tbl_receivable`.`idtbl_receivable` 
+                    
+                //     UNION ALL
+                    
+                //     -- Standalone Overpayments (not applied to any invoice)
+                //     SELECT 
+                //         `tbl_receivable`.`receiptno`, 
+                //         `tbl_receivable`.`recdate` AS `invpaydate`, 
+                //         `tbl_receivable_info`.`overpayment` AS `amount`,  -- Changed: Show overpayment amount here
+                //         CONCAT(
+                //             'OVERPAYMENT RECEIPT: ',
+                //             `tbl_receivable`.`narration`,
+                //             ' - Amount: ',
+                //             FORMAT(`tbl_receivable_info`.`overpayment`, 2),
+                //             ' (Not Applied)'
+                //         ) AS `narration`, 
+                //         'C' AS `tratype`, 
+                //         `tbl_receivable`.`chequedate`, 
+                //         `tbl_receivable`.`chequeno`,
+                //         `tbl_receivable_info`.`overpayment` AS `overpayment`,
+                //         CONCAT('Unapplied Overpayment Balance: ', FORMAT(`tbl_receivable_info`.`overpayment`, 2)) AS `overpayment_balance`,
+                //         1 AS `is_overpayment_only`
+                //     FROM `tbl_receivable_info` 
+                //     LEFT JOIN `tbl_receivable` ON `tbl_receivable`.`idtbl_receivable` = `tbl_receivable_info`.`tbl_receivable_idtbl_receivable` 
+                //     WHERE `tbl_receivable`.`recdate` BETWEEN ? AND ? 
+                //     AND `tbl_receivable`.`status`=? 
+                //     AND `tbl_receivable`.`poststatus`=? 
+                //     AND `tbl_receivable`.`payer`=? 
+                //     AND `tbl_receivable`.`tbl_company_idtbl_company`=? 
+                //     AND `tbl_receivable`.`tbl_company_branch_idtbl_company_branch`=? 
+                //     AND `tbl_receivable_info`.`invoiceno` = 0
+                //     AND `tbl_receivable_info`.`overpayment` > 0
+                //     AND `tbl_receivable_info`.`overpaysetoff` = 0
+                    
+                //     UNION ALL
+                    
+                //     -- Batch Transactions
+                //     SELECT 
+                //         `tbl_batch_transaction`.`invoiceno` AS `receiptno`,
+                //         `tbl_batch_transaction`.`transdate` AS `invpaydate`,
+                //         CASE 
+                //             WHEN `tbl_batch_transaction`.`crdr` = 'C' THEN `tbl_batch_transaction`.`creditamount`
+                //             WHEN `tbl_batch_transaction`.`crdr` = 'D' THEN `tbl_batch_transaction`.`debitamount`
+                //             ELSE 0
+                //         END AS `amount`,
+                //         `tbl_batch_transaction`.`narration` AS `narration`,
+                //         CASE 
+                //             WHEN `tbl_batch_transaction`.`crdr` = 'C' THEN 'C'
+                //             WHEN `tbl_batch_transaction`.`crdr` = 'D' THEN 'D'
+                //             ELSE NULL
+                //         END AS `tratype`,
+                //         '' AS `chequedate`,
+                //         '' AS `chequeno`,
+                //         0 AS `overpayment`,
+                //         '' AS `overpayment_balance`,
+                //         0 AS `is_overpayment_only`
+                //     FROM `tbl_batch_transaction`
+                //     LEFT JOIN `tbl_batch_transaction_main` ON `tbl_batch_transaction_main`.`idtbl_batch_transaction_main` = `tbl_batch_transaction`.`tbl_batch_transaction_main_idtbl_batch_transaction_main`
+                //     WHERE `tbl_batch_transaction`.`tbl_company_idtbl_company` = ? 
+                //     AND `tbl_batch_transaction`.`tbl_company_branch_idtbl_company_branch` = ?
+                //     AND `tbl_batch_transaction`.`tbl_customer_idtbl_customer` = ?
+                //     AND `tbl_batch_transaction`.`transdate` BETWEEN ? AND ?
+                //     AND `tbl_batch_transaction`.`status` = ?
+                //     AND `tbl_batch_transaction_main`.`status` = ?
+                //     AND `tbl_batch_transaction_main`.`approvestatus` = ?
+                // ) AS `u` 
+                // ORDER BY `u`.`invpaydate` ASC";
+
+                // // Parameters array for the query
+                // $params = [
+                //     // Sales Invoices parameters (positions 1-10)
+                //     $companyID, $branchID,                    // For print invoice join
+                //     $cust->idtbl_customer, $companyID, $branchID, // Customer and company
+                //     $fromdate, $todate,                       // Date range
+                //     1, 1,                                     // status and poststatus
+                //     $cust->idtbl_customer,                    // For NOT IN subquery
+                    
+                //     // Receivable Payments parameters (positions 11-17)
+                //     $fromdate, $todate,                       // Date range
+                //     1, 1,                                     // status and poststatus
+                //     $cust->idtbl_customer, $companyID, $branchID, // Payer and company
+                    
+                //     // Standalone Overpayments parameters (positions 18-24)
+                //     $fromdate, $todate,                       // Date range
+                //     1, 1,                                     // status and poststatus
+                //     $cust->idtbl_customer, $companyID, $branchID, // Payer and company
+                    
+                //     // Batch Transactions parameters (positions 25-32)
+                //     $companyID, $branchID,                    // Company and branch
+                //     $cust->idtbl_customer,                    // Customer
+                //     $fromdate, $todate,                       // Date range
+                //     1, 1, 1                                   // status, main status, approve status
+                // ];
+
+                // $transactions = $this->db->query($sql, $params)->result();
+
+
+
+
+                $sql = "SELECT * FROM (
+                    -- Sales Invoices (Debit transactions)
+                    SELECT 
+                        `invno` AS `receiptno`, 
+                        `invdate` AS `invpaydate`, 
+                        `invamount` AS `amount`, 
+                        GROUP_CONCAT(DISTINCT `tbl_print_invoicedetail`.`job`) AS `narration`, 
+                        'D' AS `tratype`, 
+                        '' AS `chequedate`, 
+                        '' AS `chequeno`,
+                        0 AS `overpayment`,
+                        '' AS `overpayment_balance`,
+                        0 AS `is_overpayment_only`
+                    FROM `tbl_sales_info` 
+                    LEFT JOIN `tbl_print_invoice` ON (
+                        `tbl_print_invoice`.`inv_no` = `tbl_sales_info`.`invno` 
+                        OR 
+                        `tbl_print_invoice`.`inv_no` = CONCAT('INV', `tbl_sales_info`.`invno`)
+                    ) 
+                    AND `tbl_print_invoice`.`tbl_company_idtbl_company`=? 
+                    AND `tbl_print_invoice`.`tbl_company_branch_idtbl_company_branch`=?
+                    LEFT JOIN `tbl_print_invoicedetail` ON `tbl_print_invoicedetail`.`tbl_print_invoice_idtbl_print_invoice` = `tbl_print_invoice`.`idtbl_print_invoice` 
+                    WHERE `tbl_sales_info`.`tbl_customer_idtbl_customer`=? 
+                    AND `tbl_sales_info`.`tbl_company_idtbl_company`=? 
+                    AND `tbl_sales_info`.`tbl_company_branch_idtbl_company_branch`=? 
+                    AND `tbl_sales_info`.`invdate` BETWEEN ? AND ? 
+                    AND `tbl_sales_info`.`status`=? 
+                    AND `tbl_sales_info`.`poststatus`=? 
+                    AND `tbl_sales_info`.`invno` NOT IN (
+                        SELECT `invoiceno` 
+                        FROM `tbl_batch_transaction` 
+                        WHERE `crdr` = 'C' 
+                        AND `status` = 1
+                        AND `tbl_customer_idtbl_customer` = ?
+                    ) 
+                    GROUP BY `tbl_sales_info`.`invno` 
+                    
+                    UNION ALL 
+                    
+                    -- Receivable Payments (Credit transactions) with overpayment info
+                    SELECT 
+                        `tbl_receivable`.`receiptno`, 
+                        `tbl_receivable`.`recdate` AS `invpaydate`, 
+                        SUM(`tbl_receivable_info`.`amount`) AS `amount`, 
+                        CONCAT(
+                            `tbl_receivable`.`narration`,
+                            ' ',
+                            GROUP_CONCAT(
+                                DISTINCT 
+                                CASE 
+                                    WHEN `tbl_receivable_info`.`overpayment` > 0 AND `tbl_receivable_info`.`invoiceno` > 0 
+                                    THEN CONCAT(`tbl_receivable_info`.`invoiceno`, ' (Overpaid: ', FORMAT(`tbl_receivable_info`.`overpayment`, 2), ')')
+                                    WHEN `tbl_receivable_info`.`overpayment` > 0 AND `tbl_receivable_info`.`invoiceno` = 0 
+                                    THEN CONCAT('Overpayment Only: ', FORMAT(`tbl_receivable_info`.`overpayment`, 2))
+                                    ELSE `tbl_receivable_info`.`invoiceno`
+                                END 
+                                SEPARATOR ', '
+                            ),
+                            ' - ',
+                            `tbl_receivable`.`chequeno`
+                        ) AS `narration`, 
+                        'C' AS `tratype`, 
+                        `tbl_receivable`.`chequedate`, 
+                        `tbl_receivable`.`chequeno`,
+                        SUM(`tbl_receivable_info`.`overpayment`) AS `overpayment`,
+                        GROUP_CONCAT(
+                            DISTINCT
+                            CASE 
+                                WHEN `tbl_receivable_info`.`overpayment` > 0 AND `tbl_receivable_info`.`invoiceno` > 0
+                                THEN CONCAT('Invoice: ', `tbl_receivable_info`.`invoiceno`, ' Overpaid: ', FORMAT(`tbl_receivable_info`.`overpayment`, 2))
+                                WHEN `tbl_receivable_info`.`overpayment` > 0 AND `tbl_receivable_info`.`invoiceno` = 0
+                                THEN CONCAT('Unapplied Overpayment: ', FORMAT(`tbl_receivable_info`.`overpayment`, 2))
+                                ELSE NULL
+                            END 
+                            SEPARATOR ' | '
+                        ) AS `overpayment_balance`,
+                        0 AS `is_overpayment_only`
+                    FROM `tbl_receivable_info` 
+                    LEFT JOIN `tbl_receivable` ON `tbl_receivable`.`idtbl_receivable` = `tbl_receivable_info`.`tbl_receivable_idtbl_receivable` 
+                    WHERE `tbl_receivable`.`recdate` BETWEEN ? AND ? 
+                    AND `tbl_receivable`.`status`=? 
+                    AND `tbl_receivable`.`poststatus`=? 
+                    AND `tbl_receivable`.`payer`=? 
+                    AND `tbl_receivable`.`tbl_company_idtbl_company`=? 
+                    AND `tbl_receivable`.`tbl_company_branch_idtbl_company_branch`=? 
+                    GROUP BY `tbl_receivable`.`idtbl_receivable` 
+                    
+                    UNION ALL
+                    
+                    -- Standalone Overpayments (not applied to any invoice)
+                    SELECT 
+                        `tbl_receivable`.`receiptno`, 
+                        `tbl_receivable`.`recdate` AS `invpaydate`, 
+                        `tbl_receivable_info`.`overpayment` AS `amount`,
+                        CONCAT(
+                            'OVERPAYMENT RECEIPT: ',
+                            `tbl_receivable`.`narration`,
+                            ' - Amount: ',
+                            FORMAT(`tbl_receivable_info`.`overpayment`, 2),
+                            ' (Not Applied)'
+                        ) AS `narration`, 
+                        'C' AS `tratype`, 
+                        `tbl_receivable`.`chequedate`, 
+                        `tbl_receivable`.`chequeno`,
+                        `tbl_receivable_info`.`overpayment` AS `overpayment`,
+                        CONCAT('Unapplied Overpayment Balance: ', FORMAT(`tbl_receivable_info`.`overpayment`, 2)) AS `overpayment_balance`,
+                        1 AS `is_overpayment_only`
+                    FROM `tbl_receivable_info` 
+                    LEFT JOIN `tbl_receivable` ON `tbl_receivable`.`idtbl_receivable` = `tbl_receivable_info`.`tbl_receivable_idtbl_receivable` 
+                    WHERE `tbl_receivable`.`recdate` BETWEEN ? AND ? 
+                    AND `tbl_receivable`.`status`=? 
+                    AND `tbl_receivable`.`poststatus`=? 
+                    AND `tbl_receivable`.`payer`=? 
+                    AND `tbl_receivable`.`tbl_company_idtbl_company`=? 
+                    AND `tbl_receivable`.`tbl_company_branch_idtbl_company_branch`=? 
+                    AND `tbl_receivable_info`.`invoiceno` = 0
+                    AND `tbl_receivable_info`.`overpayment` > 0
+                    AND `tbl_receivable_info`.`overpaysetoff` = 0
+                    
+                    UNION ALL
+                    
+                    -- Batch Transactions
+                    SELECT 
+                        `tbl_batch_transaction`.`invoiceno` AS `receiptno`,
+                        `tbl_batch_transaction`.`transdate` AS `invpaydate`,
+                        CASE 
+                            WHEN `tbl_batch_transaction`.`crdr` = 'C' THEN `tbl_batch_transaction`.`creditamount`
+                            WHEN `tbl_batch_transaction`.`crdr` = 'D' THEN `tbl_batch_transaction`.`debitamount`
+                            ELSE 0
+                        END AS `amount`,
+                        `tbl_batch_transaction`.`narration` AS `narration`,
+                        CASE 
+                            WHEN `tbl_batch_transaction`.`crdr` = 'C' THEN 'C'
+                            WHEN `tbl_batch_transaction`.`crdr` = 'D' THEN 'D'
+                            ELSE NULL
+                        END AS `tratype`,
+                        '' AS `chequedate`,
+                        '' AS `chequeno`,
+                        0 AS `overpayment`,
+                        '' AS `overpayment_balance`,
+                        0 AS `is_overpayment_only`
+                    FROM `tbl_batch_transaction`
+                    LEFT JOIN `tbl_batch_transaction_main` ON `tbl_batch_transaction_main`.`idtbl_batch_transaction_main` = `tbl_batch_transaction`.`tbl_batch_transaction_main_idtbl_batch_transaction_main`
+                    WHERE `tbl_batch_transaction`.`tbl_company_idtbl_company` = ? 
+                    AND `tbl_batch_transaction`.`tbl_company_branch_idtbl_company_branch` = ?
+                    AND `tbl_batch_transaction`.`tbl_customer_idtbl_customer` = ?
+                    AND `tbl_batch_transaction`.`transdate` BETWEEN ? AND ?
+                    AND `tbl_batch_transaction`.`status` = ?
+                    AND `tbl_batch_transaction_main`.`status` = ?
+                    AND `tbl_batch_transaction_main`.`approvestatus` = ?
+
+                    UNION ALL
+
+                    -- Manual Account Transactions
+                    SELECT
+                        `tbl_account_transaction_manual`.`batchno` AS `receiptno`,
+                        `tbl_account_transaction_manual`.`tradate` AS `invpaydate`,
+                        `tbl_account_transaction_manual`.`amount` AS `amount`,
+                        `tbl_account_transaction_manual`.`narration` AS `narration`,
+                        `tbl_account_transaction_manual`.`crdr` AS `tratype`,
+                        '' AS `chequedate`,
+                        '' AS `chequeno`,
+                        0 AS `overpayment`,
+                        '' AS `overpayment_balance`,
+                        0 AS `is_overpayment_only`
+                    FROM `tbl_account_transaction_manual`
+                    INNER JOIN `tbl_account_transaction_manual_main`
+                        ON `tbl_account_transaction_manual_main`.`batchno` = `tbl_account_transaction_manual`.`batchno`
+                        AND `tbl_account_transaction_manual_main`.`tbl_company_idtbl_company` = ?
+                        AND `tbl_account_transaction_manual_main`.`tbl_company_branch_idtbl_company_branch` = ?
+                        AND `tbl_account_transaction_manual_main`.`poststatus` = ?
+                        AND `tbl_account_transaction_manual_main`.`status` = ?
+                    INNER JOIN `tbl_account_detail_other`
+                        ON `tbl_account_detail_other`.`tbl_account_detail_idtbl_account_detail` = `tbl_account_transaction_manual`.`tbl_account_detail_idtbl_account_detail`
+                        AND `tbl_account_detail_other`.`otheroptiontype` = 2
+                        AND `tbl_account_detail_other`.`otheroption` = ?
+                        AND `tbl_account_detail_other`.`tbl_company_idtbl_company` = ?
+                        AND `tbl_account_detail_other`.`tbl_company_branch_idtbl_company_branch` = ?
+                    WHERE `tbl_account_transaction_manual`.`tbl_company_idtbl_company` = ?
+                    AND `tbl_account_transaction_manual`.`tbl_company_branch_idtbl_company_branch` = ?
+                    AND `tbl_account_transaction_manual`.`tradate` BETWEEN ? AND ?
+                    AND `tbl_account_transaction_manual`.`status` = ?
+
+                ) AS `u` 
+                ORDER BY `u`.`invpaydate` ASC";
+
+                $params = [
+                    // Sales Invoices parameters (positions 1-10)
+                    $companyID, $branchID,                        // print invoice join
+                    $cust->idtbl_customer, $companyID, $branchID, // customer and company
+                    $fromdate, $todate,                           // date range
+                    1, 1,                                         // status, poststatus
+                    $cust->idtbl_customer,                        // NOT IN subquery
+
+                    // Receivable Payments parameters (positions 11-17)
+                    $fromdate, $todate,                           // date range
+                    1, 1,                                         // status, poststatus
+                    $cust->idtbl_customer, $companyID, $branchID, // payer and company
+
+                    // Standalone Overpayments parameters (positions 18-24)
+                    $fromdate, $todate,                           // date range
+                    1, 1,                                         // status, poststatus
+                    $cust->idtbl_customer, $companyID, $branchID, // payer and company
+
+                    // Batch Transactions parameters (positions 25-32)
+                    $companyID, $branchID,                        // company and branch
+                    $cust->idtbl_customer,                        // customer
+                    $fromdate, $todate,                           // date range
+                    1, 1, 1,                                      // status, main status, approve status
+
+                    // Manual Account Transactions parameters (positions 33-45)
+                    $companyID, $branchID,                        // manual_main company/branch (JOIN)
+                    1, 1,                                         // manual_main poststatus, status (JOIN)
+                    $cust->idtbl_customer,                        // otheroption = customer ID (JOIN)
+                    $companyID, $branchID,                        // account_detail_other company/branch (JOIN)
+                    $companyID, $branchID,                        // manual company/branch (WHERE)
+                    $fromdate, $todate,                           // date range
+                    1                                             // manual status (WHERE)
+                ];
+
+                $transactions = $this->db->query($sql, $params)->result();
                 // print_r($this->db->last_query()); 
                 
                 // Start customer section  
@@ -202,9 +616,9 @@ class Debtorreportinfo extends CI_Model{
             }
 
             //Get Post-dated cheque info
-            $this->db->select('tbl_receivable.receiptno, tbl_receivable.amount, tbl_receivable.chequedate, tbl_receivable.chequeno, tbl_receivable.narration, tbl_customer.customer');
+            $this->db->select("tbl_receivable.receiptno, tbl_receivable.amount, tbl_receivable.chequedate, tbl_receivable.chequeno, tbl_receivable.narration, $tablename.$column2 AS customer");
             $this->db->from('tbl_receivable');
-            $this->db->join('tbl_customer', 'tbl_customer.idtbl_customer = tbl_receivable.payer', 'left');
+            $this->db->join("$tablename", "$tablename.$column1 = tbl_receivable.payer", 'left');
             $this->db->where('tbl_receivable.status', '1');
             $this->db->where('tbl_receivable.postdatedstatus', '1');
             $this->db->where('tbl_receivable.poststatus', '0');
@@ -290,208 +704,215 @@ class Debtorreportinfo extends CI_Model{
             $html .= '</table>';
             $html .= '</div>'; 
 
-        } else {
-            // Specific customer selected - show detailed statement
-            // Get Opening Balance
-            $sqlOpenBalance = "SELECT ((SELECT COALESCE(SUM(`amount`), 0) FROM `tbl_sales_info` WHERE `status`=? AND `invdate`<?";
-            if(!empty($customer)): $sqlOpenBalance.=" AND `tbl_customer_idtbl_customer`='$customer'"; endif; 
-            $sqlOpenBalance.=" AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=?)-(SELECT COALESCE(SUM(`amount`), 0) FROM `tbl_receivable` WHERE `status`=? AND `recdate`<?";
-            if(!empty($customer)): $sqlOpenBalance.=" AND `payer`='$customer'"; endif;
-            $sqlOpenBalance.=" AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=?)) AS `openbalance`";
+        // } else {
+        //     // Specific customer selected - show detailed statement
+        //     // Get Opening Balance
+        //     $sqlOpenBalance = "SELECT ((SELECT COALESCE(SUM(`amount`), 0) FROM `tbl_sales_info` WHERE `status`=? AND `invdate`<?";
+        //     if(!empty($customer)): $sqlOpenBalance.=" AND `tbl_customer_idtbl_customer`='$customer'"; endif; 
+        //     $sqlOpenBalance.=" AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=?)-(SELECT COALESCE(SUM(`amount`), 0) FROM `tbl_receivable` WHERE `status`=? AND `recdate`<?";
+        //     if(!empty($customer)): $sqlOpenBalance.=" AND `payer`='$customer'"; endif;
+        //     $sqlOpenBalance.=" AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=?)) AS `openbalance`";
             
-            $params = [1, $fromdate, $companyID, $branchID, 1, $fromdate, $companyID, $branchID];
-            $respondopenbalance = $this->db->query($sqlOpenBalance, $params);
-            $openingBalance = $respondopenbalance->row()->openbalance;
+        //     $params = [1, $fromdate, $companyID, $branchID, 1, $fromdate, $companyID, $branchID];
+        //     $respondopenbalance = $this->db->query($sqlOpenBalance, $params);
+        //     $openingBalance = $respondopenbalance->row()->openbalance;
 
-            // Get Transactions
-            $sql="SELECT * FROM (SELECT `invno` AS `receiptno`, `invdate` AS `invpaydate`, `invamount` AS `amount`, GROUP_CONCAT(`tbl_print_invoicedetail`.`job`) AS `narration`, 'D' AS `tratype`, '' AS `chequedate`, '' AS `chequeno` FROM `tbl_sales_info` LEFT JOIN `tbl_print_invoice` ON (
-                `tbl_print_invoice`.`inv_no` = `tbl_sales_info`.`invno` 
-                OR 
-                `tbl_print_invoice`.`inv_no` = CONCAT('INV', `tbl_sales_info`.`invno`)
-            ) LEFT JOIN `tbl_print_invoicedetail` ON  `tbl_print_invoicedetail`.`tbl_print_invoice_idtbl_print_invoice` = `tbl_print_invoice`.`idtbl_print_invoice` WHERE 1=1"; 
-            if(!empty($customer)): $sql.=" AND `tbl_sales_info`.`tbl_customer_idtbl_customer`='$customer'";endif; 
-            $sql.=" AND `tbl_sales_info`.`tbl_company_idtbl_company`=? AND `tbl_sales_info`.`tbl_company_branch_idtbl_company_branch`=? AND `tbl_print_invoice`.`tbl_company_idtbl_company`=? AND `tbl_print_invoice`.`tbl_company_branch_idtbl_company_branch`=? AND `tbl_sales_info`.`invdate` BETWEEN ? AND ? AND `tbl_sales_info`.`status`=? GROUP BY `tbl_sales_info`.`invno` UNION ALL 
-            SELECT `tbl_receivable`.`receiptno`, `tbl_receivable`.`recdate` AS `invpaydate`, SUM(`tbl_receivable_info`.`amount`) AS `amount`, CONCAT(
-                `tbl_receivable`.`narration`,
-                ' ',
-                GROUP_CONCAT(`tbl_receivable_info`.`invoiceno` SEPARATOR ', '),
-                ' - ',
-                `tbl_receivable`.`chequeno`
-            ) AS `narration`, 'C' AS `tratype`, `tbl_receivable`.`chequedate`, `tbl_receivable`.`chequeno` FROM `tbl_receivable_info` LEFT JOIN `tbl_receivable` ON `tbl_receivable`.`idtbl_receivable`=`tbl_receivable_info`.`tbl_receivable_idtbl_receivable` WHERE `tbl_receivable`.`recdate` BETWEEN ? AND ? AND `tbl_receivable`.`status`=? AND `tbl_receivable`.`poststatus`=? AND `tbl_receivable`.`tbl_company_idtbl_company`=? AND `tbl_receivable`.`tbl_company_branch_idtbl_company_branch`=?";
-            if(!empty($customer)): $sql.=" AND `tbl_receivable`.`payer`='$customer'"; endif;
-            $sql.=" GROUP BY `tbl_receivable_info`.`tbl_receivable_idtbl_receivable`) AS `u` ORDER BY `u`.`invpaydate` ASC";
+        //     // Get Transactions
+        //     $sql="SELECT * FROM (SELECT `invno` AS `receiptno`, `invdate` AS `invpaydate`, `invamount` AS `amount`, GROUP_CONCAT(`tbl_print_invoicedetail`.`job`) AS `narration`, 'D' AS `tratype`, '' AS `chequedate`, '' AS `chequeno` FROM `tbl_sales_info` LEFT JOIN `tbl_print_invoice` ON (
+        //         `tbl_print_invoice`.`inv_no` = `tbl_sales_info`.`invno` 
+        //         OR 
+        //         `tbl_print_invoice`.`inv_no` = CONCAT('INV', `tbl_sales_info`.`invno`)
+        //     ) LEFT JOIN `tbl_print_invoicedetail` ON  `tbl_print_invoicedetail`.`tbl_print_invoice_idtbl_print_invoice` = `tbl_print_invoice`.`idtbl_print_invoice` WHERE 1=1"; 
+        //     if(!empty($customer)): $sql.=" AND `tbl_sales_info`.`tbl_customer_idtbl_customer`='$customer'";endif; 
+        //     $sql.=" AND `tbl_sales_info`.`tbl_company_idtbl_company`=? AND `tbl_sales_info`.`tbl_company_branch_idtbl_company_branch`=? AND `tbl_print_invoice`.`tbl_company_idtbl_company`=? AND `tbl_print_invoice`.`tbl_company_branch_idtbl_company_branch`=? AND `tbl_sales_info`.`invdate` BETWEEN ? AND ? AND `tbl_sales_info`.`status`=? GROUP BY `tbl_sales_info`.`invno` UNION ALL 
+        //     SELECT `tbl_receivable`.`receiptno`, `tbl_receivable`.`recdate` AS `invpaydate`, SUM(`tbl_receivable_info`.`amount`) AS `amount`, CONCAT(
+        //         `tbl_receivable`.`narration`,
+        //         ' ',
+        //         GROUP_CONCAT(`tbl_receivable_info`.`invoiceno` SEPARATOR ', '),
+        //         ' - ',
+        //         `tbl_receivable`.`chequeno`
+        //     ) AS `narration`, 'C' AS `tratype`, `tbl_receivable`.`chequedate`, `tbl_receivable`.`chequeno` FROM `tbl_receivable_info` LEFT JOIN `tbl_receivable` ON `tbl_receivable`.`idtbl_receivable`=`tbl_receivable_info`.`tbl_receivable_idtbl_receivable` WHERE `tbl_receivable`.`recdate` BETWEEN ? AND ? AND `tbl_receivable`.`status`=? AND `tbl_receivable`.`poststatus`=? AND `tbl_receivable`.`tbl_company_idtbl_company`=? AND `tbl_receivable`.`tbl_company_branch_idtbl_company_branch`=?";
+        //     if(!empty($customer)): $sql.=" AND `tbl_receivable`.`payer`='$customer'"; endif;
+        //     $sql.=" GROUP BY `tbl_receivable_info`.`tbl_receivable_idtbl_receivable`) AS `u` ORDER BY `u`.`invpaydate` ASC";
             
-            $respond = $this->db->query($sql, array($companyID, $branchID, $companyID, $branchID, $fromdate, $todate, 1, $fromdate, $todate, 1, 1, $companyID, $branchID));
-            $transactions = $respond->result();
-            // print_r($this->db->last_query());
+        //     $respond = $this->db->query($sql, array($companyID, $branchID, $companyID, $branchID, $fromdate, $todate, 1, $fromdate, $todate, 1, 1, $companyID, $branchID));
+        //     $transactions = $respond->result();
+        //     // print_r($this->db->last_query());
 
-            // Get Customer Info
-            $customerInfo = [];
-            if(!empty($customer)) {
-                $custQuery = $this->db->query("SELECT * FROM tbl_customer WHERE idtbl_customer = ?", [$customer]);
-                $customerInfo = $custQuery->row();
-            }
+        //     // Get Customer Info
+        //     $customerInfo = [];
+        //     if(!empty($customer)) {
+        //         $custQuery = $this->db->query("SELECT * FROM tbl_customer WHERE idtbl_customer = ?", [$customer]);
+        //         $customerInfo = $custQuery->row();
+        //     }
 
-            //Get Post-dated cheque info
-            $this->db->select('tbl_receivable.receiptno, tbl_receivable.amount, tbl_receivable.chequedate, tbl_receivable.chequeno, tbl_receivable.narration, tbl_customer.customer');
-            $this->db->from('tbl_receivable');
-            $this->db->join('tbl_customer', 'tbl_customer.idtbl_customer = tbl_receivable.payer', 'left');
-            $this->db->where('tbl_receivable.status', '1');
-            $this->db->where('tbl_receivable.postdatedstatus', '1');
-            $this->db->where('tbl_receivable.poststatus', '0');
-            if(!empty($customer)) {
-                $this->db->where('tbl_receivable.payer', $customer);
-            }
-            $respondpostdated=$this->db->get();
+        //     //Get Post-dated cheque info
+        //     $this->db->select('tbl_receivable.receiptno, tbl_receivable.amount, tbl_receivable.chequedate, tbl_receivable.chequeno, tbl_receivable.narration, tbl_customer.customer');
+        //     $this->db->from('tbl_receivable');
+        //     $this->db->join('tbl_customer', 'tbl_customer.idtbl_customer = tbl_receivable.payer', 'left');
+        //     $this->db->where('tbl_receivable.status', '1');
+        //     $this->db->where('tbl_receivable.postdatedstatus', '1');
+        //     $this->db->where('tbl_receivable.poststatus', '0');
+        //     if(!empty($customer)) {
+        //         $this->db->where('tbl_receivable.payer', $customer);
+        //     }
+        //     $respondpostdated=$this->db->get();
 
-            // Transaction Table
-            $html .= '<div class="table-responsive">';
-            $html .= '<table class="table table-bordered table-striped table-sm small" id="debtorStatementTable">';
-            $html .= '<thead>';
-            $html .= '<tr>';
-            $html .= '<th>#</th>';
-            $html .= '<th>Date</th>';
-            $html .= '<th>Document No</th>';
-            $html .= '<th>Description</th>';
-            $html .= '<th>Type</th>';
-            $html .= '<th class="text-right">Debit</th>';
-            $html .= '<th class="text-right">Credit</th>';
-            $html .= '<th class="text-right">Balance</th>';
-            $html .= '</tr>';
-            $html .= '</thead>';
-            $html .= '<tbody>';
+        //     // Transaction Table
+        //     $html .= '<div class="table-responsive">';
+        //     $html .= '<table class="table table-bordered table-striped table-sm small" id="debtorStatementTable">';
+        //     $html .= '<thead>';
+        //     $html .= '<tr>';
+        //     $html .= '<th>#</th>';
+        //     $html .= '<th>Date</th>';
+        //     $html .= '<th>Document No</th>';
+        //     $html .= '<th>Description</th>';
+        //     $html .= '<th>Type</th>';
+        //     $html .= '<th class="text-right">Debit</th>';
+        //     $html .= '<th class="text-right">Credit</th>';
+        //     $html .= '<th class="text-right">Balance</th>';
+        //     $html .= '</tr>';
+        //     $html .= '</thead>';
+        //     $html .= '<tbody>';
 
-            $runningBalance = $openingBalance;
-            $counter = 1;
-            $totalDebit = 0;
-            $totalCredit = 0;
+        //     $runningBalance = $openingBalance;
+        //     $counter = 1;
+        //     $totalDebit = 0;
+        //     $totalCredit = 0;
 
-            // Opening Balance Row
-            $html .= '<tr>';
-            $html .= '<th>&nbsp;</th>';
-            $html .= '<th>' . date('d/m/Y', strtotime($fromdate)) . '</th>';
-            $html .= '<th>-</th>';
-            $html .= '<th>Opening Balance</th>';
-            $html .= '<th>Balance B/F</th>';
-            $html .= '<th class="text-right">-</th>';
-            $html .= '<th class="text-right">-</th>';
-            $html .= '<th class="text-right">' . number_format($runningBalance, 2) . '</th>';
-            $html .= '</tr>';
+        //     // Opening Balance Row
+        //     $html .= '<tr>';
+        //     $html .= '<th>&nbsp;</th>';
+        //     $html .= '<th>' . date('d/m/Y', strtotime($fromdate)) . '</th>';
+        //     $html .= '<th>-</th>';
+        //     $html .= '<th>Opening Balance</th>';
+        //     $html .= '<th>Balance B/F</th>';
+        //     $html .= '<th class="text-right">-</th>';
+        //     $html .= '<th class="text-right">-</th>';
+        //     $html .= '<th class="text-right">' . number_format($runningBalance, 2) . '</th>';
+        //     $html .= '</tr>';
 
-            foreach($transactions as $transaction) {
-                if($transaction->tratype == 'D') {
-                    // Invoice/Debit
-                    $runningBalance += $transaction->amount;
-                    $totalDebit += $transaction->amount;
-                    $debitAmount = number_format($transaction->amount, 2);
-                    $creditAmount = '-';
-                    $typeBadge = 'Invoice';
-                } else {
-                    // Receipt/Credit
-                    $runningBalance -= $transaction->amount;
-                    $totalCredit += $transaction->amount;
-                    $debitAmount = '-';
-                    $creditAmount = number_format($transaction->amount, 2);
-                    $typeBadge = 'Receipt';
-                }
+        //     foreach($transactions as $transaction) {
+        //         if($transaction->tratype == 'D') {
+        //             // Invoice/Debit
+        //             $runningBalance += $transaction->amount;
+        //             $totalDebit += $transaction->amount;
+        //             $debitAmount = number_format($transaction->amount, 2);
+        //             $creditAmount = '-';
+        //             $typeBadge = 'Invoice';
+        //         } else {
+        //             // Receipt/Credit
+        //             $runningBalance -= $transaction->amount;
+        //             $totalCredit += $transaction->amount;
+        //             $debitAmount = '-';
+        //             $creditAmount = number_format($transaction->amount, 2);
+        //             $typeBadge = 'Receipt';
+        //         }
 
-                $html .= '<tr>';
-                $html .= '<td>' . $counter . '</td>';
-                $html .= '<td>' . date('d/m/Y', strtotime($transaction->invpaydate)) . '</td>';
-                $html .= '<td>' . $transaction->receiptno . '</td>';
-                $html .= '<td>' . $transaction->narration . '</td>';
-                $html .= '<td>' . $typeBadge . '</td>';
-                $html .= '<td class="text-right">' . $debitAmount . '</td>';
-                $html .= '<td class="text-right">' . $creditAmount . '</td>';
-                $html .= '<td class="text-right">' . number_format($runningBalance, 2) . '</td>';
-                $html .= '</tr>';
+        //         $html .= '<tr>';
+        //         $html .= '<td>' . $counter . '</td>';
+        //         $html .= '<td>' . date('d/m/Y', strtotime($transaction->invpaydate)) . '</td>';
+        //         $html .= '<td>' . $transaction->receiptno . '</td>';
+        //         $html .= '<td>' . $transaction->narration . '</td>';
+        //         $html .= '<td>' . $typeBadge . '</td>';
+        //         $html .= '<td class="text-right">' . $debitAmount . '</td>';
+        //         $html .= '<td class="text-right">' . $creditAmount . '</td>';
+        //         $html .= '<td class="text-right">' . number_format($runningBalance, 2) . '</td>';
+        //         $html .= '</tr>';
 
-                $counter++;
-            }
+        //         $counter++;
+        //     }
 
-            // Closing Balance Row
-            $html .= '<tr>';
-            $html .= '<th colspan="5" class="text-right">Closing Balance (without pd cheque)</th>';
-            $html .= '<th class="text-right">' . number_format($totalDebit, 2) . '</th>';
-            $html .= '<th class="text-right">' . number_format($totalCredit, 2) . '</th>';
-            $html .= '<th class="text-right">' . number_format($runningBalance, 2) . '</th>';
-            $html .= '</tr>';
+        //     // Closing Balance Row
+        //     $html .= '<tr>';
+        //     $html .= '<th colspan="5" class="text-right">Closing Balance (without pd cheque)</th>';
+        //     $html .= '<th class="text-right">' . number_format($totalDebit, 2) . '</th>';
+        //     $html .= '<th class="text-right">' . number_format($totalCredit, 2) . '</th>';
+        //     $html .= '<th class="text-right">' . number_format($runningBalance, 2) . '</th>';
+        //     $html .= '</tr>';
 
-            //Post-dated cheque info
-            if(!empty($respondpostdated->result())):
-                $totalpostdated=0;
-                $chno=1;
-                $html .= '<tr>';
-                $html .='<th colspan="8">Post-dated cheque information.</th>';
-                $html .= '</tr>';
-                $html .= '<tr>';
-                $html .= '<th>#</th>';
-                $html .= '<th>Customer</th>';
-                $html .= '<th>Receipt no</th>';
-                $html .= '<th>Cheque date</th>';
-                $html .= '<th>Cheque no</th>';
-                $html .= '<th class="text-left">Narration</th>';
-                $html .= '<th class="text-right">Amount</th>';
-                $html .= '<th>&nbsp;</th>';
-                $html .= '</tr>';
-                foreach($respondpostdated->result() as $rowpostdated):
-                    $html .= '<tr>';
-                    $html .= '<td>'.$chno.'</td>';
-                    $html .= '<td>'.$rowpostdated->customer.'</td>';
-                    $html .= '<td>'.$rowpostdated->receiptno.'</td>';
-                    $html .= '<td>'.$rowpostdated->chequedate.'</td>';
-                    $html .= '<td>'.$rowpostdated->chequeno.'</td>';
-                    $html .= '<td class="text-left">'.$rowpostdated->narration.'</td>';
-                    $html .= '<td class="text-right">'.number_format($rowpostdated->amount, 2).'</td>';
-                    $html .= '<td>&nbsp;</td>';
-                    $html .= '</tr>';
+        //     //Post-dated cheque info
+        //     if(!empty($respondpostdated->result())):
+        //         $totalpostdated=0;
+        //         $chno=1;
+        //         $html .= '<tr>';
+        //         $html .='<th colspan="8">Post-dated cheque information.</th>';
+        //         $html .= '</tr>';
+        //         $html .= '<tr>';
+        //         $html .= '<th>#</th>';
+        //         $html .= '<th>Customer</th>';
+        //         $html .= '<th>Receipt no</th>';
+        //         $html .= '<th>Cheque date</th>';
+        //         $html .= '<th>Cheque no</th>';
+        //         $html .= '<th class="text-left">Narration</th>';
+        //         $html .= '<th class="text-right">Amount</th>';
+        //         $html .= '<th>&nbsp;</th>';
+        //         $html .= '</tr>';
+        //         foreach($respondpostdated->result() as $rowpostdated):
+        //             $html .= '<tr>';
+        //             $html .= '<td>'.$chno.'</td>';
+        //             $html .= '<td>'.$rowpostdated->customer.'</td>';
+        //             $html .= '<td>'.$rowpostdated->receiptno.'</td>';
+        //             $html .= '<td>'.$rowpostdated->chequedate.'</td>';
+        //             $html .= '<td>'.$rowpostdated->chequeno.'</td>';
+        //             $html .= '<td class="text-left">'.$rowpostdated->narration.'</td>';
+        //             $html .= '<td class="text-right">'.number_format($rowpostdated->amount, 2).'</td>';
+        //             $html .= '<td>&nbsp;</td>';
+        //             $html .= '</tr>';
 
-                    $totalpostdated=$totalpostdated+$rowpostdated->amount;
-                    $chno++;
-                endforeach;
-                $html .= '<tr>';
-                $html .='<th class="text-right" colspan="6">Total Post-dated</th>';
-                $html .= '<th class="text-right">'.number_format($totalpostdated, 2).'</th>';
-                $html .= '<th>&nbsp;</th>';
-                $html .= '</tr>';
+        //             $totalpostdated=$totalpostdated+$rowpostdated->amount;
+        //             $chno++;
+        //         endforeach;
+        //         $html .= '<tr>';
+        //         $html .='<th class="text-right" colspan="6">Total Post-dated</th>';
+        //         $html .= '<th class="text-right">'.number_format($totalpostdated, 2).'</th>';
+        //         $html .= '<th>&nbsp;</th>';
+        //         $html .= '</tr>';
 
-                // Calculate and add Final Close Balance row
-                $finalCloseBalance = $runningBalance - $totalpostdated;
-                $html .= '<tr>';
-                $html .= '<th colspan="5" class="text-right">Final Close Balance</th>';
-                $html .= '<th class="text-right">-</th>';
-                $html .= '<th class="text-right">-</th>';
-                $html .= '<th class="text-right">' . number_format($finalCloseBalance, 2) . '</th>';
-                $html .= '</tr>';
+        //         // Calculate and add Final Close Balance row
+        //         $finalCloseBalance = $runningBalance - $totalpostdated;
+        //         $html .= '<tr>';
+        //         $html .= '<th colspan="5" class="text-right">Final Close Balance</th>';
+        //         $html .= '<th class="text-right">-</th>';
+        //         $html .= '<th class="text-right">-</th>';
+        //         $html .= '<th class="text-right">' . number_format($finalCloseBalance, 2) . '</th>';
+        //         $html .= '</tr>';
                 
-                // Add a summary row showing the calculation
-                $html .= '<tr>';
-                $html .= '<td colspan="8" style="font-style: italic;">';
-                $html .= 'Calculation: Closing Balance (' . number_format($runningBalance, 2) . ') - Post-dated Total (' . number_format($totalpostdated, 2) . ') = Final Close Balance (' . number_format($finalCloseBalance, 2) . ')';
-                $html .= '</td>';
-                $html .= '</tr>';
-            else:
-                // If no post-dated cheques, final close balance equals closing balance
-                $html .= '<tr>';
-                $html .= '<th colspan="5" class="text-right">Final Close Balance</th>';
-                $html .= '<th class="text-right">-</th>';
-                $html .= '<th class="text-right">-</th>';
-                $html .= '<th class="text-right">' . number_format($runningBalance, 2) . '</th>';
-                $html .= '</tr>';
-            endif;
+        //         // Add a summary row showing the calculation
+        //         $html .= '<tr>';
+        //         $html .= '<td colspan="8" style="font-style: italic;">';
+        //         $html .= 'Calculation: Closing Balance (' . number_format($runningBalance, 2) . ') - Post-dated Total (' . number_format($totalpostdated, 2) . ') = Final Close Balance (' . number_format($finalCloseBalance, 2) . ')';
+        //         $html .= '</td>';
+        //         $html .= '</tr>';
+        //     else:
+        //         // If no post-dated cheques, final close balance equals closing balance
+        //         $html .= '<tr>';
+        //         $html .= '<th colspan="5" class="text-right">Final Close Balance</th>';
+        //         $html .= '<th class="text-right">-</th>';
+        //         $html .= '<th class="text-right">-</th>';
+        //         $html .= '<th class="text-right">' . number_format($runningBalance, 2) . '</th>';
+        //         $html .= '</tr>';
+        //     endif;
 
-            $html .= '</tbody>';
-            $html .= '</table>';
-            $html .= '</div>';
-        }
+        //     $html .= '</tbody>';
+        //     $html .= '</table>';
+        //     $html .= '</div>';
+        // }
 
         echo $html;
     }
     public function DebtorAgeAnalysisReport(){
-        $asofdate = $this->input->post('asofdate') ? $this->input->post('asofdate') : date('Y-m-d');
+        $asofdate = $this->input->post('todate') ? $this->input->post('todate') : date('Y-m-d');
         $customer = $this->input->post('customer');
         $companyID = $_SESSION['companyid'];
         $branchID = $_SESSION['branchid'];
+
+        $configdata = getconfigdata('debtor_report');
+
+		$tablename = $configdata->row(0)->tbl_name;
+		$column1   = $configdata->row(0)->col_name;
+		$column2   = $configdata->row(1)->col_name;
+		$column3   = $configdata->row(2)->col_name;
 
         $html = '';
 
@@ -501,14 +922,14 @@ class Debtorreportinfo extends CI_Model{
         // Get Customer Info if selected
         $customerInfo = null;
         if(!empty($customer)) {
-            $custQuery = $this->db->query("SELECT * FROM tbl_customer WHERE idtbl_customer = ?", [$customer]);
+            $custQuery = $this->db->query("SELECT * FROM $tablename WHERE $column1 = ?", [$customer]);
             $customerInfo = $custQuery->row();
         }
 
         //Get Post-dated cheque info
-        $this->db->select('tbl_receivable.receiptno, tbl_receivable.amount, tbl_receivable.chequedate, tbl_receivable.chequeno, tbl_receivable.narration, tbl_customer.customer');
+        $this->db->select("tbl_receivable.receiptno, tbl_receivable.amount, tbl_receivable.chequedate, tbl_receivable.chequeno, tbl_receivable.narration, $tablename.$column2 as customer");
         $this->db->from('tbl_receivable');
-        $this->db->join('tbl_customer', 'tbl_customer.idtbl_customer = tbl_receivable.payer', 'left');
+        $this->db->join("$tablename", "$tablename.$column1 = tbl_receivable.payer", 'left');
         $this->db->where('tbl_receivable.status', '1');
         $this->db->where('tbl_receivable.postdatedstatus', '1');
         $this->db->where('tbl_receivable.poststatus', '0');
@@ -758,9 +1179,9 @@ class Debtorreportinfo extends CI_Model{
             // No customer selected - show all customers in summary table
             $sql = "
                 SELECT 
-                    c.idtbl_customer,
-                    c.customer,
-                    c.ref_no,
+                    c.$column1 AS idtbl_customer,
+                    c.$column2 AS customer,
+                    c.$column3 AS ref_no,
                     SUM(CASE WHEN DATEDIFF(?, s.invdate) > 89 AND s.status = 1 THEN s.amount ELSE 0 END) AS over_90,
                     SUM(CASE WHEN DATEDIFF(?, s.invdate) BETWEEN 60 AND 89 AND s.status = 1 THEN s.amount ELSE 0 END) AS days_60_89,
                     SUM(CASE WHEN DATEDIFF(?, s.invdate) BETWEEN 30 AND 59 AND s.status = 1 THEN s.amount ELSE 0 END) AS days_30_59,
@@ -769,22 +1190,22 @@ class Debtorreportinfo extends CI_Model{
                     SUM(CASE WHEN r.status = 1 THEN r.amount ELSE 0 END) AS total_receipt,
                     (SUM(CASE WHEN s.status = 1 THEN s.amount ELSE 0 END) - 
                     SUM(CASE WHEN r.status = 1 THEN r.amount ELSE 0 END)) AS net_balance
-                FROM tbl_customer c
-                LEFT JOIN tbl_sales_info s ON c.idtbl_customer = s.tbl_customer_idtbl_customer 
+                FROM $tablename c
+                LEFT JOIN tbl_sales_info s ON c.$column1 = s.tbl_customer_idtbl_customer 
                     AND s.tbl_company_idtbl_company = ? 
                     AND s.tbl_company_branch_idtbl_company_branch = ?
                     AND s.invdate <= ?
                     AND s.status = 1
-                LEFT JOIN tbl_receivable r ON c.idtbl_customer = r.payer 
+                LEFT JOIN tbl_receivable r ON c.$column1 = r.payer 
                     AND r.tbl_company_idtbl_company = ? 
                     AND r.tbl_company_branch_idtbl_company_branch = ?
                     AND r.recdate <= ?
                     AND r.status = 1
                     AND r.poststatus = 1
                 WHERE c.status = 1
-                GROUP BY c.idtbl_customer
+                GROUP BY c.$column1
                 HAVING net_balance > 0
-                ORDER BY c.customer ASC
+                ORDER BY c.$column2 ASC
             ";
 
             $debtors = $this->db->query($sql, [
@@ -794,9 +1215,9 @@ class Debtorreportinfo extends CI_Model{
             ])->result();
 
             //Get Post-dated cheque info
-            $this->db->select('tbl_receivable.receiptno, tbl_receivable.amount, tbl_receivable.chequedate, tbl_receivable.chequeno, tbl_receivable.narration, tbl_customer.customer');
+            $this->db->select("tbl_receivable.receiptno, tbl_receivable.amount, tbl_receivable.chequedate, tbl_receivable.chequeno, tbl_receivable.narration, $tablename.$column2 as customer");
             $this->db->from('tbl_receivable');
-            $this->db->join('tbl_customer', 'tbl_customer.idtbl_customer = tbl_receivable.payer', 'left');
+            $this->db->join("$tablename", "$tablename.$column1 = tbl_receivable.payer", 'left');
             $this->db->where('tbl_receivable.status', '1');
             $this->db->where('tbl_receivable.postdatedstatus', '1');
             $this->db->where('tbl_receivable.poststatus', '0');

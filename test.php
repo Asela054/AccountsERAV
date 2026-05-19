@@ -1,137 +1,294 @@
-<?php
-// $servername = "localhost";
-// $username = "root";
-// $password = "asela123";
-// $dbname = "erav_account";
-// $conn = mysqli_connect($servername, $username, $password, $dbname);
-// if (!$conn) {
-//     die("Connection failed: " . mysqli_connect_error());
-// }
+-- MySQL Workbench Synchronization
+-- Generated: 2026-05-18 16:33
+-- Model: New Model
+-- Version: 1.0
+-- Project: Name of the project
+-- Author: asela
 
-// // $userID=$_SESSION['userid'];
-// $filename = "tbl_sales_info1.csv";
-// $updatedatetime=date('Y-m-d h:i:s');
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL,ALLOW_INVALID_DATES';
 
-// $file = fopen($filename, 'r');
-// $i=0;
-// while (($line = fgetcsv($file)) !== FALSE) {
-//     // print_r($line);
-//     $invoice=$line[0];
-//     $amount=$line[2];
-//     if(is_numeric($invoice)){      
-//         $update="UPDATE `tbl_sales_info` SET `amount`='$amount',`poststatus`='0' WHERE `invno`='$invoice'";
-//         $conn->query($update);
-//     }
-// }
-// fclose($file);
+ALTER SCHEMA `erav_multioffset`  DEFAULT CHARACTER SET utf8mb4  DEFAULT COLLATE utf8mb4_general_ci ;
+
+ALTER TABLE `erav_multioffset`.`tbl_user` 
+DROP FOREIGN KEY `fk_tbl_user_tbl_user_type1`;
+
+ALTER TABLE `erav_multioffset`.`tbl_supplier` 
+DROP FOREIGN KEY `fk_tbl_supplier_tbl_tbl_company_branch1`,
+DROP FOREIGN KEY `fk_tbl_supplier_tbl_tbl_company1`;
+
+ALTER TABLE `erav_multioffset`.`tbl_customer` 
+DROP FOREIGN KEY `fk_tbl_print_material_info_tbl_company_branch1`,
+DROP FOREIGN KEY `fk_tbl_print_material_info_tbl_company1`;
+
+ALTER TABLE `erav_multioffset`.`tbl_menu_list` 
+CHANGE COLUMN `menu` `menu` VARCHAR(450) NOT NULL ;
+
+ALTER TABLE `erav_multioffset`.`tbl_user` 
+CHARACTER SET = utf8 , COLLATE = utf8_general_ci ,
+CHANGE COLUMN `name` `name` VARCHAR(150) NOT NULL ,
+ADD INDEX `fk_tbl_user_tbl_user_type_idx` (`tbl_user_type_idtbl_user_type` ASC),
+DROP INDEX `fk_tbl_user_tbl_user_type1_idx` ;
+
+ALTER TABLE `erav_multioffset`.`tbl_user_type` 
+CHANGE COLUMN `type` `type` VARCHAR(450) NOT NULL ;
+
+ALTER TABLE `erav_multioffset`.`tbl_bank` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_bank_branch` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_category` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_subcategory` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_transaction` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_finacial_year` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_finacial_month` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_master` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_company` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_company_branch` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_allocation` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_cheque_info` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_pettycash` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_pettycash_reimburse` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_finacialtype` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_transactiontype` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_type` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_receivable` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_payable` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_transaction_full` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_receivable_main` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_payable_main` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_detail` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ,
+CHANGE COLUMN `accountname` `accountname` VARCHAR(45) NOT NULL ;
+
+ALTER TABLE `erav_multioffset`.`tbl_batch_num_register` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_paysettle` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_paysettle_info` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_cheque_issue` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_paysettle_has_tbl_cheque_issue` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_pettycash_summary` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_pettycash_reimburse_has_tbl_pettycash` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_supplier` 
+CHANGE COLUMN `supcode` `supcode` VARCHAR(45) NOT NULL ,
+ADD INDEX `fk_tbl_supplier_tbl_company1_idx` (`tbl_company_idtbl_company` ASC),
+ADD INDEX `fk_tbl_supplier_tbl_company_branch1_idx` (`tbl_company_branch_idtbl_company_branch` ASC),
+DROP INDEX `fk_tbl_supplier_tbl_tbl_company_branch1_idx` ,
+DROP INDEX `fk_tbl_supplier_tbl_tbl_company1_idx` ;
+
+ALTER TABLE `erav_multioffset`.`tbl_customer` 
+CHANGE COLUMN `vat_customer` `vat_customer` INT(11) NOT NULL COMMENT '0-non vat\\r\\n1-vat customer	' ,
+CHANGE COLUMN `imagepath` `imagepath` MEDIUMTEXT NOT NULL ,
+ADD INDEX `fk_tbl_customer_tbl_company1_idx` (`tbl_company_idtbl_company` ASC),
+ADD INDEX `fk_tbl_customer_tbl_company_branch1_idx` (`tbl_company_branch_idtbl_company_branch` ASC),
+DROP INDEX `fk_tbl_print_material_info_tbl_company_branch1_idx` ,
+DROP INDEX `fk_tbl_print_material_info_tbl_company1_idx` ;
+
+ALTER TABLE `erav_multioffset`.`tbl_sales_info` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_expence_info` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_open_bal` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_receivable` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_receivable_info` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_receivable_type` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_bank_rec_info` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_bank_rec_list` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_bank_rec_revision` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_gl_report_head_sections` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_gl_report_sub_section_particulars` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_gl_report_sub_sections` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_transaction_manual` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_transaction_manual_main` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_special_category` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_nestcategory` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_asset` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_asset_type` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_asset_sell` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_asset_destroy` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_upgrade_dipreciation` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_depreciation_category` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_depreciation_method` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_depreciation_type` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_depreciation_info` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_asset_has_tbl_account_detail` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_other_payincome` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_batch_trans_type` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_batch_trans_type_info` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_batch_trans_type_tax` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_batch_category` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_batch_transaction` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_batch_transaction_main` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_detail_other` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_receivable_entry` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_account_paysettle_entry` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_supplier_type` 
+CHANGE COLUMN `type` `type` VARCHAR(45) NULL DEFAULT NULL ;
+
+ALTER TABLE `erav_multioffset`.`tbl_material_type` 
+CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
+
+ALTER TABLE `erav_multioffset`.`tbl_user` 
+ADD CONSTRAINT `fk_tbl_user_tbl_user_type`
+  FOREIGN KEY (`tbl_user_type_idtbl_user_type`)
+  REFERENCES `erav_multioffset`.`tbl_user_type` (`idtbl_user_type`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION;
+
+ALTER TABLE `erav_multioffset`.`tbl_supplier` 
+ADD CONSTRAINT `fk_tbl_supplier_tbl_company1`
+  FOREIGN KEY (`tbl_company_idtbl_company`)
+  REFERENCES `erav_multioffset`.`tbl_company` (`idtbl_company`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION,
+ADD CONSTRAINT `fk_tbl_supplier_tbl_company_branch1`
+  FOREIGN KEY (`tbl_company_branch_idtbl_company_branch`)
+  REFERENCES `erav_multioffset`.`tbl_company_branch` (`idtbl_company_branch`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION;
+
+ALTER TABLE `erav_multioffset`.`tbl_customer` 
+ADD CONSTRAINT `fk_tbl_customer_tbl_company1`
+  FOREIGN KEY (`tbl_company_idtbl_company`)
+  REFERENCES `erav_multioffset`.`tbl_company` (`idtbl_company`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION,
+ADD CONSTRAINT `fk_tbl_customer_tbl_company_branch1`
+  FOREIGN KEY (`tbl_company_branch_idtbl_company_branch`)
+  REFERENCES `erav_multioffset`.`tbl_company_branch` (`idtbl_company_branch`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION;
 
 
-
-// Here’s a classification of the accounts based on the provided categories:
-
-//     ### 1 - Payroll Expenses
-//     - EX002200 Salaries & Wages
-//     - EX002201 EPF - Production
-//     - EX002202 ETF - Production
-//     - EX002203 Employees Travelling Expenses 
-//     - EX002204 Employees Incentive
-//     - EX002205 Sundry Wages 
-//     - EX004009 Salaries & Wages - Administrative 
-//     - EX004010 EPF-Administration
-//     - EX004011 ETF-Administration
-//     - LI009500 Salary Payment Suspense
-//     - LI009501 Employees Provident Fund Reserve
-//     - LI009502 Employees Trust Fund Reserve
-//     - LI009503 Employees Travelling Expenses Reserve
-//     - LI009504 Employees Incentive Reserve
-    
-//     ### 2 - Property, Plant & Equipment
-//     - AS007000 Land & Building
-//     - AS007001 Land & Building - Accumulated Depreciation
-//     - AS007002 Motor Vehicles
-//     - AS007003 Motor Vehicles - Accumulated Depreciation
-//     - AS007004 Plant & Machinery
-//     - AS007005 Plant & Machinery - Accumulated Depreciation
-//     - AS007006 Factory Equipment
-//     - AS007007 Factory Equipment - Accumulated Depreciation
-//     - AS007008 Office Equipment
-//     - AS007009 Office Equipment - Accumulated Depreciation
-//     - AS007010 Tools & Implements
-//     - AS007011 Tools & Implements - Accumulated Depreciation
-//     - AS007012 Kuk Dong Goods Lift
-//     - AS007013 Kuk Dong Goods Lift - Accumulated Depreciation
-//     - AS007014 Furniture Fittings
-//     - AS007015 Furniture Fittings - Accumulated Depreciation
-//     - AS007016 Building
-//     - AS007017 Building - Accumulated Depreciation
-//     - AS007018 Software System
-//     - AS007019 Software System - Accumulated Depreciation
-//     - AS007020 Fire Extinguisher
-//     - AS007021 Fire Extinguisher - Accumulated Depreciation
-//     - AS007100 Capital Work-In-Progress
-    
-//     ### 3 - Inventories
-//     - AS008000 Material Stock
-//     - AS008001 Sundry Stock
-//     - AS008603 Multi Offset Printers
-//     - AS008604 Goods in Transit
-    
-//     ### 4 - Trade Receivables
-//     - AS008300 Trade Debtors
-//     - AS008400 Staff Debtors
-//     - AS008401 Other Debtors
-    
-//     ### 5 - Income Tax Recoverable
-//     - LI009506 Income Tax Payable
-    
-//     ### 6 - Stated Capital
-//     - EQ009900 Share Capital Account
-    
-//     ### 7 - Retained Profit
-//     - EQ009950 Profit & Loss Reserve Account
-    
-//     ### 8 - Directors Investment
-//     - LI009700 Directors Current Account
-//     - LI009800 Directors Loan Account
-    
-//     ### 9 - Trade Payable
-//     - LI009000  Trade Creditors
-//     - LI009001 Other Creditor
-//     - LI009600 Rajah Multi Industries
-//     - LI009650 Other Payable Loan Accounts
-//     - LI009601 Fair Trading House (Pvt) Ltd
-    
-//     ### 10 - Interest Bearing Loans & Borrowings
-//     - LI009802 Hattan National Bank Loan
-//     - LI009801 H.N.B. Leasing
-//     - LI009657 H.N.B. Short Term Loan
-    
-//     ### 11 - Bank Overdraft
-//     - EX006000 Interest on Bank Overdraft
-    
-//     ### 12 - Cash on Hand
-//     - AS008900 Petty Cash
-//     - AS008950 Cash in Hand
-    
-//     This classification assigns the accounts to the respective types as per your provided categories.
-
-An uncaught Exception was encountered
-Type: Error
-
-Message: Using $this when not in object context
-
-Filename: D:\xampp\htdocs\accountscode\application\helpers\useracc_helper.php
-
-Line Number: 513
-
-Backtrace:
-
-File: D:\xampp\htdocs\accountscode\application\controllers\Openbalance.php
-Line: 36
-Function: get_all_accounts
-
-File: D:\xampp\htdocs\accountscode\index.php
-Line: 315
-Function: require_once
-
-?>
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;

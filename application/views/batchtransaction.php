@@ -135,7 +135,11 @@ include "include/topnavbar.php";
                                     <label class="small font-weight-bold">UOM*</label>
                                     <select name="inventoryuom" id="inventoryuom" class="form-control form-control-sm" required>
                                         <option value="">Select</option>
-                                        <?php foreach($uomlist->result() as $rowuom){ ?>
+                                        <?php 
+                                        // Check if it's a CodeIgniter DB object, otherwise treat as array
+                                        $list = (is_object($uomlist) && method_exists($uomlist, 'result')) ? $uomlist->result() : $uomlist;
+
+                                        foreach($list as $rowuom){ ?>
                                         <option value="<?php echo $rowuom->idtbl_mesurements ?>"><?php echo $rowuom->measure_type ?></option>
                                         <?php } ?>
                                     </select>

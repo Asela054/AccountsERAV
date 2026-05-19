@@ -22,13 +22,16 @@ include "include/topnavbar.php";
                 <div class="card">
                     <div class="card-body p-0 p-2">
                         <div class="row">
-                            <div class="col-6">
+                            <div class="col-2">
                                 <div class="custom-control custom-checkbox">
                                     <input type="checkbox" class="custom-control-input" id="filterpostdated">
                                     <label class="custom-control-label" for="filterpostdated">View post-dated receivables</label>
                                 </div>
                             </div>
-                            <div class="col-6 text-right">
+                            <div class="col-2">
+                                <input type="date" class="form-control form-control-sm" id="filterdate">
+                            </div>
+                            <div class="col-8 text-right">
                                 <button class="btn btn-orange btn-sm px-4 mr-1" id="btnreceiptprint"><i class="fas fa-print mr-2"></i>Receipt Print</button>
                                 <button class="btn btn-primary btn-sm px-4" id="btncreatesegregation" <?php if($addcheck==0){echo 'disabled';} ?>><i class="fas fa-plus mr-2"></i>Receivable Create</button>
                             </div>
@@ -139,7 +142,25 @@ include "include/topnavbar.php";
                                         <option value="">Select</option>
                                     </select>
                                 </div>
-                            </div>                        
+                            </div>   
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <h6 class="small title-style"><span>Unapplied Payment Information</span></h6>
+                                    <table class="table table-striped table-bordered table-sm small" id="tableunappliedpayment">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center">&nbsp;</th>
+                                                <th class="d-none">Receivable Info ID</th>
+                                                <th>Customer</th>
+                                                <th class="d-none">Invoice ID</th>
+                                                <th>Invoice No</th>
+                                                <th class="text-right">Unapplied Payment</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </div>                     
                             <div class="row mt-3">
                                 <div class="col-12">
                                     <h6 class="small title-style"><span>Invoice Information</span></h6>
@@ -222,6 +243,7 @@ include "include/topnavbar.php";
 
                             <input type="submit" id="hidesegsubmit" class="d-none">
                             <input type="reset" id="hidesegreset" class="d-none">
+                            <input type="hidden" name="hideunappliedtotal" id="hideunappliedtotal" value="0.00">
                         </form>
                     </div>
                     <div class="col-12">
@@ -362,6 +384,12 @@ include "include/topnavbar.php";
         });
 
         $('#filterpostdated').change(function() {
+            $('#filterdate').val('');
+            $('#dataTable').DataTable().ajax.reload(null, false);
+        });
+
+        $('#filterdate').change(function() {
+            $('#filterpostdated').prop('checked', false);
             $('#dataTable').DataTable().ajax.reload(null, false);
         });
 
@@ -375,6 +403,7 @@ include "include/topnavbar.php";
                 data: function(d) {
                     d.userID = '<?php echo $_SESSION['userid']; ?>';
                     d.filterpost = $('#filterpostdated').is(':checked') ? 1 : 0;
+                    d.filterdate = $('#filterdate').val();
                 }
             },
             "order": [[ 0, "desc" ]],
@@ -611,6 +640,16 @@ include "include/topnavbar.php";
                     $('#tableinvoicepayment tbody').empty().append(result);
                 }
             });
+            $.ajax({
+                type: "POST",
+                data: {
+                    recordID: id
+                },
+                url: '<?php echo base_url() ?>Receivablesettle/Getunappliedpaymentaccocustomer',
+                success: function(result) { // alert(result);
+                    $('#tableunappliedpayment tbody').empty().append(result);
+                }
+            });
         });
         $('#tableinvoicepayment tbody').on('click', '.checkclick', function() {
             if ($(this).is(':checked')) {
@@ -687,6 +726,8 @@ include "include/topnavbar.php";
                     var amount = $(this).find('.addamount').text().replace(/,/g, '');
                     totalpaidamount += parseFloat(amount);
                 });
+                var unappliedamount = parseFloat($('#hideunappliedtotal').val());
+                totalpaidamount = totalpaidamount + unappliedamount;
                 $('#paidamount').val(addCommas(parseFloat(totalpaidamount).toFixed(2)));
             }
         });
@@ -707,7 +748,7 @@ include "include/topnavbar.php";
             $('#btnfullinvoicepayment').prop('disabled', true).html('<i class="fas fa-circle-notch fa-spin mr-2"></i> Complete');
             var tablelist = $("#tableinvoicepayment tbody input[type=checkbox]:checked");
 
-            if (tablelist.length > 0) {
+            if (tablelist.length > 0 || $('#paidamount').val()>=$('#invoicepayamount').val()) {
                 $('#customer').attr('disabled', false);
                 jsonObj = [];
                 tablelist.each(function() {
@@ -739,6 +780,19 @@ include "include/topnavbar.php";
                     jsonObjPay.push(itemPay);
                 });
                 var myJSONPay = JSON.stringify(jsonObjPay);
+
+                jsonObjUnapplied = [];
+                $('#tableunappliedpayment tbody tr').each(function() {
+                    item = {}
+                    var row = $(this).closest("tr");
+                    item["receivableinfoid"] = row.find('td:eq(1)').text();
+                    item["customer"] = row.find('td:eq(2)').text();
+                    item["invid"] = row.find('td:eq(3)').text();
+                    item["invoiceno"] = row.find('td:eq(4)').text();
+                    item["unappliedamount"] = row.find('td:eq(5)').text();
+                    jsonObjUnapplied.push(item);
+                });
+                var myJSONUnapplied = JSON.stringify(jsonObjUnapplied);
                 
                 var recordID = $('#recordID').val();
                 var recordOption = $('#recordOption').val();
@@ -747,6 +801,7 @@ include "include/topnavbar.php";
                 var company = $('#company').val();
                 var branch = $('#branch').val();
                 var paidamount = $('#paidamount').val();
+                var unappliedamount = parseFloat($('#hideunappliedtotal').val());
                 var recsettdate = $('#recsettdate').val();
 
                 Swal.fire({
@@ -768,12 +823,14 @@ include "include/topnavbar.php";
                             data: {
                                 tableData: myJSON,
                                 tableReceData: myJSONPay,
+                                tableUnapplyData: myJSONUnapplied,
                                 company: company,
                                 branch: branch,
                                 customer: customerID,
                                 invoicepayamount: invoicepayamount,
                                 paidamount: paidamount,
                                 recsettdate: recsettdate,
+                                unappliedamount: unappliedamount,
                                 recordOption: recordOption,
                                 recordID: recordID
                             },
@@ -930,7 +987,15 @@ include "include/topnavbar.php";
                 var printinvoicereceipt = $('#printinvoicereceipt').val();
                 window.open("<?php echo base_url() ?>Reportprint/Receivereceipt/"+printinvoicereceipt+"/"+printtype, "_blank");
             }
-        })
+        });
+
+        $('#tableunappliedpayment tbody').on('click', '.checkclickunapplied', function() {
+            if ($(this).is(':checked')) {
+                checkunapplied();
+            } else {
+                checkunapplied();
+            }
+        });
     });
 
     function getbranchlist(id, value){
@@ -1050,6 +1115,62 @@ include "include/topnavbar.php";
         else{
             $('#btnfullinvoicepayment').prop('disabled', true);
         }
+
+        paidtotalamount();
+    }
+
+    function checkunapplied(){
+        var intVal = function (i) {
+            return typeof i === 'string' ?
+                i.replace(/[\$,]/g, '') * 1 :
+                typeof i === 'number' ?
+                i : 0;
+        };
+        
+        var sum = 0;
+        var tablelist = $("#tableunappliedpayment tbody input[type=checkbox]:checked");
+                
+        if(tablelist.length>0){
+            tablelist.each(function() {
+                item = {}
+                var row = $(this).closest("tr");
+                sum += parseFloat(intVal(row.find('td:eq(5)').text()));
+            });
+        }
+
+        $('#hideunappliedtotal').val(parseFloat(sum).toFixed(2));
+
+        if ($('#tblreceivableinfo tbody tr').length > 0) {
+            var totalpaidamount = 0;
+            $('#tblreceivableinfo tbody tr').each(function() {
+                var amount = $(this).find('.addamount').text().replace(/,/g, '');
+                totalpaidamount += parseFloat(amount);
+            });
+
+            var unappliedamount = parseFloat($('#hideunappliedtotal').val());
+            totalpaidamount = totalpaidamount + unappliedamount;
+            $('#paidamount').val(addCommas(parseFloat(totalpaidamount).toFixed(2)));
+        }
+        else{
+            paidtotalamount();
+        }
+    }
+
+    function paidtotalamount(){
+        let tablelist = $("#tableinvoicepayment tbody input[type=checkbox]:checked");
+                
+        if(tablelist.length>0){
+            var invoicetotal = 0;
+            $('#invoicepayamount').val() ? invoicetotal += parseFloat($('#invoicepayamount').val().replace(/,/g, '')) : 0;   
+            var unappliedamount = parseFloat($('#hideunappliedtotal').val());
+            var paidtotal = unappliedamount;
+            if(invoicetotal <= unappliedamount){
+                $('#paidamount').val(addCommas(parseFloat(paidtotal).toFixed(2)));
+            }
+            else{
+                $('#paidamount').val('');
+            }   
+        }            
     }
 
     function getinvoicereceiptno(){

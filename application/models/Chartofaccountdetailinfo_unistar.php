@@ -512,88 +512,25 @@ class Chartofaccountdetailinfo extends CI_Model{
             redirect('Chartofaccountdetail');
         }
     }
-    // public function Getaccountspecialcategorydata(){
-    //     $companyID = $_SESSION['companyid'];
-    //     $branchID = $_SESSION['branchid']; 
-
-    //     $configdata = getconfigdata('chartdetail_special');
-      
-    //     $tablename = '';
-    //     $cateID=1;
-    //     $selectFields = '';
-        
-
-    //     $this->db->select('tbl_account_detail.idtbl_account_detail, tbl_account_detail.accountno, tbl_account_detail.accountname, tbl_account_detail.special_cate_detail, tbl_account_detail.special_cate_sub');
-    //     $this->db->from('tbl_account_detail');
-    //     $this->db->join('tbl_account_allocation', 'tbl_account_allocation.tbl_account_detail_idtbl_account_detail = tbl_account_detail.idtbl_account_detail', 'left');
-    //     foreach($configdata->result() as $row) {
-    //         $this->db->join($tablename, "tbl_account_detail.special_cate_sub = $tablename.$row->col_name AND tbl_account_detail.special_cate_detail = $cateID", 'left');
-    //         $selectFields = "WHEN tbl_account_detail.special_cate_detail = $cateID THEN $tablename.$row->col_name";
-    //         $cateID++;
-    //     }
-    //     // $this->db->join('tbl_material_group', 'tbl_account_detail.special_cate_sub = tbl_material_group.idtbl_material_group AND tbl_account_detail.special_cate_detail = 1', 'left');
-    //     // $this->db->join('tbl_material_type', 'tbl_account_detail.special_cate_sub = tbl_material_type.idtbl_material_type AND tbl_account_detail.special_cate_detail = 2', 'left');
-    //     $this->db->select('CASE ' . $selectFields . ' ELSE NULL END AS special_item', FALSE);
-    //     $this->db->where('tbl_account_detail.status', 1);
-    //     $this->db->where('tbl_account_allocation.companybank', $companyID);
-    //     $this->db->where('tbl_account_allocation.branchcompanybank', $branchID);
-    //     $this->db->where('tbl_account_detail.special_cate_detail>', 0);
-    //     $this->db->where('tbl_account_detail.special_cate_sub>', 0);
-
-    //     return $respond = $this->db->get();
-    // }
-    public function Getaccountspecialcategorydata() {
+    public function Getaccountspecialcategorydata(){
         $companyID = $_SESSION['companyid'];
-        $branchID  = $_SESSION['branchid'];
+        $branchID = $_SESSION['branchid']; 
 
-        $configdata = getconfigdata('chartdetail_special');
-        $rows = $configdata->result();
-
-        $this->db->select('
-            tbl_account_detail.idtbl_account_detail,
-            tbl_account_detail.accountno,
-            tbl_account_detail.accountname,
-            tbl_account_detail.special_cate_detail,
-            tbl_account_detail.special_cate_sub
-        ', FALSE);
+        $this->db->select('tbl_account_detail.idtbl_account_detail, tbl_account_detail.accountno, tbl_account_detail.accountname, tbl_account_detail.special_cate_detail, tbl_account_detail.special_cate_sub');
         $this->db->from('tbl_account_detail');
         $this->db->join('tbl_account_allocation', 'tbl_account_allocation.tbl_account_detail_idtbl_account_detail = tbl_account_detail.idtbl_account_detail', 'left');
-
-        $caseWhen   = '';
-        $cateID     = 1;
-        $joinedTbls = []; 
-
-        for ($i = 0; $i < count($rows); $i += 2) {
-            $matchRow   = $rows[$i];       
-            $displayRow = $rows[$i + 1];   
-
-            $tablename  = $matchRow->tbl_name;   
-            $matchCol   = $matchRow->col_name;   
-            $displayCol = $displayRow->col_name; 
-
-            $alias = 'mg' . $cateID; 
-
-            
-            $this->db->join(
-                "$tablename $alias",
-                "tbl_account_detail.special_cate_sub = $alias.$matchCol AND tbl_account_detail.special_cate_detail = $cateID",
-                'left'
-            );
-
-            $caseWhen .= " WHEN tbl_account_detail.special_cate_detail = $cateID THEN $alias.$displayCol ";
-
-            $cateID++;
-        }
-
-        $this->db->select('CASE ' . $caseWhen . ' ELSE NULL END AS special_item', FALSE);
-
+        $this->db->join('tbl_material_category', 'tbl_account_detail.special_cate_sub = tbl_material_category.idtbl_material_category AND tbl_account_detail.special_cate_detail = 1', 'left');
+        $this->db->select('CASE 
+            WHEN tbl_account_detail.special_cate_detail = 1 THEN tbl_material_category.categoryname
+            ELSE NULL
+        END AS special_item', FALSE);
         $this->db->where('tbl_account_detail.status', 1);
         $this->db->where('tbl_account_allocation.companybank', $companyID);
         $this->db->where('tbl_account_allocation.branchcompanybank', $branchID);
-        $this->db->where('tbl_account_detail.special_cate_detail >', 0);
-        $this->db->where('tbl_account_detail.special_cate_sub >', 0);
+        $this->db->where('tbl_account_detail.special_cate_detail>', 0);
+        $this->db->where('tbl_account_detail.special_cate_sub>', 0);
 
-        return $this->db->get();
+        return $respond = $this->db->get();
     }
     public function Chartofaccountdetailspecialcategorystatus($x, $y){
         $this->db->trans_begin();

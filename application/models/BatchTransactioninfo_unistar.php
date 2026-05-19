@@ -24,69 +24,26 @@ class BatchTransactioninfo extends CI_Model{
         echo json_encode($respond->result());
     }
     public function Getuomlist(){
-        $configdata = getconfigdata('measurement_search');
+        $this->db->select('`idtbl_unit`, `unitcode`');
+        $this->db->from('tbl_unit');
+        $this->db->where('status', 1);
 
-        $tablename = $configdata->row(0)->tbl_name;
-		$column1   = $configdata->row(0)->col_name;
-		$column2   = $configdata->row(1)->col_name;
-
-        if(!empty($tablename)):
-            $this->db->select("$column1 AS `idtbl_mesurements`, $column2 AS `measure_type`");
-            $this->db->from($tablename);
-            $this->db->where('status', 1);
-
-            return $respond = $this->db->get();
-        else:
-            $obj = new stdClass();
-            $obj->idtbl_mesurements = '';
-            $obj->measure_type = 'No UOM found';
-
-            return [$obj];
-        endif;
-
+        return $respond = $this->db->get();
     }
     public function GetMaterialDetails(){
         $materialID = $this->input->post('materialID');
         $companyid = $_SESSION['companyid'];
         $branchid = $_SESSION['branchid'];
 
-        $configdata = getconfigdata('stock_material');
+        $this->db->select('`batchno`, `qty`, `measure_type_id`, `unitprice`');
+        $this->db->from('tbl_print_stock');
+        $this->db->where('tbl_print_material_info_idtbl_print_material_info', $materialID);
+        $this->db->where('tbl_company_idtbl_company', $companyid);
+        $this->db->where('tbl_company_branch_idtbl_company_branch', $branchid);
+        $this->db->where('status', 1);
         
-        $tablename = $configdata->row(0)->tbl_name;
-        $column1   = $configdata->row(0)->col_name;
-        $column2   = $configdata->row(1)->col_name;
-        $column3   = $configdata->row(2)->col_name;
-        $column4   = $configdata->row(3)->col_name;
-        $column5   = $configdata->row(4)->col_name;
-        $column6   = $configdata->row(5)->col_name;
-        $column7   = $configdata->row(6)->col_name;
-        $column8   = $configdata->row(7)->col_name;
-
-        if(!empty($tablename)):
-            $this->db->select("$column2 AS `batchno`, $column3 AS `qty`, $column4 AS `measure_type_id`, $column5 AS `unitprice`");
-            $this->db->from("$tablename");
-            $this->db->where("$column1", $materialID);
-            if(!empty($column6)):
-                $this->db->where("$column6", $companyid);
-            endif;
-            if(!empty($column7)):
-                $this->db->where("$column7", $branchid);
-            endif;
-            if(!empty($column8)):
-                $this->db->where("$column8", 1);
-            endif;
-            
-            $respond = $this->db->get();
-            echo json_encode($respond->result());
-        else:
-            $obj = new stdClass();
-            $obj->batchno = '';
-            $obj->qty = '';
-            $obj->measure_type_id = '';
-            $obj->unitprice = '';
-
-            echo json_encode([$obj]);
-        endif;
+        $respond = $this->db->get();
+        echo json_encode($respond->result());
     }
     public function BatchTransactioninsertupdate(){
         $userID=$_SESSION['userid'];
@@ -341,33 +298,13 @@ class BatchTransactioninfo extends CI_Model{
         $transcate = $this->input->post('transcate');
 
         if($transcate==1){
-            $configdata = getconfigdata('measurement_search');
-        
-            $tablename = $configdata->row(0)->tbl_name;
-            $column1   = $configdata->row(0)->col_name;
-            $column2   = $configdata->row(1)->col_name;
-
-            $has_table = !empty($tablename) ? 1 : 0;
-
-            $configdatamaterial = getconfigdata('material_search');
-        
-            $tablenamematerial = $configdatamaterial->row(0)->tbl_name;
-            $column1material   = $configdatamaterial->row(0)->col_name;
-            $column2material   = $configdatamaterial->row(1)->col_name;
-
-            $has_tablematerial = !empty($tablenamematerial) ? 1 : 0;
-
-            $this->db->select("tbl_batch_transaction.*, tbl_batch_transaction_main.approvestatus, tbl_batch_transaction_main.completestatus, tbl_batch_category.batch_category, tbl_batch_trans_type.batctranstype, IF($has_tablematerial = 0, '', $tablenamematerial.$column2material) AS materialname,  IF($has_table = 0, '', $tablename.$column2) AS measure_type");
+            $this->db->select('tbl_batch_transaction.*, tbl_batch_transaction_main.approvestatus, tbl_batch_transaction_main.completestatus, tbl_batch_category.batch_category, tbl_batch_trans_type.batctranstype, tbl_product.product_name,  tbl_measurements.measure_type');
             $this->db->from('tbl_batch_transaction');
             $this->db->join('tbl_batch_transaction_main', 'tbl_batch_transaction_main.idtbl_batch_transaction_main = tbl_batch_transaction.tbl_batch_transaction_main_idtbl_batch_transaction_main', 'left');
             $this->db->join('tbl_batch_category', 'tbl_batch_category.idtbl_batch_category = tbl_batch_transaction_main.tbl_batch_category_idtbl_batch_category', 'left');
             $this->db->join('tbl_batch_trans_type', 'tbl_batch_trans_type.idtbl_batch_trans_type=tbl_batch_transaction.tbl_batch_trans_type_idtbl_batch_trans_type', 'left');
-            if(!empty($tablenamematerial)):
-                $this->db->join("$tablenamematerial", "$tablenamematerial.$column1material = tbl_batch_transaction.tbl_print_material_info_idtbl_print_material_info", 'left');
-            endif;
-            if(!empty($tablename)):
-                $this->db->join("$tablename", "$tablename.$column1 = tbl_batch_transaction.uom_id", 'left');
-            endif;
+            // $this->db->join('tbl_product', 'tbl_product.idtbl_product=tbl_batch_transaction.tbl_print_material_info_idtbl_print_material_info', 'left');
+            $this->db->join('tbl_measurements', 'tbl_measurements.idtbl_measurements=tbl_batch_transaction.uom_id', 'left');
             $this->db->where('tbl_batch_transaction.tbl_batch_transaction_main_idtbl_batch_transaction_main', $recordID);
             $this->db->where('tbl_batch_transaction.status', 1);
 
@@ -466,18 +403,12 @@ class BatchTransactioninfo extends CI_Model{
             echo $html;
         }
         else if($transcate==2){
-            $configdata = getconfigdata('receivable_search');
-        
-            $tablename = $configdata->row(0)->tbl_name;
-            $column1   = $configdata->row(0)->col_name;
-            $column2   = $configdata->row(1)->col_name;
-
-            $this->db->select("tbl_batch_transaction.*, tbl_batch_transaction_main.approvestatus, tbl_batch_transaction_main.completestatus, tbl_batch_category.batch_category, tbl_batch_trans_type.batctranstype, $tablename.$column2 AS customer");
+            $this->db->select('tbl_batch_transaction.*, tbl_batch_transaction_main.approvestatus, tbl_batch_transaction_main.completestatus, tbl_batch_category.batch_category, tbl_batch_trans_type.batctranstype, tbl_customer.customer');
             $this->db->from('tbl_batch_transaction');
             $this->db->join('tbl_batch_transaction_main', 'tbl_batch_transaction_main.idtbl_batch_transaction_main = tbl_batch_transaction.tbl_batch_transaction_main_idtbl_batch_transaction_main', 'left');
             $this->db->join('tbl_batch_category', 'tbl_batch_category.idtbl_batch_category = tbl_batch_transaction_main.tbl_batch_category_idtbl_batch_category', 'left');
             $this->db->join('tbl_batch_trans_type', 'tbl_batch_trans_type.idtbl_batch_trans_type=tbl_batch_transaction.tbl_batch_trans_type_idtbl_batch_trans_type', 'left');
-            $this->db->join($tablename, "$tablename.$column1 = tbl_batch_transaction.tbl_customer_idtbl_customer", 'left');
+            $this->db->join('tbl_customer', 'tbl_customer.idtbl_customer=tbl_batch_transaction.tbl_customer_idtbl_customer', 'left');
             $this->db->where('tbl_batch_transaction.tbl_batch_transaction_main_idtbl_batch_transaction_main', $recordID);
             $this->db->where('tbl_batch_transaction.status', 1);
 
@@ -570,18 +501,12 @@ class BatchTransactioninfo extends CI_Model{
             echo $html;
         }
         else if($transcate==3){
-            $configdata = getconfigdata('payable_search');
-        
-            $tablename = $configdata->row(0)->tbl_name;
-            $column1   = $configdata->row(0)->col_name;
-            $column2   = $configdata->row(1)->col_name;
-
-            $this->db->select("tbl_batch_transaction.*, tbl_batch_transaction_main.approvestatus, tbl_batch_transaction_main.completestatus, tbl_batch_category.batch_category, tbl_batch_trans_type.batctranstype, $tablename.$column2 AS suppliername");
+            $this->db->select('tbl_batch_transaction.*, tbl_batch_transaction_main.approvestatus, tbl_batch_transaction_main.completestatus, tbl_batch_category.batch_category, tbl_batch_trans_type.batctranstype, tbl_supplier.suppliername');
             $this->db->from('tbl_batch_transaction');
             $this->db->join('tbl_batch_transaction_main', 'tbl_batch_transaction_main.idtbl_batch_transaction_main = tbl_batch_transaction.tbl_batch_transaction_main_idtbl_batch_transaction_main', 'left');
             $this->db->join('tbl_batch_category', 'tbl_batch_category.idtbl_batch_category = tbl_batch_transaction_main.tbl_batch_category_idtbl_batch_category', 'left');
             $this->db->join('tbl_batch_trans_type', 'tbl_batch_trans_type.idtbl_batch_trans_type=tbl_batch_transaction.tbl_batch_trans_type_idtbl_batch_trans_type', 'left');
-            $this->db->join($tablename, "$tablename.$column1 = tbl_batch_transaction.tbl_supplier_idtbl_supplier", 'left');
+            $this->db->join('tbl_supplier', 'tbl_supplier.idtbl_supplier=tbl_batch_transaction.tbl_supplier_idtbl_supplier', 'left');
             $this->db->where('tbl_batch_transaction.tbl_batch_transaction_main_idtbl_batch_transaction_main', $recordID);
             $this->db->where('tbl_batch_transaction.status', 1);
 
@@ -684,38 +609,13 @@ class BatchTransactioninfo extends CI_Model{
         $today = date('Y-m-d');   
         $journalmainID = 0;
 
-        $configdata = getconfigdata('measurement_search');
-        
-        $tablename = $configdata->row(0)->tbl_name;
-        $column1   = $configdata->row(0)->col_name;
-        $column2   = $configdata->row(1)->col_name;
-
-        $has_table = !empty($tablename) ? 1 : 0;
-
-        $configdatabatch = getconfigdata('batch_transaction');
-        
-        $tablenamebatch = $configdatabatch->row(0)->tbl_name;
-        $column1batch   = $configdatabatch->row(0)->col_name;
-        $column2batch   = $configdatabatch->row(1)->col_name;
-        $column3batch   = $configdatabatch->row(2)->col_name;
-
-        $has_tablebatch = !empty($tablenamebatch) ? 1 : 0;
-
-        $configdataweb = getconfigdata('batch_stock_webhook');
-        
-        $webhookUrl = $configdataweb->row(0)->col_name;
-
-        $this->db->select("tbl_batch_transaction.*, tbl_batch_transaction_main.approvestatus, tbl_batch_transaction_main.completestatus, tbl_batch_category.batch_category, tbl_batch_category.idtbl_batch_category, tbl_batch_trans_type.batctranstype, tbl_batch_trans_type.idtbl_batch_trans_type, tbl_batch_trans_type.crdr as `batchtypecrdr`, tbl_batch_trans_type.plusminus, IF($has_tablebatch = 0, '', $tablenamebatch.$column2batch) AS materialname, IF($has_tablebatch = 0, '', $tablenamebatch.$column3batch) as `grnsupplierid`, IF($has_table = 0, '', $tablename.$column2) AS measure_type");
+        $this->db->select('tbl_batch_transaction.*, tbl_batch_transaction_main.approvestatus, tbl_batch_transaction_main.completestatus, tbl_batch_category.batch_category, tbl_batch_category.idtbl_batch_category, tbl_batch_trans_type.batctranstype, tbl_batch_trans_type.idtbl_batch_trans_type, tbl_batch_trans_type.crdr as `batchtypecrdr`, tbl_batch_trans_type.plusminus, tbl_print_material_info.materialname, tbl_print_material_info.tbl_supplier_idtbl_supplier as `grnsupplierid`, tbl_measurements.measure_type');
         $this->db->from('tbl_batch_transaction');
         $this->db->join('tbl_batch_transaction_main', 'tbl_batch_transaction_main.idtbl_batch_transaction_main = tbl_batch_transaction.tbl_batch_transaction_main_idtbl_batch_transaction_main', 'left');
         $this->db->join('tbl_batch_category', 'tbl_batch_category.idtbl_batch_category = tbl_batch_transaction_main.tbl_batch_category_idtbl_batch_category', 'left');
         $this->db->join('tbl_batch_trans_type', 'tbl_batch_trans_type.idtbl_batch_trans_type=tbl_batch_transaction.tbl_batch_trans_type_idtbl_batch_trans_type', 'left');
-        if(!empty($tablenamebatch)):
-            $this->db->join("$tablenamebatch", "$tablenamebatch.$column1batch=tbl_batch_transaction.tbl_print_material_info_idtbl_print_material_info", 'left');
-        endif;
-        if(!empty($tablename)):
-            $this->db->join("$tablename", "$tablename.$column1=tbl_batch_transaction.uom_id", 'left');
-        endif;
+        $this->db->join('tbl_print_material_info', 'tbl_print_material_info.idtbl_print_material_info=tbl_batch_transaction.tbl_print_material_info_idtbl_print_material_info', 'left');
+        $this->db->join('tbl_measurements', 'tbl_measurements.idtbl_measurements=tbl_batch_transaction.uom_id', 'left');
         $this->db->where('tbl_batch_transaction.tbl_batch_transaction_main_idtbl_batch_transaction_main', $recordID);
         $this->db->where('tbl_batch_transaction.status', 1);
 
@@ -768,81 +668,51 @@ class BatchTransactioninfo extends CI_Model{
                     $this->db->update('tbl_batch_transaction_main', $data);
                     
                     if($respond->row(0)->idtbl_batch_category==1){
-                        $stockWebhookPayload = [];
-
                         foreach($respond->result() as $rowtransactiondata){
-                            if(!empty($rowtransactiondata->plusminus > 0)){
+                            if(!empty($rowtransactiondata->plusminus>0)){
+                                //Update already in stock
                                 $materialBatchno = $rowtransactiondata->materialbatch;
+                                
                                 if($rowtransactiondata->plusminus==1):
                                     $stocktotal = $rowtransactiondata->qtyin * $rowtransactiondata->unitcost;
+                                    $this->db->set('qty', "(`qty` + '$rowtransactiondata->qtyin')", FALSE);
                                 elseif($rowtransactiondata->plusminus==2):
                                     $stocktotal = $rowtransactiondata->qtyout * $rowtransactiondata->unitcost;
+                                    $this->db->set('qty', "(`qty` - '$rowtransactiondata->qtyout')", FALSE);
                                 endif;
-                                $totaltransactionamount += $stocktotal;
+                                $this->db->where('tbl_print_material_info_idtbl_print_material_info', $rowtransactiondata->tbl_print_material_info_idtbl_print_material_info);
+                                $this->db->where('tbl_company_idtbl_company', $companyID);
+                                $this->db->where('tbl_company_branch_idtbl_company_branch', $branchID);
+                                $this->db->update('tbl_print_stock');
 
-                                // Collect for webhook
-                                $stockWebhookPayload[] = [
-                                    'type'          => 'update',
-                                    'batchno'       => $materialBatchno,
-                                    'materialid'    => $rowtransactiondata->tbl_print_material_info_idtbl_print_material_info,
-                                    'materialname'  => $rowtransactiondata->materialname,
-                                    'plusminus'     => $rowtransactiondata->plusminus,
-                                    'qtyin'         => $rowtransactiondata->qtyin,
-                                    'qtyout'        => $rowtransactiondata->qtyout,
-                                    'unitcost'      => $rowtransactiondata->unitcost,
-                                    'stocktotal'    => $stocktotal,
-                                    'supplier_id'   => $rowtransactiondata->grnsupplierid,
-                                    'uom_id'        => $rowtransactiondata->uom_id,
-                                    'grndate'       => $today,
-                                    'companyID'     => $companyID,
-                                    'branchID'      => $branchID,
-                                    'userid'        => $userID
-                                ];
-                            } else {
+                                $totaltransactionamount += $stocktotal;
+                            }
+                            else{
+                                //New stock insert
                                 $materialBatchno = generate_batch_no($rowtransactiondata->tbl_print_material_info_idtbl_print_material_info);
                                 $stocktotal = $rowtransactiondata->qtyin * $rowtransactiondata->unitcost;
                                 $totaltransactionamount += $stocktotal;
 
-                                // Collect for webhook
-                                $stockWebhookPayload[] = [
-                                    'type'          => 'insert',
-                                    'batchno'       => $materialBatchno,
-                                    'materialid'    => $rowtransactiondata->tbl_print_material_info_idtbl_print_material_info,
-                                    'materialname'  => $rowtransactiondata->materialname,
-                                    'plusminus'     => $rowtransactiondata->plusminus,
-                                    'qtyin'         => $rowtransactiondata->qtyin,
-                                    'qtyout'        => 0,
-                                    'unitcost'      => $rowtransactiondata->unitcost,
-                                    'stocktotal'    => $stocktotal,
-                                    'supplier_id'   => $rowtransactiondata->grnsupplierid,
-                                    'uom_id'        => $rowtransactiondata->uom_id,
-                                    'grndate'       => $today,
-                                    'companyID'     => $companyID,
-                                    'branchID'      => $branchID,
-                                    'userid'        => $userID
-                                ];
+                                // Insert the stock in the transaction data
+                                $datastock = array(
+                                    'batchno' => $materialBatchno, 
+                                    'grndate' => $today, 
+                                    'supplier_id' => $rowtransactiondata->grnsupplierid, 
+                                    'qty' => $rowtransactiondata->qtyin, 
+                                    'measure_type_id' => $rowtransactiondata->uom_id, 
+                                    'unitprice' => $rowtransactiondata->unitcost, 
+                                    'total' => $stocktotal, 
+                                    'status' => '1', 
+                                    'insertdatetime' => $updatedatetime,
+                                    'tbl_user_idtbl_user' => $userID, 
+                                    'tbl_print_material_info_idtbl_print_material_info' => $rowtransactiondata->tbl_print_material_info_idtbl_print_material_info, 
+                                    'tbl_company_idtbl_company' => $companyID, 
+                                    'tbl_company_branch_idtbl_company_branch' => $branchID,
+                                );
+                                $this->db->insert('tbl_print_stock', $datastock);
                             }
                         }
-
-                       if(!empty($stockWebhookPayload)){
-                            // $webhookUrl = 'http://localhost/multioffsetprint/Api/StockWebhook';
-                            
-                            $ch = curl_init($webhookUrl);
-                            curl_setopt($ch, CURLOPT_POST, true);
-                            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
-                                'stocks' => $stockWebhookPayload,
-                            ]));
-                            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-                            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-                            
-                            $webhookResponse = curl_exec($ch);
-                            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                            curl_close($ch);
-                        } 
                         
-                        // print_r($webhookResponse);
-                        // die();
                         // Prepare the journal entry
                         $batchtype = $respond->row(0)->idtbl_batch_trans_type;
                         $narration = $respond->row(0)->batch_category.' - '.$respond->row(0)->batctranstype.' on '.$today;
@@ -1182,55 +1052,22 @@ class BatchTransactioninfo extends CI_Model{
         $respond=$this->db->get();
 
         if($respond->row(0)->tbl_batch_category_idtbl_batch_category==1):
-            $configdata = getconfigdata('measurement_search');
-        
-            $tablename = $configdata->row(0)->tbl_name;
-            $column1   = $configdata->row(0)->col_name;
-            $column2   = $configdata->row(1)->col_name;
-
-            $configdatabatch = getconfigdata('batch_transaction');
-            
-            $tablenamebatch = $configdatabatch->row(0)->tbl_name;
-            $column1batch   = $configdatabatch->row(0)->col_name;
-            $column2batch   = $configdatabatch->row(1)->col_name;
-            $column3batch   = $configdatabatch->row(2)->col_name;
-
-            $this->db->select("tbl_batch_transaction.*, IF($tablenamebatch IS NULL, '', $tablenamebatch.$column1batch) AS materialname, IF($tablename IS NULL, '', $tablename.$column2) AS measure_type");
+            $this->db->select('tbl_batch_transaction.*, tbl_print_material_info.materialname,  tbl_measurements.measure_type');
             $this->db->from('tbl_batch_transaction');
-            if(!empty($tablenamebatch)):
-                $this->db->join("$tablenamebatch", "$tablenamebatch.$column1batch=tbl_batch_transaction.tbl_print_material_info_idtbl_print_material_info", 'left');
-            endif;
-            if(!empty($tablename)):
-                $this->db->join("$tablename", "$tablename.$column2=tbl_batch_transaction.uom_id", 'left');
-            endif;
+            $this->db->join('tbl_print_material_info', 'tbl_print_material_info.idtbl_print_material_info=tbl_batch_transaction.tbl_print_material_info_idtbl_print_material_info', 'left');
+            $this->db->join('tbl_measurements', 'tbl_measurements.idtbl_measurements=tbl_batch_transaction.uom_id', 'left');
             $this->db->where('tbl_batch_transaction_main_idtbl_batch_transaction_main', $recordID);
             $this->db->where('tbl_batch_transaction.status', 1);
         elseif($respond->row(0)->tbl_batch_category_idtbl_batch_category==2):
-            $configdata = getconfigdata('receivable_search');
-        
-            $tablename = $configdata->row(0)->tbl_name;
-            $column1   = $configdata->row(0)->col_name;
-            $column2   = $configdata->row(1)->col_name;
-
-            $this->db->select("tbl_batch_transaction.*, IF($tablename IS NULL, '', $tablename.$column1) AS customer");
+            $this->db->select('tbl_batch_transaction.*, tbl_customer.customer');
             $this->db->from('tbl_batch_transaction');
-            if(!empty($tablename)):
-                $this->db->join("$tablename", "$tablename.$column1=tbl_batch_transaction.tbl_customer_idtbl_customer", 'left');
-            endif;
+            $this->db->join('tbl_customer', 'tbl_customer.idtbl_customer=tbl_batch_transaction.tbl_customer_idtbl_customer', 'left');
             $this->db->where('tbl_batch_transaction_main_idtbl_batch_transaction_main', $recordID);
             $this->db->where('tbl_batch_transaction.status', 1);
         elseif($respond->row(0)->tbl_batch_category_idtbl_batch_category==3):
-            $configdata = getconfigdata('payable_search');
-        
-            $tablename = $configdata->row(0)->tbl_name;
-            $column1   = $configdata->row(0)->col_name;
-            $column2   = $configdata->row(1)->col_name;
-
-            $this->db->select("tbl_batch_transaction.*, IF($tablename IS NULL, '', $tablename.$column1) AS suppliername");
+            $this->db->select('tbl_batch_transaction.*, tbl_supplier.suppliername');
             $this->db->from('tbl_batch_transaction');
-            if(!empty($tablename)):
-                $this->db->join("$tablename", "$tablename.$column1=tbl_batch_transaction.tbl_supplier_idtbl_supplier", 'left');
-            endif;
+            $this->db->join('tbl_supplier', 'tbl_supplier.idtbl_supplier=tbl_batch_transaction.tbl_supplier_idtbl_supplier', 'left');
             $this->db->where('tbl_batch_transaction_main_idtbl_batch_transaction_main', $recordID);
             $this->db->where('tbl_batch_transaction.status', 1);
         endif;

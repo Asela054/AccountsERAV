@@ -419,6 +419,14 @@ class Receiptsegregationinfo extends CI_Model{
         $userID=$_SESSION['userid'];
         $updatedatetime=date('Y-m-d H:i:s');
 
+        $configdata = getconfigdata('receivable_search');
+
+		$tablename = $configdata->row(0)->tbl_name;
+		$column1   = $configdata->row(0)->col_name;
+		$column2   = $configdata->row(1)->col_name;
+
+        $has_table = !empty($tablename) ? 1 : 0;
+
         $data = array(
             'editstatus' => '1',
             'updateuser'=> $userID, 
@@ -437,11 +445,13 @@ class Receiptsegregationinfo extends CI_Model{
         $this->db->where('tbl_account_receivable_main_idtbl_account_receivable_main', $recordID);
         $this->db->update('tbl_account_receivable', $datapay);
 
-        $this->db->select('tbl_account_receivable_main.*, tbl_company.company, tbl_company_branch.branch, tbl_customer.customer AS customername');
+        $this->db->select("tbl_account_receivable_main.*, tbl_company.company, tbl_company_branch.branch, IF($has_table = 0, '', $tablename.$column2) AS customername");
         $this->db->from('tbl_account_receivable_main');
         $this->db->join('tbl_company', 'tbl_company.idtbl_company = tbl_account_receivable_main.tbl_company_idtbl_company', 'left');
         $this->db->join('tbl_company_branch', 'tbl_company_branch.idtbl_company_branch = tbl_account_receivable_main.tbl_company_branch_idtbl_company_branch', 'left');
-        $this->db->join('tbl_customer', 'tbl_customer.idtbl_customer = tbl_account_receivable_main.customer', 'left');
+        if(!empty($tablename)){
+            $this->db->join("$tablename", "$tablename.$column1 = tbl_account_receivable_main.customer", 'left');
+        }
         $this->db->where('tbl_account_receivable_main.idtbl_account_receivable_main', $recordID);
         $this->db->where('tbl_account_receivable_main.status', 1);
 
@@ -508,6 +518,14 @@ class Receiptsegregationinfo extends CI_Model{
         $recordID=$this->input->post('recordID');
         $updatedatetime=date('Y-m-d H:i:s');
 
+        $configdata = getconfigdata('receivable_search');
+
+		$tablename = $configdata->row(0)->tbl_name;
+		$column1   = $configdata->row(0)->col_name;
+		$column2   = $configdata->row(1)->col_name;
+
+        $has_table = !empty($tablename) ? 1 : 0;
+
         $data = array(
             'postviewtime'=> $updatedatetime
         );
@@ -516,11 +534,13 @@ class Receiptsegregationinfo extends CI_Model{
         $this->db->where('poststatus', 0);
         $this->db->update('tbl_account_receivable_main', $data);
 
-        $this->db->select('tbl_account_receivable_main.*, tbl_company.company, tbl_company_branch.branch, tbl_customer.customer');
+        $this->db->select("tbl_account_receivable_main.*, tbl_company.company, tbl_company_branch.branch, IF($has_table = 0, '', $tablename.$column2) AS customer");
         $this->db->from('tbl_account_receivable_main');
         $this->db->join('tbl_company', 'tbl_company.idtbl_company = tbl_account_receivable_main.tbl_company_idtbl_company', 'left');
         $this->db->join('tbl_company_branch', 'tbl_company_branch.idtbl_company_branch = tbl_account_receivable_main.tbl_company_branch_idtbl_company_branch', 'left');
-        $this->db->join('tbl_customer', 'tbl_customer.idtbl_customer = tbl_account_receivable_main.customer', 'left');
+        if(!empty($tablename)){
+            $this->db->join("$tablename", "$tablename.$column1 = tbl_account_receivable_main.customer", 'left');
+        }
         $this->db->where('tbl_account_receivable_main.idtbl_account_receivable_main', $recordID);
         // $this->db->where('tbl_account_receivable_main.status', 1);
 

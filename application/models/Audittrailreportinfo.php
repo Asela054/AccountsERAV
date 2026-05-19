@@ -252,16 +252,62 @@ class Audittrailreportinfo extends CI_Model{
                 AND a.trabatchotherno LIKE 'JE%'
 
         -- RE Detail
-        LEFT JOIN tbl_receivable re 
-            ON a.trabatchotherno = re.batchno AND a.accamount = re.amount AND a.trabatchotherno LIKE 'RE%'
-        LEFT JOIN tbl_account_detail det_re 
-            ON re.tbl_account_detail_idtbl_account_detail = det_re.idtbl_account_detail
+        -- LEFT JOIN tbl_receivable re 
+        --     ON a.trabatchotherno = re.batchno AND a.accamount = re.amount AND a.trabatchotherno LIKE 'RE%'
+        -- LEFT JOIN tbl_account_detail det_re 
+        --     ON re.tbl_account_detail_idtbl_account_detail = det_re.idtbl_account_detail
+
+        LEFT JOIN (
+            SELECT 
+                re.batchno, 
+                re.amount,
+                ree.tratype,
+                ree.tbl_account_detail_idtbl_account_detail AS entry_account_detail_id,
+                d.accountno, 
+                d.accountname
+            FROM tbl_receivable re
+            LEFT JOIN tbl_receivable_entry ree 
+                ON ree.tbl_receivable_idtbl_receivable = re.idtbl_receivable
+            JOIN tbl_account_detail d 
+                ON ree.tbl_account_detail_idtbl_account_detail = d.idtbl_account_detail
+            GROUP BY 
+                re.batchno, 
+                re.amount, 
+                ree.tratype,
+                ree.tbl_account_detail_idtbl_account_detail
+        ) det_re ON a.trabatchotherno = det_re.batchno 
+                AND a.accamount = det_re.amount 
+                AND a.crdr = det_re.tratype
+                AND a.trabatchotherno LIKE 'RE%'
 
         -- PS Detail
-        LEFT JOIN tbl_account_paysettle ps 
-            ON a.trabatchotherno = ps.batchno AND a.accamount = ps.totalpayment AND a.trabatchotherno LIKE 'PS%'
-        LEFT JOIN tbl_account_detail det_ps 
-            ON ps.tbl_account_detail_idtbl_account_detail = det_ps.idtbl_account_detail
+        -- LEFT JOIN tbl_account_paysettle ps 
+        --     ON a.trabatchotherno = ps.batchno AND a.accamount = ps.totalpayment AND a.trabatchotherno LIKE 'PS%'
+        -- LEFT JOIN tbl_account_detail det_ps 
+        --     ON ps.tbl_account_detail_idtbl_account_detail = det_ps.idtbl_account_detail
+        -- PS Detail
+        LEFT JOIN (
+            SELECT 
+                ps.batchno, 
+                ps.totalpayment,
+                pse.tratype,
+                pse.tbl_account_detail_idtbl_account_detail AS entry_account_detail_id,
+                d.accountno, 
+                d.accountname
+            FROM tbl_account_paysettle ps
+            LEFT JOIN tbl_account_paysettle_entry pse 
+                ON pse.tbl_account_paysettle_idtbl_account_paysettle = ps.idtbl_account_paysettle
+            JOIN tbl_account_detail d 
+                ON pse.tbl_account_detail_idtbl_account_detail = d.idtbl_account_detail
+            GROUP BY 
+                ps.batchno, 
+                ps.totalpayment, 
+                pse.tratype,
+                pse.tbl_account_detail_idtbl_account_detail
+        ) det_ps ON a.trabatchotherno = det_ps.batchno 
+                AND a.accamount = det_ps.totalpayment 
+                AND a.crdr = det_ps.tratype
+                AND a.trabatchotherno LIKE 'PS%'
 
         WHERE a.trabatchotherno IS NOT NULL 
             AND a.trabatchotherno != ''

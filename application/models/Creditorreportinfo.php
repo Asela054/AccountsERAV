@@ -7,19 +7,28 @@ class Creditorreportinfo extends CI_Model{
         $companyID = $_SESSION['companyid'];
         $branchID = $_SESSION['branchid'];
 
+        $configdata = getconfigdata('creditor_report');
+
+		$tablename = $configdata->row(0)->tbl_name;
+		$column1   = $configdata->row(0)->col_name;
+		$column2   = $configdata->row(1)->col_name;
+		$column3   = $configdata->row(2)->col_name;
+
+        $has_table = !empty($tablename) ? 1 : 0;
+
         $html = '';
 
         // If no creditor selected, show summary for all creditors
-        if(empty($creditor)) {
+        // if(empty($creditor)) {
             // Get all creditors with balances
             $sqlCreditors = "
                 SELECT 
-                    s.idtbl_supplier,
-                    s.suppliername,
-                    s.bus_reg_no,
+                    s.$column1 AS idtbl_supplier,
+                    s.$column2 AS suppliername,
+                    s.$column3 AS bus_reg_no,
                     (SELECT COALESCE(SUM(amount), 0) 
                     FROM tbl_expence_info e 
-                    WHERE e.tbl_supplier_idtbl_supplier = s.idtbl_supplier 
+                    WHERE e.tbl_supplier_idtbl_supplier = s.$column1 
                     AND e.status = 1 
                     AND e.grndate BETWEEN ? AND ?
                     AND e.tbl_company_idtbl_company = ? 
@@ -28,22 +37,23 @@ class Creditorreportinfo extends CI_Model{
                     (SELECT COALESCE(SUM(api.amount), 0) 
                     FROM tbl_account_paysettle_info api 
                     JOIN tbl_account_paysettle ap ON ap.idtbl_account_paysettle = api.tbl_account_paysettle_idtbl_account_paysettle
-                    WHERE ap.supplier = s.idtbl_supplier 
+                    WHERE ap.supplier = s.$column1 
                     AND ap.status = 1 
                     AND ap.date BETWEEN ? AND ?
                     AND ap.tbl_company_idtbl_company = ? 
                     AND ap.tbl_company_branch_idtbl_company_branch = ?) as total_payments
-                FROM tbl_supplier s
+                FROM $tablename s
                 WHERE s.status = 1
+                " . (!empty($creditor) ? "AND s.$column1 = " . (int)$creditor . " " : "") . "
                 AND EXISTS (
                     SELECT 1 FROM tbl_expence_info e 
-                    WHERE e.tbl_supplier_idtbl_supplier = s.idtbl_supplier 
+                    WHERE e.tbl_supplier_idtbl_supplier = s.$column1 
                     AND e.status = 1 
                     AND e.grndate BETWEEN ? AND ?
                     AND e.tbl_company_idtbl_company = ? 
                     AND e.tbl_company_branch_idtbl_company_branch = ?
                 )
-                ORDER BY s.suppliername ASC
+                ORDER BY s.$column2 ASC
             ";
 
             $creditors = $this->db->query($sqlCreditors, [
@@ -106,16 +116,16 @@ class Creditorreportinfo extends CI_Model{
                     ) 
                     AND `tbl_print_grn`.`tbl_company_idtbl_company`=? AND `tbl_print_grn`.`tbl_company_branch_idtbl_company_branch`=?
                 WHERE
-                `tbl_expence_info`.`tbl_company_idtbl_company` = ? AND `tbl_expence_info`.`tbl_company_branch_idtbl_company_branch` = ? AND `tbl_expence_info`.`tbl_supplier_idtbl_supplier` = ? AND `tbl_expence_info`.`grndate` BETWEEN ? AND ? AND `tbl_expence_info`.`poststatus`=?) AS `u` ORDER BY `u`.`repaydate` ASC";
+                `tbl_expence_info`.`tbl_company_idtbl_company` = ? AND `tbl_expence_info`.`tbl_company_branch_idtbl_company_branch` = ? AND `tbl_expence_info`.`tbl_supplier_idtbl_supplier` = ? AND `tbl_expence_info`.`grndate` BETWEEN ? AND ? AND `tbl_expence_info`.`poststatus`=? AND `tbl_expence_info`.`status`=?) AS `u` ORDER BY `u`.`repaydate` ASC";
                 
-                $transactions = $this->db->query($sql, [1, $fromdate, $todate, 1, 1, $sup->idtbl_supplier, $companyID, $branchID, $companyID, $branchID, $companyID, $branchID, $sup->idtbl_supplier, $fromdate, $todate, 1])->result();
+                $transactions = $this->db->query($sql, [1, $fromdate, $todate, 1, 1, $sup->idtbl_supplier, $companyID, $branchID, $companyID, $branchID, $companyID, $branchID, $sup->idtbl_supplier, $fromdate, $todate, 1, 1])->result();
 
                 //Get Post-dated cheque info
-                $this->db->select('tbl_account_paysettle.paymentno, tbl_cheque_issue.amount, tbl_cheque_issue.chedate, tbl_cheque_issue.chequeno, tbl_cheque_issue.narration, tbl_supplier.suppliername');
+                $this->db->select("tbl_account_paysettle.paymentno, tbl_cheque_issue.amount, tbl_cheque_issue.chedate, tbl_cheque_issue.chequeno, tbl_cheque_issue.narration, $tablename.$column2 AS suppliername");
                 $this->db->from('tbl_account_paysettle');
                 $this->db->join('tbl_account_paysettle_has_tbl_cheque_issue', 'tbl_account_paysettle_has_tbl_cheque_issue.tbl_account_paysettle_idtbl_account_paysettle = tbl_account_paysettle.idtbl_account_paysettle', 'left');
                 $this->db->join('tbl_cheque_issue', 'tbl_cheque_issue.idtbl_cheque_issue = tbl_account_paysettle_has_tbl_cheque_issue.tbl_cheque_issue_idtbl_cheque_issue', 'left');
-                $this->db->join('tbl_supplier', 'tbl_supplier.idtbl_supplier = tbl_account_paysettle.supplier', 'left');
+                $this->db->join("$tablename", "$tablename.$column1 = tbl_account_paysettle.supplier", 'left');
                 $this->db->where('tbl_account_paysettle.status', '1');
                 $this->db->where('tbl_account_paysettle.postdatedstatus', '1');
                 $this->db->where('tbl_account_paysettle.poststatus', '0');
@@ -268,190 +278,197 @@ class Creditorreportinfo extends CI_Model{
 
             $html .= '</div>'; // Close table-responsive
 
-        } else {
-            // Specific creditor selected - show detailed statement
-            // Get Opening Balance
-            $sqlOpenBalance = "SELECT ((SELECT COALESCE(SUM(`amount`), 0) FROM `tbl_expence_info` WHERE `status`=? AND `grndate`<? AND `tbl_supplier_idtbl_supplier`=? AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=?)-(SELECT COALESCE(SUM(`totalpayment`), 0) FROM `tbl_account_paysettle` WHERE `status`=? AND `date`<? AND `supplier`=? AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=?)) AS `openbalance`";
+        // } else {
+        //     // Specific creditor selected - show detailed statement
+        //     // Get Opening Balance
+        //     $sqlOpenBalance = "SELECT ((SELECT COALESCE(SUM(`amount`), 0) FROM `tbl_expence_info` WHERE `status`=? AND `grndate`<? AND `tbl_supplier_idtbl_supplier`=? AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=?)-(SELECT COALESCE(SUM(`totalpayment`), 0) FROM `tbl_account_paysettle` WHERE `status`=? AND `date`<? AND `supplier`=? AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=?)) AS `openbalance`";
             
-            $params = [1, $fromdate, $creditor, $companyID, $branchID, 1, $fromdate, $creditor, $companyID, $branchID];
-            $respondopenbalance = $this->db->query($sqlOpenBalance, $params);
-            $openingBalance = $respondopenbalance->row()->openbalance;
+        //     $params = [1, $fromdate, $creditor, $companyID, $branchID, 1, $fromdate, $creditor, $companyID, $branchID];
+        //     $respondopenbalance = $this->db->query($sqlOpenBalance, $params);
+        //     $openingBalance = $respondopenbalance->row()->openbalance;
 
-            // Get Transactions
-            $sql = "SELECT * FROM (SELECT `tbl_account_paysettle`.`date` AS `repaydate`, `tbl_account_paysettle`.`paymentno` AS `regrnno`, '' AS `expcode`, `tbl_account_paysettle_info`.`amount`, `tbl_account_paysettle_info`.`narration`, 'D' AS `tratype`, `tbl_cheque_issue`.`chedate`, `tbl_cheque_issue`.`chequeno` FROM `tbl_account_paysettle_info` LEFT JOIN `tbl_account_paysettle` ON `tbl_account_paysettle`.`idtbl_account_paysettle`=`tbl_account_paysettle_info`.`tbl_account_paysettle_idtbl_account_paysettle` LEFT JOIN `tbl_account_paysettle_has_tbl_cheque_issue` ON `tbl_account_paysettle_has_tbl_cheque_issue`.`tbl_account_paysettle_idtbl_account_paysettle`=`tbl_account_paysettle`.`idtbl_account_paysettle` LEFT JOIN `tbl_cheque_issue` ON `tbl_cheque_issue`.`idtbl_cheque_issue`=`tbl_account_paysettle_has_tbl_cheque_issue`.`tbl_cheque_issue_idtbl_cheque_issue` WHERE `tbl_account_paysettle_info`.`status`=? AND `tbl_account_paysettle`.`date` BETWEEN ? AND ? AND `tbl_account_paysettle`.`status`=? AND `tbl_account_paysettle`.`poststatus`=? AND `tbl_account_paysettle`.`supplier`=? AND `tbl_account_paysettle`.`tbl_company_idtbl_company`=? AND `tbl_account_paysettle`.`tbl_company_branch_idtbl_company_branch`=? UNION ALL SELECT `grndate` AS `repaydate`, `grnno` AS `regrnno`, `expcode`, `amount`, '' AS `narration`, 'C' AS `tratype`, '' AS `chedate`, '' AS `chequeno` FROM `tbl_expence_info` WHERE `tbl_supplier_idtbl_supplier`=? AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=? AND `grndate` BETWEEN ? AND ?) AS `u` ORDER BY `u`.`repaydate` ASC";
+        //     // Get Transactions
+        //     $sql = "SELECT * FROM (SELECT `tbl_account_paysettle`.`date` AS `repaydate`, `tbl_account_paysettle`.`paymentno` AS `regrnno`, '' AS `expcode`, `tbl_account_paysettle_info`.`amount`, `tbl_account_paysettle_info`.`narration`, 'D' AS `tratype`, `tbl_cheque_issue`.`chedate`, `tbl_cheque_issue`.`chequeno` FROM `tbl_account_paysettle_info` LEFT JOIN `tbl_account_paysettle` ON `tbl_account_paysettle`.`idtbl_account_paysettle`=`tbl_account_paysettle_info`.`tbl_account_paysettle_idtbl_account_paysettle` LEFT JOIN `tbl_account_paysettle_has_tbl_cheque_issue` ON `tbl_account_paysettle_has_tbl_cheque_issue`.`tbl_account_paysettle_idtbl_account_paysettle`=`tbl_account_paysettle`.`idtbl_account_paysettle` LEFT JOIN `tbl_cheque_issue` ON `tbl_cheque_issue`.`idtbl_cheque_issue`=`tbl_account_paysettle_has_tbl_cheque_issue`.`tbl_cheque_issue_idtbl_cheque_issue` WHERE `tbl_account_paysettle_info`.`status`=? AND `tbl_account_paysettle`.`date` BETWEEN ? AND ? AND `tbl_account_paysettle`.`status`=? AND `tbl_account_paysettle`.`poststatus`=? AND `tbl_account_paysettle`.`supplier`=? AND `tbl_account_paysettle`.`tbl_company_idtbl_company`=? AND `tbl_account_paysettle`.`tbl_company_branch_idtbl_company_branch`=? UNION ALL SELECT `grndate` AS `repaydate`, `grnno` AS `regrnno`, `expcode`, `amount`, '' AS `narration`, 'C' AS `tratype`, '' AS `chedate`, '' AS `chequeno` FROM `tbl_expence_info` WHERE `tbl_supplier_idtbl_supplier`=? AND `tbl_company_idtbl_company`=? AND `tbl_company_branch_idtbl_company_branch`=? AND `grndate` BETWEEN ? AND ?) AS `u` ORDER BY `u`.`repaydate` ASC";
             
-            $respond = $this->db->query($sql, array(1, $fromdate, $todate, 1, 1, $creditor, $companyID, $branchID, $creditor, $companyID, $branchID, $fromdate, $todate));
-            $transactions = $respond->result();
+        //     $respond = $this->db->query($sql, array(1, $fromdate, $todate, 1, 1, $creditor, $companyID, $branchID, $creditor, $companyID, $branchID, $fromdate, $todate));
+        //     $transactions = $respond->result();
 
-            // Get Creditor Info
-            $creditorInfo = [];
-            if(!empty($creditor)) {
-                $supQuery = $this->db->query("SELECT * FROM tbl_supplier WHERE idtbl_supplier = ?", [$creditor]);
-                $creditorInfo = $supQuery->row();
-            }
+        //     // Get Creditor Info
+        //     $creditorInfo = [];
+        //     if(!empty($creditor)) {
+        //         $supQuery = $this->db->query("SELECT * FROM tbl_supplier WHERE idtbl_supplier = ?", [$creditor]);
+        //         $creditorInfo = $supQuery->row();
+        //     }
 
-            //Get Post-dated cheque info
-            $this->db->select('tbl_account_paysettle.paymentno, tbl_cheque_issue.amount, tbl_cheque_issue.chedate, tbl_cheque_issue.chequeno, tbl_cheque_issue.narration, tbl_supplier.suppliername');
-            $this->db->from('tbl_account_paysettle');
-            $this->db->join('tbl_account_paysettle_has_tbl_cheque_issue', 'tbl_account_paysettle_has_tbl_cheque_issue.tbl_account_paysettle_idtbl_account_paysettle = tbl_account_paysettle.idtbl_account_paysettle', 'left');
-            $this->db->join('tbl_cheque_issue', 'tbl_cheque_issue.idtbl_cheque_issue = tbl_account_paysettle_has_tbl_cheque_issue.tbl_cheque_issue_idtbl_cheque_issue', 'left');
-            $this->db->join('tbl_supplier', 'tbl_supplier.idtbl_supplier = tbl_account_paysettle.supplier', 'left');
-            $this->db->where('tbl_account_paysettle.status', '1');
-            $this->db->where('tbl_account_paysettle.postdatedstatus', '1');
-            $this->db->where('tbl_account_paysettle.poststatus', '0');
-            if(!empty($creditor)) {
-                $this->db->where('tbl_account_paysettle.supplier', $creditor);
-            }
-            $respondpostdated=$this->db->get();
+        //     //Get Post-dated cheque info
+        //     $this->db->select('tbl_account_paysettle.paymentno, tbl_cheque_issue.amount, tbl_cheque_issue.chedate, tbl_cheque_issue.chequeno, tbl_cheque_issue.narration, tbl_supplier.suppliername');
+        //     $this->db->from('tbl_account_paysettle');
+        //     $this->db->join('tbl_account_paysettle_has_tbl_cheque_issue', 'tbl_account_paysettle_has_tbl_cheque_issue.tbl_account_paysettle_idtbl_account_paysettle = tbl_account_paysettle.idtbl_account_paysettle', 'left');
+        //     $this->db->join('tbl_cheque_issue', 'tbl_cheque_issue.idtbl_cheque_issue = tbl_account_paysettle_has_tbl_cheque_issue.tbl_cheque_issue_idtbl_cheque_issue', 'left');
+        //     $this->db->join('tbl_supplier', 'tbl_supplier.idtbl_supplier = tbl_account_paysettle.supplier', 'left');
+        //     $this->db->where('tbl_account_paysettle.status', '1');
+        //     $this->db->where('tbl_account_paysettle.postdatedstatus', '1');
+        //     $this->db->where('tbl_account_paysettle.poststatus', '0');
+        //     if(!empty($creditor)) {
+        //         $this->db->where('tbl_account_paysettle.supplier', $creditor);
+        //     }
+        //     $respondpostdated=$this->db->get();
 
-            // Transaction Table
-            $html .= '<div class="table-responsive">';
-            $html .= '<table class="table table-bordered table-striped table-sm small" id="creditorStatementsTable">';
-            $html .= '<thead>';
-            $html .= '<tr>';
-            $html .= '<th>#</th>';
-            $html .= '<th>Date</th>';
-            $html .= '<th>Document No</th>';
-            $html .= '<th>Description</th>';
-            $html .= '<th>Type</th>';
-            $html .= '<th class="text-right">Credit</th>';
-            $html .= '<th class="text-right">Debit</th>';
-            $html .= '<th class="text-right">Balance</th>';
-            $html .= '</tr>';
-            $html .= '</thead>';
-            $html .= '<tbody>';
+        //     // Transaction Table
+        //     $html .= '<div class="table-responsive">';
+        //     $html .= '<table class="table table-bordered table-striped table-sm small" id="creditorStatementsTable">';
+        //     $html .= '<thead>';
+        //     $html .= '<tr>';
+        //     $html .= '<th>#</th>';
+        //     $html .= '<th>Date</th>';
+        //     $html .= '<th>Document No</th>';
+        //     $html .= '<th>Description</th>';
+        //     $html .= '<th>Type</th>';
+        //     $html .= '<th class="text-right">Credit</th>';
+        //     $html .= '<th class="text-right">Debit</th>';
+        //     $html .= '<th class="text-right">Balance</th>';
+        //     $html .= '</tr>';
+        //     $html .= '</thead>';
+        //     $html .= '<tbody>';
 
-            $runningBalance = $openingBalance;
-            $counter = 1;
-            $totalCredit = 0;
-            $totalDebit = 0;
+        //     $runningBalance = $openingBalance;
+        //     $counter = 1;
+        //     $totalCredit = 0;
+        //     $totalDebit = 0;
 
-            // Opening Balance Row
-            $html .= '<tr>';
-            $html .= '<th>&nbsp;</th>';
-            $html .= '<th>' . date('d/m/Y', strtotime($fromdate)) . '</th>';
-            $html .= '<th>-</th>';
-            $html .= '<th>Opening Balance</th>';
-            $html .= '<th>Balance B/F</th>';
-            $html .= '<th class="text-right">-</th>';
-            $html .= '<th class="text-right">-</th>';
-            $html .= '<th class="text-right">' . number_format($runningBalance, 2) . '</th>';
-            $html .= '</tr>';
+        //     // Opening Balance Row
+        //     $html .= '<tr>';
+        //     $html .= '<th>&nbsp;</th>';
+        //     $html .= '<th>' . date('d/m/Y', strtotime($fromdate)) . '</th>';
+        //     $html .= '<th>-</th>';
+        //     $html .= '<th>Opening Balance</th>';
+        //     $html .= '<th>Balance B/F</th>';
+        //     $html .= '<th class="text-right">-</th>';
+        //     $html .= '<th class="text-right">-</th>';
+        //     $html .= '<th class="text-right">' . number_format($runningBalance, 2) . '</th>';
+        //     $html .= '</tr>';
 
-            foreach($transactions as $transaction) {
-                if($transaction->tratype == 'C') {
-                    // Expense/Credit (GRN)
-                    $runningBalance += $transaction->amount;
-                    $totalCredit += $transaction->amount;
-                    $creditAmount = number_format($transaction->amount, 2);
-                    $debitAmount = '-';
-                    $typeBadge = 'GRN';
-                } else {
-                    // Payment/Debit
-                    $runningBalance -= $transaction->amount;
-                    $totalDebit += $transaction->amount;
-                    $creditAmount = '-';
-                    $debitAmount = number_format($transaction->amount, 2);
-                    $typeBadge = 'Payment';
-                }
+        //     foreach($transactions as $transaction) {
+        //         if($transaction->tratype == 'C') {
+        //             // Expense/Credit (GRN)
+        //             $runningBalance += $transaction->amount;
+        //             $totalCredit += $transaction->amount;
+        //             $creditAmount = number_format($transaction->amount, 2);
+        //             $debitAmount = '-';
+        //             $typeBadge = 'GRN';
+        //         } else {
+        //             // Payment/Debit
+        //             $runningBalance -= $transaction->amount;
+        //             $totalDebit += $transaction->amount;
+        //             $creditAmount = '-';
+        //             $debitAmount = number_format($transaction->amount, 2);
+        //             $typeBadge = 'Payment';
+        //         }
 
-                $html .= '<tr>';
-                $html .= '<td>' . $counter . '</td>';
-                $html .= '<td>' . date('d/m/Y', strtotime($transaction->repaydate)) . '</td>';
-                $html .= '<td>' . $transaction->regrnno . '</td>';
-                $html .= '<td>' . $transaction->narration . '</td>';
-                $html .= '<td>' . $typeBadge . '</td>';
-                $html .= '<td class="text-right">' . $creditAmount . '</td>';
-                $html .= '<td class="text-right">' . $debitAmount . '</td>';
-                $html .= '<td class="text-right">' . number_format($runningBalance, 2) . '</td>';
-                $html .= '</tr>';
+        //         $html .= '<tr>';
+        //         $html .= '<td>' . $counter . '</td>';
+        //         $html .= '<td>' . date('d/m/Y', strtotime($transaction->repaydate)) . '</td>';
+        //         $html .= '<td>' . $transaction->regrnno . '</td>';
+        //         $html .= '<td>' . $transaction->narration . '</td>';
+        //         $html .= '<td>' . $typeBadge . '</td>';
+        //         $html .= '<td class="text-right">' . $creditAmount . '</td>';
+        //         $html .= '<td class="text-right">' . $debitAmount . '</td>';
+        //         $html .= '<td class="text-right">' . number_format($runningBalance, 2) . '</td>';
+        //         $html .= '</tr>';
 
-                $counter++;
-            }
+        //         $counter++;
+        //     }
 
-            // Closing Balance Row
-            $html .= '<tr>';
-            $html .= '<th colspan="5" class="text-right">Closing Balance (without pd cheques)</th>';
-            $html .= '<th class="text-right">' . number_format($totalCredit, 2) . '</th>';
-            $html .= '<th class="text-right">' . number_format($totalDebit, 2) . '</th>';
-            $html .= '<th class="text-right">' . number_format($runningBalance, 2) . '</th>';
-            $html .= '</tr>';
+        //     // Closing Balance Row
+        //     $html .= '<tr>';
+        //     $html .= '<th colspan="5" class="text-right">Closing Balance (without pd cheques)</th>';
+        //     $html .= '<th class="text-right">' . number_format($totalCredit, 2) . '</th>';
+        //     $html .= '<th class="text-right">' . number_format($totalDebit, 2) . '</th>';
+        //     $html .= '<th class="text-right">' . number_format($runningBalance, 2) . '</th>';
+        //     $html .= '</tr>';
 
-            //Post-dated cheque info
-            if(!empty($respondpostdated->result())):
-                $totalpostdated=0;
-                $chno=1;
-                $html .= '<tr>';
-                $html .='<th colspan="8">Post-dated cheque information.</th>';
-                $html .= '</tr>';
-                $html .= '<tr>';
-                $html .= '<th>#</th>';
-                $html .= '<th>Customer</th>';
-                $html .= '<th>Receipt no</th>';
-                $html .= '<th>Cheque date</th>';
-                $html .= '<th>Cheque no</th>';
-                $html .= '<th class="text-left">Narration</th>';
-                $html .= '<th class="text-right">Amount</th>';
-                $html .= '<th>&nbsp;</th>';
-                $html .= '</tr>';
-                foreach($respondpostdated->result() as $rowpostdated):
-                    $html .= '<tr>';
-                    $html .= '<td>'.$chno.'</td>';
-                    $html .= '<td>'.$rowpostdated->suppliername.'</td>';
-                    $html .= '<td>'.$rowpostdated->paymentno.'</td>';
-                    $html .= '<td>'.$rowpostdated->chedate.'</td>';
-                    $html .= '<td>'.$rowpostdated->chequeno.'</td>';
-                    $html .= '<td class="text-left">'.$rowpostdated->narration.'</td>';
-                    $html .= '<td class="text-right">'.number_format($rowpostdated->amount, 2).'</td>';
-                    $html .= '<td>&nbsp;</td>';
-                    $html .= '</tr>';
+        //     //Post-dated cheque info
+        //     if(!empty($respondpostdated->result())):
+        //         $totalpostdated=0;
+        //         $chno=1;
+        //         $html .= '<tr>';
+        //         $html .='<th colspan="8">Post-dated cheque information.</th>';
+        //         $html .= '</tr>';
+        //         $html .= '<tr>';
+        //         $html .= '<th>#</th>';
+        //         $html .= '<th>Customer</th>';
+        //         $html .= '<th>Receipt no</th>';
+        //         $html .= '<th>Cheque date</th>';
+        //         $html .= '<th>Cheque no</th>';
+        //         $html .= '<th class="text-left">Narration</th>';
+        //         $html .= '<th class="text-right">Amount</th>';
+        //         $html .= '<th>&nbsp;</th>';
+        //         $html .= '</tr>';
+        //         foreach($respondpostdated->result() as $rowpostdated):
+        //             $html .= '<tr>';
+        //             $html .= '<td>'.$chno.'</td>';
+        //             $html .= '<td>'.$rowpostdated->suppliername.'</td>';
+        //             $html .= '<td>'.$rowpostdated->paymentno.'</td>';
+        //             $html .= '<td>'.$rowpostdated->chedate.'</td>';
+        //             $html .= '<td>'.$rowpostdated->chequeno.'</td>';
+        //             $html .= '<td class="text-left">'.$rowpostdated->narration.'</td>';
+        //             $html .= '<td class="text-right">'.number_format($rowpostdated->amount, 2).'</td>';
+        //             $html .= '<td>&nbsp;</td>';
+        //             $html .= '</tr>';
 
-                    $totalpostdated=$totalpostdated+$rowpostdated->amount;
-                    $chno++;
-                endforeach;
-                $html .= '<tr>';
-                $html .='<th class="text-right" colspan="6">Total Post-dated</th>';
-                $html .= '<th class="text-right">'.number_format($totalpostdated, 2).'</th>';
-                $html .= '<th>&nbsp;</th>';
-                $html .= '</tr>';
+        //             $totalpostdated=$totalpostdated+$rowpostdated->amount;
+        //             $chno++;
+        //         endforeach;
+        //         $html .= '<tr>';
+        //         $html .='<th class="text-right" colspan="6">Total Post-dated</th>';
+        //         $html .= '<th class="text-right">'.number_format($totalpostdated, 2).'</th>';
+        //         $html .= '<th>&nbsp;</th>';
+        //         $html .= '</tr>';
 
-                // Calculate and add Final Close Balance row
-                $finalCloseBalance = $runningBalance - $totalpostdated;
-                $html .= '<tr>';
-                $html .= '<th colspan="5" class="text-right">Final Close Balance</th>';
-                $html .= '<th class="text-right">-</th>';
-                $html .= '<th class="text-right">-</th>';
-                $html .= '<th class="text-right">' . number_format($finalCloseBalance, 2) . '</th>';
-                $html .= '</tr>';
+        //         // Calculate and add Final Close Balance row
+        //         $finalCloseBalance = $runningBalance - $totalpostdated;
+        //         $html .= '<tr>';
+        //         $html .= '<th colspan="5" class="text-right">Final Close Balance</th>';
+        //         $html .= '<th class="text-right">-</th>';
+        //         $html .= '<th class="text-right">-</th>';
+        //         $html .= '<th class="text-right">' . number_format($finalCloseBalance, 2) . '</th>';
+        //         $html .= '</tr>';
                 
-                // Add a summary row showing the calculation
-                $html .= '<tr>';
-                $html .= '<td colspan="8" style="font-style: italic;">';
-                $html .= 'Calculation: Closing Balance (' . number_format($runningBalance, 2) . ') - Post-dated Total (' . number_format($totalpostdated, 2) . ') = Final Close Balance (' . number_format($finalCloseBalance, 2) . ')';
-                $html .= '</td>';
-                $html .= '</tr>';
-            else:
-                // If no post-dated cheques, final close balance equals closing balance
-                $html .= '<tr>';
-                $html .= '<th colspan="5" class="text-right">Final Close Balance</th>';
-                $html .= '<th class="text-right">-</th>';
-                $html .= '<th class="text-right">-</th>';
-                $html .= '<th class="text-right">' . number_format($runningBalance, 2) . '</th>';
-                $html .= '</tr>';
-            endif;
+        //         // Add a summary row showing the calculation
+        //         $html .= '<tr>';
+        //         $html .= '<td colspan="8" style="font-style: italic;">';
+        //         $html .= 'Calculation: Closing Balance (' . number_format($runningBalance, 2) . ') - Post-dated Total (' . number_format($totalpostdated, 2) . ') = Final Close Balance (' . number_format($finalCloseBalance, 2) . ')';
+        //         $html .= '</td>';
+        //         $html .= '</tr>';
+        //     else:
+        //         // If no post-dated cheques, final close balance equals closing balance
+        //         $html .= '<tr>';
+        //         $html .= '<th colspan="5" class="text-right">Final Close Balance</th>';
+        //         $html .= '<th class="text-right">-</th>';
+        //         $html .= '<th class="text-right">-</th>';
+        //         $html .= '<th class="text-right">' . number_format($runningBalance, 2) . '</th>';
+        //         $html .= '</tr>';
+        //     endif;
 
-            $html .= '</tbody>';
-            $html .= '</table>';
-            $html .= '</div>';
-        }
+        //     $html .= '</tbody>';
+        //     $html .= '</table>';
+        //     $html .= '</div>';
+        // }
 
         echo $html;
     }
     public function CreditorAgeAnalysisReport(){
-        $asofdate = $this->input->post('asofdate') ? $this->input->post('asofdate') : date('Y-m-d');
+        $asofdate = $this->input->post('todate') ? $this->input->post('todate') : date('Y-m-d');
         $creditor = $this->input->post('supplier');
         $companyID = $_SESSION['companyid'];
         $branchID = $_SESSION['branchid'];
+
+        $configdata = getconfigdata('creditor_report');
+
+		$tablename = $configdata->row(0)->tbl_name;
+		$column1   = $configdata->row(0)->col_name;
+		$column2   = $configdata->row(1)->col_name;
+		$column3   = $configdata->row(2)->col_name;
 
         $html = '';
 
@@ -461,7 +478,7 @@ class Creditorreportinfo extends CI_Model{
         // Get Creditor Info if selected
         $creditorInfo = null;
         if(!empty($creditor)) {
-            $supQuery = $this->db->query("SELECT * FROM tbl_supplier WHERE idtbl_supplier = ?", [$creditor]);
+            $supQuery = $this->db->query("SELECT * FROM $tablename WHERE $column1 = ?", [$creditor]);
             $creditorInfo = $supQuery->row();
         }
 
@@ -469,11 +486,11 @@ class Creditorreportinfo extends CI_Model{
             // Specific creditor selected - show PDF-style layout
 
             //Get Post-dated cheque info
-            $this->db->select('tbl_account_paysettle.paymentno, tbl_cheque_issue.amount, tbl_cheque_issue.chedate, tbl_cheque_issue.chequeno, tbl_cheque_issue.narration, tbl_supplier.suppliername');
+            $this->db->select("tbl_account_paysettle.paymentno, tbl_cheque_issue.amount, tbl_cheque_issue.chedate, tbl_cheque_issue.chequeno, tbl_cheque_issue.narration, $tablename.$column2 AS suppliername");
             $this->db->from('tbl_account_paysettle');
             $this->db->join('tbl_account_paysettle_has_tbl_cheque_issue', 'tbl_account_paysettle_has_tbl_cheque_issue.tbl_account_paysettle_idtbl_account_paysettle = tbl_account_paysettle.idtbl_account_paysettle', 'left');
             $this->db->join('tbl_cheque_issue', 'tbl_cheque_issue.idtbl_cheque_issue = tbl_account_paysettle_has_tbl_cheque_issue.tbl_cheque_issue_idtbl_cheque_issue', 'left');
-            $this->db->join('tbl_supplier', 'tbl_supplier.idtbl_supplier = tbl_account_paysettle.supplier', 'left');
+            $this->db->join("$tablename", "$tablename.$column1 = tbl_account_paysettle.supplier", 'left');
             $this->db->where('tbl_account_paysettle.status', '1');
             $this->db->where('tbl_account_paysettle.postdatedstatus', '1');
             $this->db->where('tbl_account_paysettle.poststatus', '0');
@@ -717,9 +734,9 @@ class Creditorreportinfo extends CI_Model{
             // No creditor selected - show all creditors in summary table
             $sql = "
                 SELECT 
-                    s.idtbl_supplier,
-                    s.suppliername,
-                    s.bus_reg_no,
+                    s.$column1 AS idtbl_supplier,
+                    s.$column2 AS suppliername,
+                    s.$column3 AS bus_reg_no,
                     SUM(CASE WHEN DATEDIFF(?, e.grndate) > 89 AND e.status = 1 THEN e.amount ELSE 0 END) AS over_90,
                     SUM(CASE WHEN DATEDIFF(?, e.grndate) BETWEEN 60 AND 89 AND e.status = 1 THEN e.amount ELSE 0 END) AS days_60_89,
                     SUM(CASE WHEN DATEDIFF(?, e.grndate) BETWEEN 30 AND 59 AND e.status = 1 THEN e.amount ELSE 0 END) AS days_30_59,
@@ -728,22 +745,22 @@ class Creditorreportinfo extends CI_Model{
                     SUM(CASE WHEN ap.status = 1 THEN ap.totalpayment ELSE 0 END) AS total_payments,
                     (SUM(CASE WHEN e.status = 1 THEN e.amount ELSE 0 END) - 
                     SUM(CASE WHEN ap.status = 1 THEN ap.totalpayment ELSE 0 END)) AS net_balance
-                FROM tbl_supplier s
-                LEFT JOIN tbl_expence_info e ON s.idtbl_supplier = e.tbl_supplier_idtbl_supplier 
+                FROM $tablename s
+                LEFT JOIN tbl_expence_info e ON s.$column1 = e.tbl_supplier_idtbl_supplier 
                     AND e.tbl_company_idtbl_company = ? 
                     AND e.tbl_company_branch_idtbl_company_branch = ?
                     AND e.grndate <= ?
                     AND e.status = 1
-                LEFT JOIN tbl_account_paysettle ap ON s.idtbl_supplier = ap.supplier 
+                LEFT JOIN tbl_account_paysettle ap ON s.$column1 = ap.supplier 
                     AND ap.tbl_company_idtbl_company = ? 
                     AND ap.tbl_company_branch_idtbl_company_branch = ?
                     AND ap.date <= ?
                     AND ap.status = 1
                     AND ap.poststatus = 1
                 WHERE s.status = 1
-                GROUP BY s.idtbl_supplier
+                GROUP BY s.$column1
                 HAVING net_balance > 0
-                ORDER BY s.suppliername ASC
+                ORDER BY s.$column2 ASC
             ";
 
             $creditors = $this->db->query($sql, [
@@ -753,11 +770,11 @@ class Creditorreportinfo extends CI_Model{
             ])->result();
 
             //Get Post-dated cheque info
-            $this->db->select('tbl_account_paysettle.paymentno, tbl_cheque_issue.amount, tbl_cheque_issue.chedate, tbl_cheque_issue.chequeno, tbl_cheque_issue.narration, tbl_supplier.suppliername');
+            $this->db->select("tbl_account_paysettle.paymentno, tbl_cheque_issue.amount, tbl_cheque_issue.chedate, tbl_cheque_issue.chequeno, tbl_cheque_issue.narration, $tablename.$column2 AS suppliername");
             $this->db->from('tbl_account_paysettle');
             $this->db->join('tbl_account_paysettle_has_tbl_cheque_issue', 'tbl_account_paysettle_has_tbl_cheque_issue.tbl_account_paysettle_idtbl_account_paysettle = tbl_account_paysettle.idtbl_account_paysettle', 'left');
             $this->db->join('tbl_cheque_issue', 'tbl_cheque_issue.idtbl_cheque_issue = tbl_account_paysettle_has_tbl_cheque_issue.tbl_cheque_issue_idtbl_cheque_issue', 'left');
-            $this->db->join('tbl_supplier', 'tbl_supplier.idtbl_supplier = tbl_account_paysettle.supplier', 'left');
+            $this->db->join("$tablename", "$tablename.$column1 = tbl_account_paysettle.supplier", 'left');
             $this->db->where('tbl_account_paysettle.status', '1');
             $this->db->where('tbl_account_paysettle.postdatedstatus', '1');
             $this->db->where('tbl_account_paysettle.poststatus', '0');

@@ -465,20 +465,30 @@ class Reportprintinfo extends CI_Model{
         return ucfirst(trim($words));
     }     
     public function Paymentsettlereceipt($invoicereceipt, $printtype){
-        $this->db->select('`tbl_account_paysettle_info`.`invoiceno`, `tbl_account_paysettle`.`paymentno`, `tbl_account_paysettle_info`.`narration`, `tbl_account_paysettle_info`.`amount`,`tbl_account_paysettle`.`idtbl_account_paysettle`, `tbl_account_paysettle`.`date`');
-        $this->db->from('tbl_account_paysettle_info');
-        $this->db->join('tbl_account_paysettle', 'tbl_account_paysettle.idtbl_account_paysettle = tbl_account_paysettle_info.tbl_account_paysettle_idtbl_account_paysettle', 'left');
+        $this->db->select('paysettlefiltertype');
+        $this->db->from('tbl_account_paysettle');
+        $this->db->where('tbl_account_paysettle.paymentno', $invoicereceipt);
+        $this->db->where('tbl_account_paysettle.status', '1');
+        $respondpaysettletype=$this->db->get();
+
+        $this->db->select('`tbl_account_paysettle_info`.`invoiceno`, `tbl_account_paysettle`.`paymentno`, `tbl_account_paysettle`.`remark`, `tbl_account_paysettle`.`totalpayment`, `tbl_account_paysettle_info`.`narration`, `tbl_account_paysettle_info`.`amount`,`tbl_account_paysettle`.`idtbl_account_paysettle`, `tbl_account_paysettle`.`date`');
+        $this->db->from('tbl_account_paysettle');
+        $this->db->join('tbl_account_paysettle_info', 'tbl_account_paysettle_info.tbl_account_paysettle_idtbl_account_paysettle = tbl_account_paysettle.idtbl_account_paysettle', 'left');
         if($printtype==1){
             $this->db->where('`tbl_account_paysettle_info`.`invoiceno`', $invoicereceipt);
         }
         else{
             $this->db->where('tbl_account_paysettle.paymentno', $invoicereceipt);
         }
-        $this->db->where('tbl_account_paysettle_info.status', '1');
+
+        if($respondpaysettletype->row(0)->paysettlefiltertype<3){
+            $this->db->where('tbl_account_paysettle_info.status', '1');
+        }
         $this->db->where('tbl_account_paysettle.status', '1');
         $respondinvoiceinfo=$this->db->get();
 
-        $this->db->select('`tbl_supplier`.`suppliername` AS `suppliername`, CONCAT(`address_line1`, " ", `address_line2`, " ", `city`) AS `address`, `tbl_supplier`.`telephone_no`, SUM(tbl_account_paysettle.totalpayment) AS `receipttotal`, `tbl_account_paysettle`.`idtbl_account_paysettle` AS `receipts`, `tbl_account_paysettle`.`date` AS `receiptdates`');
+
+        $this->db->select('`tbl_supplier`.`suppliername` AS `suppliername`, CONCAT(`address_line1`, " ", `address_line2`, " ", `city`) AS `address`, `tbl_supplier`.`telephone_no`, SUM(tbl_account_paysettle.totalpayment) AS `receipttotal`, `tbl_account_paysettle`.`idtbl_account_paysettle` AS `receipts`, `tbl_account_paysettle`.`date` AS `receiptdates`, `tbl_account_paysettle`.`paysettlefiltertype`');
         $this->db->from('tbl_account_paysettle');
         $this->db->join('tbl_supplier', 'tbl_supplier.idtbl_supplier = tbl_account_paysettle.supplier', 'left');
         if($printtype==1){
@@ -550,7 +560,9 @@ class Reportprintinfo extends CI_Model{
                 'orderno' => $i,
                 'invoiceno' => $rowlist->invoiceno,
                 'narration' => $rowlist->narration,
-                'amount' => $rowlist->amount
+                'amount' => $rowlist->amount,
+                'remark' => $rowlist->remark,
+                'totalpayment' => $rowlist->totalpayment
             ];
         
             $count++;
@@ -615,11 +627,19 @@ class Reportprintinfo extends CI_Model{
                 <table style="width:100%;border-collapse: collapse;">
                     <tr>
                         <td width="55%" style="vertical-align: top;padding:0px;">
-                            <p style="margin:0px;font-size:16px;font-weight: bold;">PAYMENT RECEIPT</p>
-                            <p style="margin:0px;font-size:13px;font-weight: bold;">To: '.$respondreceipt->row(0)->suppliername.'</p>
-                            <p style="margin:0px;font-size:13px;padding-left: 24px;"> '.$respondreceipt->row(0)->address.',</p>
-                            <p style="margin:0px;font-size:13px;padding-left: 24px;"> '.$respondreceipt->row(0)->telephone_no.'.</p>
-                        </td>
+                            <p style="margin:0px;font-size:16px;font-weight: bold;">PAYMENT RECEIPT</p>';
+                            if($respondreceipt->row(0)->paysettlefiltertype==1){
+                                $html.='<p style="margin:0px;font-size:13px;font-weight: bold;">To: '.$respondreceipt->row(0)->suppliername.'</p>
+                                <p style="margin:0px;font-size:13px;padding-left: 24px;"> '.$respondreceipt->row(0)->address.',</p>
+                                <p style="margin:0px;font-size:13px;padding-left: 24px;"> '.$respondreceipt->row(0)->telephone_no.'.</p>';
+                            }
+                            else if($respondreceipt->row(0)->paysettlefiltertype==2){
+                                $html.='<p style="margin:0px;font-size:13px;font-weight: bold;">To: Journal entry payment.</p>';
+                            }
+                            else if($respondreceipt->row(0)->paysettlefiltertype==3){
+                                $html.='<p style="margin:0px;font-size:13px;font-weight: bold;">To: Payment Voucher.</p>';
+                            }
+                        $html.='</td>
                         <td style="vertical-align: top;padding:0px;">
                             <p style="margin:0px;font-size:18px;font-weight:bold;text-transform: uppercase;">'.$companydetails->row()->companyname.'</p>
                             <p style="margin:0px;font-size:13px;font-weight:normal;text-transform: uppercase;">'.$companydetails->row()->companyaddress.'</p>
@@ -650,23 +670,41 @@ class Reportprintinfo extends CI_Model{
                 // Add page-break class to all sections except the last one
                 $pageBreakClass = ($currentSection < $totalSections) ? 'page-break' : 'no-page-break';
 
-                $html.='<main class="' . $pageBreakClass . '">
-                    <table style="width:100%;border-collapse: collapse;font-size: 13px;">
-                        <tr>
-                            <th width="10%" style="text-align: center; border:1px solid black;">No</th>
-                            <th width="15%" style="border:1px solid black;padding-left: 5px;">Invoice No</th>
-                            <th style="text-align: left; border:1px solid black;padding-left: 5px;">Description</th>
-                            <th width="25%" style="text-align: right; border:1px solid black;padding-right: 10px;">Amount</th>
-                        </tr>';
-                        foreach ($section as $row) {
-                            $html .= '<tr>
-                                <td width="10%" style="text-align: center; border:1px solid black;">'.$row['orderno'].'</td>
-                                <td width="15%" style="border:1px solid black;padding-left: 5px;">'.$row['invoiceno'].'</td>
-                                <td style="text-align: left; border:1px solid black;padding-left: 5px;">'.$row['narration'].'</td>
-                                <td width="25%" style="text-align: right; border:1px solid black;padding-right: 10px;">'.number_format($row['amount'], 2).'</td>
+                $html.='<main class="' . $pageBreakClass . '">';
+                    if($respondreceipt->row(0)->paysettlefiltertype==3){
+                        $html.='<table style="width:100%;border-collapse: collapse;font-size: 13px;">
+                            <tr>
+                                <th width="10%" style="text-align: center; border:1px solid black;">No</th>
+                                <th style="text-align: left; border:1px solid black;padding-left: 5px;">Description</th>
+                                <th width="25%" style="text-align: right; border:1px solid black;padding-right: 10px;">Amount</th>
                             </tr>';
-                        }
-                    $html .= '</table>';
+                            foreach ($section as $row) {
+                                $html .= '<tr>
+                                    <td width="10%" style="text-align: center; border:1px solid black;">'.$row['orderno'].'</td>
+                                    <td style="text-align: left; border:1px solid black;padding-left: 5px;">'.$row['remark'].'</td>
+                                    <td width="25%" style="text-align: right; border:1px solid black;padding-right: 10px;">'.number_format($row['totalpayment'], 2).'</td>
+                                </tr>';
+                            }
+                        $html .= '</table>';
+                    }
+                    else{
+                        $html.='<table style="width:100%;border-collapse: collapse;font-size: 13px;">
+                            <tr>
+                                <th width="10%" style="text-align: center; border:1px solid black;">No</th>
+                                <th width="15%" style="border:1px solid black;padding-left: 5px;">Invoice No</th>
+                                <th style="text-align: left; border:1px solid black;padding-left: 5px;">Description</th>
+                                <th width="25%" style="text-align: right; border:1px solid black;padding-right: 10px;">Amount</th>
+                            </tr>';
+                            foreach ($section as $row) {
+                                $html .= '<tr>
+                                    <td width="10%" style="text-align: center; border:1px solid black;">'.$row['orderno'].'</td>
+                                    <td width="15%" style="border:1px solid black;padding-left: 5px;">'.$row['invoiceno'].'</td>
+                                    <td style="text-align: left; border:1px solid black;padding-left: 5px;">'.$row['narration'].'</td>
+                                    <td width="25%" style="text-align: right; border:1px solid black;padding-right: 10px;">'.number_format($row['amount'], 2).'</td>
+                                </tr>';
+                            }
+                        $html .= '</table>';
+                    }
                     if ($currentSection === $totalSections) {
                         $html.='
                         <p style="font-size:13px;">Cheque information</p>

@@ -32,4 +32,7 @@ class Api extends CI_Controller {
     public function Createdetailaccount(){
         $result=$this->Apiinfo->Createdetailaccount();
 	}
+    public function Creditnoteprocess(){
+        $result=$this->Apiinfo->Creditnoteprocess();
+	}
 }

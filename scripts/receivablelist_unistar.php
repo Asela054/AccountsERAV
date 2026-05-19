@@ -3,11 +3,6 @@ require_once '../external.php';
 
 $CI =& get_instance();
 $CI->load->library('session');
-
-$configdata = getconfigdata('receivable_search');
-$tablename = $configdata->row(0)->tbl_name;
-$column1   = $configdata->row(0)->col_name;
-$column2   = $configdata->row(1)->col_name;
 /*
  * DataTables example server-side processing script.
  *
@@ -43,7 +38,7 @@ $columns = array(
 	array( 'db' => '`u`.`amount`', 'dt' => 'amount', 'field' => 'amount' ),
 	array( 'db' => '`u`.`poststatus`', 'dt' => 'poststatus', 'field' => 'poststatus' ),
 	array( 'db' => '`u`.`amount`', 'dt' => 'amount', 'field' => 'amount' ),
-	array( 'db' => "`ui`.$column2", 'dt' => 'customer', 'field' => 'customer' ),
+	array( 'db' => '`ui`.`name`', 'dt' => 'customer', 'field' => 'name' ),
 	array( 'db' => '`ua`.`company`', 'dt' => 'company', 'field' => 'company' ),
 	array( 'db' => '`ub`.`branch`', 'dt' => 'branch', 'field' => 'branch' ),
 	array( 'db' => '`ud`.`desc`', 'dt' => 'desc', 'field' => 'desc' ),
@@ -80,10 +75,9 @@ require('ssp.customized.class.php' );
 $companyid=$_SESSION['companyid'];
 $branchid=$_SESSION['branchid'];
 
-$joinQuery = "FROM `tbl_receivable` AS `u` LEFT JOIN `tbl_company` AS `ua` ON (`ua`.`idtbl_company` = `u`.`tbl_company_idtbl_company`) LEFT JOIN `tbl_company_branch` AS `ub` ON (`ub`.`idtbl_company_branch` = `u`.`tbl_company_branch_idtbl_company_branch`) LEFT JOIN `tbl_master` AS `uc` ON (`uc`.`idtbl_master` = `u`.`tbl_master_idtbl_master`) LEFT JOIN `tbl_finacial_year` AS `ud` ON (`ud`.`idtbl_finacial_year` = `uc`.`tbl_finacial_year_idtbl_finacial_year`) LEFT JOIN `tbl_finacial_month` AS `ue` ON (`ue`.`idtbl_finacial_month` = `uc`.`tbl_finacial_month_idtbl_finacial_month`) LEFT JOIN `tbl_receivable_type` AS `uf` ON (`uf`.`idtbl_receivable_type` = `u`.`tbl_receivable_type_idtbl_receivable_type`) LEFT JOIN `tbl_account` AS `ug` ON (`ug`.`idtbl_account` = `u`.`tbl_account_idtbl_account`) LEFT JOIN `tbl_account_detail` AS `uh` ON (`uh`.`idtbl_account_detail` = `u`.`tbl_account_detail_idtbl_account_detail`) LEFT JOIN $tablename AS `ui` ON (`ui`.`$column1` = `u`.`payer`)";
+$joinQuery = "FROM `tbl_receivable` AS `u` LEFT JOIN `tbl_company` AS `ua` ON (`ua`.`idtbl_company` = `u`.`tbl_company_idtbl_company`) LEFT JOIN `tbl_company_branch` AS `ub` ON (`ub`.`idtbl_company_branch` = `u`.`tbl_company_branch_idtbl_company_branch`) LEFT JOIN `tbl_master` AS `uc` ON (`uc`.`idtbl_master` = `u`.`tbl_master_idtbl_master`) LEFT JOIN `tbl_finacial_year` AS `ud` ON (`ud`.`idtbl_finacial_year` = `uc`.`tbl_finacial_year_idtbl_finacial_year`) LEFT JOIN `tbl_finacial_month` AS `ue` ON (`ue`.`idtbl_finacial_month` = `uc`.`tbl_finacial_month_idtbl_finacial_month`) LEFT JOIN `tbl_receivable_type` AS `uf` ON (`uf`.`idtbl_receivable_type` = `u`.`tbl_receivable_type_idtbl_receivable_type`) LEFT JOIN `tbl_account` AS `ug` ON (`ug`.`idtbl_account` = `u`.`tbl_account_idtbl_account`) LEFT JOIN `tbl_account_detail` AS `uh` ON (`uh`.`idtbl_account_detail` = `u`.`tbl_account_detail_idtbl_account_detail`) LEFT JOIN `tbl_customer` AS `ui` ON (`ui`.`idtbl_customer` = `u`.`payer`)";
 
 if($_POST['filterpost']==1){$extraWhere = "`u`.`status` IN (1, 2) AND `u`.`tbl_company_idtbl_company`='$companyid' AND `u`.`tbl_company_branch_idtbl_company_branch`='$branchid' AND `u`.`postdatedstatus`=1 AND `u`.`poststatus`=0";}
-if(!empty($_POST['filterdate'])){$extraWhere = "`u`.`status` IN (1, 2) AND `u`.`tbl_company_idtbl_company`='$companyid' AND `u`.`tbl_company_branch_idtbl_company_branch`='$branchid' AND `u`.`postdatedstatus`=1 AND `u`.`poststatus`=0 AND `u`.`chequedate` = '".$_POST['filterdate']."'";}
 else{$extraWhere = "`u`.`status` IN (1, 2, 3) AND `u`.`tbl_company_idtbl_company`='$companyid' AND `u`.`tbl_company_branch_idtbl_company_branch`='$branchid'";}
 
 echo json_encode(
