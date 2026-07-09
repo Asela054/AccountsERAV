@@ -1,12 +1,45 @@
 <?php
 class BankReconciliationinfo extends CI_Model{
-    public function getRecByYearMonth($rec_accno, $rec_year, $rec_month){
+	public function getRecByYearMonth($rec_accno, $rec_year, $rec_month){
 		$this->db->where('tbl_account_idtbl_account', $rec_accno);
 		$this->db->where('tbl_finacial_year_idtbl_finacial_year', $rec_year);
 		$this->db->where('tbl_finacial_month_idtbl_finacial_month', $rec_month);
 		//$this->db->or_where('salesorder_ref', $orderRef);
 		$row = $this->db->get('tbl_bank_rec_list')->row();
 		return $row;
+	}
+
+	public function getLastApprovedRecBefore($bankAcc, $selectedYear, $selectedMonth){
+		if(empty($selectedYear) || empty($selectedMonth)){
+			$sql = "SELECT idtbl_bank_rec_list, statement_closed_bal,
+					       tbl_finacial_year_idtbl_finacial_year,
+					       tbl_finacial_month_idtbl_finacial_month
+					FROM tbl_bank_rec_list
+					WHERE rec_approved = 1
+					AND tbl_account_idtbl_account = ?
+					ORDER BY tbl_finacial_year_idtbl_finacial_year DESC,
+					         tbl_finacial_month_idtbl_finacial_month DESC
+					LIMIT 1";
+			return $this->db->query($sql, array($bankAcc))->row();
+		}
+
+		$sql = "SELECT idtbl_bank_rec_list, statement_closed_bal,
+				       tbl_finacial_year_idtbl_finacial_year,
+				       tbl_finacial_month_idtbl_finacial_month
+				FROM tbl_bank_rec_list
+				WHERE rec_approved = 1
+				AND tbl_account_idtbl_account = ?
+				AND (
+						tbl_finacial_year_idtbl_finacial_year < ?
+						OR (
+							tbl_finacial_year_idtbl_finacial_year = ?
+							AND tbl_finacial_month_idtbl_finacial_month < ?
+						)
+					)
+				ORDER BY tbl_finacial_year_idtbl_finacial_year DESC,
+				         tbl_finacial_month_idtbl_finacial_month DESC
+				LIMIT 1";
+		return $this->db->query($sql, array($bankAcc, $selectedYear, $selectedYear, $selectedMonth))->row();
 	}
 	
 	public function getNonBankAccounts(){
@@ -154,35 +187,27 @@ class BankReconciliationinfo extends CI_Model{
 		}
 
 		if(!empty($selectedYear) && !empty($selectedMonth)){
-			$sql_approved = "SELECT MAX(idtbl_bank_rec_list) AS last_approved_rec
-							FROM tbl_bank_rec_list
-							WHERE rec_approved = 1
-							AND tbl_account_idtbl_account = ?
-							AND (
-									tbl_finacial_year_idtbl_finacial_year < ?
-									OR (
-										tbl_finacial_year_idtbl_finacial_year = ?
-										AND tbl_finacial_month_idtbl_finacial_month < ?
-										)
-								)";
-			$result_approved = $this->db->query($sql_approved,
-							array($bankAcc, $selectedYear, $selectedYear, $selectedMonth));
+			$prevApproved = $this->getLastApprovedRecBefore($bankAcc, $selectedYear, $selectedMonth);
 		} else {
-			$sql_approved = "SELECT MAX(idtbl_bank_rec_list) AS last_approved_rec
-							FROM tbl_bank_rec_list
-							WHERE rec_approved = 1
-							AND tbl_account_idtbl_account = ?";
-			$result_approved = $this->db->query($sql_approved, array($bankAcc));
+			$prevApproved = $this->getLastApprovedRecBefore($bankAcc, null, null);
 		}
 
-		$row_approved    = $result_approved->row();
-		$lastApprovedRec = $row_approved->last_approved_rec;
+		$lastApprovedRec = !empty($prevApproved) ? $prevApproved->idtbl_bank_rec_list : null;
 
-		// New period: carry forward statement opening balance from last approved rec
-		if(empty($acc_info->idtbl_bank_rec_list) && !empty($lastApprovedRec)){
-			$prevApproved = $this->getOrderHeader($lastApprovedRec);
-			if(!empty($prevApproved)){
+		// Carry forward: new period OR unapproved rec still saved with 0.00 opening balance
+		if(!empty($prevApproved) && $acc_info->rec_approved == 0){
+			$needsCarryForward = empty($acc_info->idtbl_bank_rec_list)
+				|| floatval($acc_info->statement_open_bal) == 0;
+
+			if($needsCarryForward){
 				$acc_info->statement_open_bal = $prevApproved->statement_closed_bal;
+
+				if(!empty($acc_info->idtbl_bank_rec_list)){
+					$this->db->where('idtbl_bank_rec_list', $acc_info->idtbl_bank_rec_list);
+					$this->db->update('tbl_bank_rec_list', array(
+						'statement_open_bal' => $prevApproved->statement_closed_bal
+					));
+				}
 			}
 		}
 	

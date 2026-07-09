@@ -13,33 +13,81 @@ class BankReconciliation extends CI_Controller {
         $this->load->model("BankReconciliationinfo");
     }
     
-	private function getProfile($bankacc_id, $bankrec_id=''){
-		$result = ($bankrec_id=='')?$this->BankReconciliationinfo->getAccountHeader($bankacc_id):
-												$this->BankReconciliationinfo->getOrderHeader($bankrec_id);
+	// private function getProfile($bankacc_id, $bankrec_id=''){
+	// 	$result = ($bankrec_id=='')?$this->BankReconciliationinfo->getAccountHeader($bankacc_id):
+	// 											$this->BankReconciliationinfo->getOrderHeader($bankrec_id);
 		
-		$data = array('idtbl_bank_rec_list'=>'', 'tbl_account_idtbl_account'=>$bankacc_id, 
-					  'tbl_finacial_year_idtbl_finacial_year'=>'', 'tbl_finacial_month_idtbl_finacial_month'=>'',
-					  'bank_rec_date'=>'', 'statement_open_bal'=>'0.00', 'statement_closed_bal'=>'0.00', 
-					  'statement_tot_cr'=>'0.00', 'statement_tot_dr'=>'0.00',
-					  'acc_open_bal'=>'0.00',
-					  'status'=>1, 'rec_approved'=>0,
-					  'acc_rec_batchno'=>'');
+	// 	$data = array('idtbl_bank_rec_list'=>'', 'tbl_account_idtbl_account'=>$bankacc_id, 
+	// 				  'tbl_finacial_year_idtbl_finacial_year'=>'', 'tbl_finacial_month_idtbl_finacial_month'=>'',
+	// 				  'bank_rec_date'=>'', 'statement_open_bal'=>'0.00', 'statement_closed_bal'=>'0.00', 
+	// 				  'statement_tot_cr'=>'0.00', 'statement_tot_dr'=>'0.00',
+	// 				  'acc_open_bal'=>'0.00',
+	// 				  'status'=>1, 'rec_approved'=>0,
+	// 				  'acc_rec_batchno'=>'');
 		
-		if(!empty($result)){
-			$data['idtbl_bank_rec_list'] = $result->idtbl_bank_rec_list;
-			$data['tbl_finacial_year_idtbl_finacial_year'] = $result->tbl_finacial_year_idtbl_finacial_year;
-			$data['tbl_finacial_month_idtbl_finacial_month'] = $result->tbl_finacial_month_idtbl_finacial_month;
-			$data['bank_rec_date'] = $result->bank_rec_date;
-			$data['statement_open_bal'] = $result->statement_open_bal;
-			$data['statement_closed_bal'] = $result->statement_closed_bal;
-			$data['statement_tot_cr'] = $result->statement_tot_cr;
-			$data['statement_tot_dr'] = $result->statement_tot_dr;
-			$data['acc_open_bal'] = $result->acc_open_bal;
-			$data['status'] = $result->status;
-			$data['rec_approved'] = $result->rec_approved;
-			$data['acc_rec_batchno'] = $result->rec_batchno;
+	// 	if(!empty($result)){
+	// 		$data['idtbl_bank_rec_list'] = $result->idtbl_bank_rec_list;
+	// 		$data['tbl_finacial_year_idtbl_finacial_year'] = $result->tbl_finacial_year_idtbl_finacial_year;
+	// 		$data['tbl_finacial_month_idtbl_finacial_month'] = $result->tbl_finacial_month_idtbl_finacial_month;
+	// 		$data['bank_rec_date'] = $result->bank_rec_date;
+	// 		$data['statement_open_bal'] = $result->statement_open_bal;
+	// 		$data['statement_closed_bal'] = $result->statement_closed_bal;
+	// 		$data['statement_tot_cr'] = $result->statement_tot_cr;
+	// 		$data['statement_tot_dr'] = $result->statement_tot_dr;
+	// 		$data['acc_open_bal'] = $result->acc_open_bal;
+	// 		$data['status'] = $result->status;
+	// 		$data['rec_approved'] = $result->rec_approved;
+	// 		$data['acc_rec_batchno'] = $result->rec_batchno;
+	// 	}
+		
+	// 	return $data;
+	// }
+	private function getProfile($bankacc_id, $bankrec_id = '', $selectedYear = null, $selectedMonth = null){
+		if($bankrec_id == ''){
+			// New / ongoing rec: selected year+month ලෙස opening balance
+			$result = $this->BankReconciliationinfo->getAccountHeader($bankacc_id, $selectedYear, $selectedMonth);
+		} else {
+			// Existing approved/completed rec: original header
+			$result = $this->BankReconciliationinfo->getOrderHeader($bankrec_id);
 		}
-		
+	
+		$data = array(
+			'idtbl_bank_rec_list'                        => '',
+			'tbl_account_idtbl_account'                  => $bankacc_id,
+			'tbl_finacial_year_idtbl_finacial_year'      => '',
+			'tbl_finacial_month_idtbl_finacial_month'    => '',
+			'bank_rec_date'                              => '',
+			'statement_open_bal'                         => '0.00',
+			'statement_closed_bal'                       => '0.00',
+			'statement_tot_cr'                           => '0.00',
+			'statement_tot_dr'                           => '0.00',
+			'acc_open_bal'                               => '0.00',
+			'status'                                     => 1,
+			'rec_approved'                               => 0,
+			'acc_rec_batchno'                            => ''
+		);
+	
+		if(!empty($result)){
+			$data['idtbl_bank_rec_list']                     = $result->idtbl_bank_rec_list;
+			$data['tbl_finacial_year_idtbl_finacial_year']   = $result->tbl_finacial_year_idtbl_finacial_year;
+			$data['tbl_finacial_month_idtbl_finacial_month'] = $result->tbl_finacial_month_idtbl_finacial_month;
+			$data['bank_rec_date']                           = $result->bank_rec_date;
+			$data['statement_open_bal']                      = $result->statement_open_bal;
+			$data['statement_closed_bal']                    = $result->statement_closed_bal;
+			$data['statement_tot_cr']                        = $result->statement_tot_cr;
+			$data['statement_tot_dr']                        = $result->statement_tot_dr;
+			$data['acc_open_bal']                            = $result->acc_open_bal;
+			$data['status']                                  = $result->status;
+			$data['rec_approved']                            = $result->rec_approved;
+			$data['acc_rec_batchno']                         = $result->rec_batchno;
+		}
+	
+		// FIX: user selected year/month override කරනවා (new rec only)
+		if($bankrec_id == '' && !empty($selectedYear)){
+			$data['tbl_finacial_year_idtbl_finacial_year']   = $selectedYear;
+			$data['tbl_finacial_month_idtbl_finacial_month'] = $selectedMonth;
+		}
+	
 		return $data;
 	}
 	
@@ -96,8 +144,11 @@ class BankReconciliation extends CI_Controller {
 			$data[] = array('transaction_id'=>'', 'rec_info_id'=>'', 
 							'rec_revision_id'=>$o->idtbl_bank_rec_revision,
 							'rec_info_status'=>1,
-							'acc_period_txt'=>'-', 'narration_txt'=>$o->bank_narration, 
-							'transaction_date'=>'-', 
+							// FIX: adjustment row එකේත් Period column එක load කරනවා (tbl_master හරහා)
+							'acc_period_txt'=>!empty($o->acc_period_txt) ? $o->acc_period_txt : '-', 
+							'narration_txt'=>$o->bank_narration, 
+							// FIX: reload වුනාම adjustment row එකේ trans_date එක tbl_bank_rec_revision වලින් load කරනවා
+							'transaction_date'=>!empty($o->trans_date) ? $o->trans_date : '-', 
 							'cr_val'=>$o->cr_val, 'dr_val'=>$o->dr_val, 
 							'rec_revise_status'=>0,
 							'opt_render'=>'btn', 
@@ -135,36 +186,167 @@ class BankReconciliation extends CI_Controller {
 		return $data;
 	}
 	
-	public function view(){
+	public function index(){
 		$result['menuaccess']=$this->Commeninfo->Getmenuprivilege();
-		
 		$result['company_bank_account_list']=get_bank_account_list();
 		$result['main_accounts']=$this->BankReconciliationinfo->getNonBankAccounts();
-		$this->load->view('bank_reconciliation_view', $result);
+		// $this->load->view('bank_reconciliation_view', $result);
+		$this->load->view('bank_reconciliation_new', $result);
+	}
+
+	public function Getaccountlist(){
+		$searchTerm=$this->input->post('searchTerm');
+		$companyid=$_SESSION['companyid'];
+		$branchid=$_SESSION['branchid'];
+		$result=get_all_accounts($searchTerm, $companyid, $branchid);
 	}
 	
+	// public function create(){
+	// 	$bankrec_id = $this->input->post('main_id');
+	// 	$bankacc_id = $this->input->post('bankacc_id');
+		
+	// 	$bank_rec_header = $this->getProfile($bankacc_id, $bankrec_id);
+	// 	$bankrec_id = $bank_rec_header['idtbl_bank_rec_list'];//var_dump($bank_rec_header);die;
+	// 	$id_y = $bank_rec_header['tbl_finacial_year_idtbl_finacial_year'];
+	// 	$id_m = $bank_rec_header['tbl_finacial_month_idtbl_finacial_month'];
+	// 	$bank_rec_period_txt = $this->BankReconciliationinfo->getRecPeriodDescription($id_y, $id_m);
+	// 	$rec_batchno = $bank_rec_header['acc_rec_batchno'];
+		
+	// 	$bank_rec_master_ids = $this->BankReconciliationinfo->getCompanyBranchAccountPeriods($id_y, $id_m);
+		
+	// 	$checked_flag = empty($bankrec_id)?NULL:0;
+		
+	// 	$view_detail_data = $this->getRecTransactions($bankacc_id, $bankrec_id, $rec_batchno, $id_y, $id_m, $bank_rec_header['rec_approved'], $checked_flag);
+		
+	// 	echo json_encode(array('bank_rec_period_txt'=>$bank_rec_period_txt, 
+	// 						   'view_header_data'=>$bank_rec_header, 
+	// 						   'acc_tot_cr'=>$this->cr_running_total, 'acc_tot_dr'=>$this->dr_running_total,
+	// 						   'acc_periods'=>$bank_rec_master_ids, 'view_detail_data'=>$view_detail_data)
+	// 					 );
+	// }
+	
+	// ═══════════════════════════════════════════════════════════════
+	// BankReconciliation.php Controller - Add කරන්නට ඕනෑ methods
+	// ═══════════════════════════════════════════════════════════════
+
+	// ────────────────────────────────────────────────────────────────
+	// FIX 1: create() method modify කරන්නට ඕනෑ
+	// year_id සහ month_id POST parameters receive කරනවා
+	// ────────────────────────────────────────────────────────────────
+
+	// public function create(){
+	// 	$bankrec_id = $this->input->post('main_id');
+	// 	$bankacc_id = $this->input->post('bankacc_id');
+	// 	$post_year  = $this->input->post('year_id');   // <-- NEW
+	// 	$post_month = $this->input->post('month_id');  // <-- NEW
+
+	// 	$bank_rec_header = $this->getProfile($bankacc_id, $bankrec_id);
+	// 	$bankrec_id = $bank_rec_header['idtbl_bank_rec_list'];
+		
+	// 	// FIX: year/month - user selected one use කරනවා, නැත්නම් existing rec one
+	// 	$id_y = !empty($post_year)  ? $post_year  : $bank_rec_header['tbl_finacial_year_idtbl_finacial_year'];
+	// 	$id_m = !empty($post_month) ? $post_month : $bank_rec_header['tbl_finacial_month_idtbl_finacial_month'];
+
+	// 	// FIX: header data ලේ year/month update කරනවා selected values ලෙස
+	// 	$bank_rec_header['tbl_finacial_year_idtbl_finacial_year']  = $id_y;
+	// 	$bank_rec_header['tbl_finacial_month_idtbl_finacial_month'] = $id_m;
+
+	// 	$bank_rec_period_txt = $this->BankReconciliationinfo->getRecPeriodDescription($id_y, $id_m);
+	// 	$rec_batchno = $bank_rec_header['acc_rec_batchno'];
+
+	// 	$bank_rec_master_ids = $this->BankReconciliationinfo->getCompanyBranchAccountPeriods($id_y, $id_m);
+
+	// 	$checked_flag = empty($bankrec_id) ? NULL : 0;
+
+	// 	$view_detail_data = $this->getRecTransactions($bankacc_id, $bankrec_id, $rec_batchno, $id_y, $id_m, $bank_rec_header['rec_approved'], $checked_flag);
+
+	// 	echo json_encode(array(
+	// 		'bank_rec_period_txt' => $bank_rec_period_txt,
+	// 		'view_header_data'    => $bank_rec_header,
+	// 		'acc_tot_cr'          => $this->cr_running_total,
+	// 		'acc_tot_dr'          => $this->dr_running_total,
+	// 		'acc_periods'         => $bank_rec_master_ids,
+	// 		'view_detail_data'    => $view_detail_data
+	// 	));
+	// }
+
 	public function create(){
 		$bankrec_id = $this->input->post('main_id');
 		$bankacc_id = $this->input->post('bankacc_id');
-		
-		$bank_rec_header = $this->getProfile($bankacc_id, $bankrec_id);
-		$bankrec_id = $bank_rec_header['idtbl_bank_rec_list'];//var_dump($bank_rec_header);die;
-		$id_y = $bank_rec_header['tbl_finacial_year_idtbl_finacial_year'];
-		$id_m = $bank_rec_header['tbl_finacial_month_idtbl_finacial_month'];
+		$post_year  = $this->input->post('year_id');
+		$post_month = $this->input->post('month_id');
+	
+		// FIX: selected year/month getProfile ලට pass කරනවා
+		$bank_rec_header = $this->getProfile($bankacc_id, $bankrec_id, $post_year, $post_month);
+	
+		$bankrec_id          = $bank_rec_header['idtbl_bank_rec_list'];
+		$id_y                = $bank_rec_header['tbl_finacial_year_idtbl_finacial_year'];
+		$id_m                = $bank_rec_header['tbl_finacial_month_idtbl_finacial_month'];
 		$bank_rec_period_txt = $this->BankReconciliationinfo->getRecPeriodDescription($id_y, $id_m);
-		$rec_batchno = $bank_rec_header['acc_rec_batchno'];
-		
+		$rec_batchno         = $bank_rec_header['acc_rec_batchno'];
+	
 		$bank_rec_master_ids = $this->BankReconciliationinfo->getCompanyBranchAccountPeriods($id_y, $id_m);
+	
+		$checked_flag     = empty($bankrec_id) ? NULL : 0;
+		$view_detail_data = $this->getRecTransactions(
+								$bankacc_id, $bankrec_id, $rec_batchno,
+								$id_y, $id_m,
+								$bank_rec_header['rec_approved'],
+								$checked_flag
+							);
+	
+		echo json_encode(array(
+			'bank_rec_period_txt' => $bank_rec_period_txt,
+			'view_header_data'    => $bank_rec_header,
+			'acc_tot_cr'          => $this->cr_running_total,
+			'acc_tot_dr'          => $this->dr_running_total,
+			'acc_periods'         => $bank_rec_master_ids,
+			'view_detail_data'    => $view_detail_data
+		));
+	}
+
+	// ────────────────────────────────────────────────────────────────
+	// FIX 2: getYears() - Financial Years return කරන නව method
+	// ────────────────────────────────────────────────────────────────
+
+	public function getYears(){
+		$companyID = $_SESSION['companyid'];
+		$branchID = $_SESSION['branchid'];
 		
-		$checked_flag = empty($bankrec_id)?NULL:0;
-		
-		$view_detail_data = $this->getRecTransactions($bankacc_id, $bankrec_id, $rec_batchno, $id_y, $id_m, $bank_rec_header['rec_approved'], $checked_flag);
-		
-		echo json_encode(array('bank_rec_period_txt'=>$bank_rec_period_txt, 
-							   'view_header_data'=>$bank_rec_header, 
-							   'acc_tot_cr'=>$this->cr_running_total, 'acc_tot_dr'=>$this->dr_running_total,
-							   'acc_periods'=>$bank_rec_master_ids, 'view_detail_data'=>$view_detail_data)
-						 );
+		// tbl_finacial_year table ලෙස active years ගනිමු
+		$this->db->select('idtbl_finacial_year as id, desc as label, year as year');
+		$this->db->from('tbl_finacial_year');
+		$this->db->where('status', 1);
+		$this->db->where('tbl_company_idtbl_company', $companyID);
+		$this->db->where('tbl_company_branch_idtbl_company_branch', $branchID);
+		$this->db->where_in('actstatus', array(1, 3));
+		$this->db->order_by('idtbl_finacial_year', 'DESC');
+		$years = $this->db->get()->result();
+
+		echo json_encode($years);
+	}
+
+	// ────────────────────────────────────────────────────────────────
+	// FIX 3: getMonths() - Financial Months return කරන නව method
+	// ────────────────────────────────────────────────────────────────
+
+	public function getMonths(){
+		$year_id = $this->input->post('year_id');
+
+		if(empty($year_id)){
+			echo json_encode(array());
+			return;
+		}
+
+		$this->db->select('idtbl_finacial_month as id, monthname as label');
+		$this->db->from('tbl_finacial_month');
+		$this->db->where('tbl_finacial_year_idtbl_finacial_year', $year_id);
+		$this->db->where('status', 1);
+		$this->db->where_in('activestatus', array(1, 3));
+		$this->db->order_by('idtbl_finacial_month', 'ASC');
+		$months = $this->db->get()->result();
+
+		echo json_encode($months);
 	}
 	
 	public function store(){
@@ -181,8 +363,12 @@ class BankReconciliation extends CI_Controller {
 		}
 		
 		if($this->input->post('bank_amount')>0){
-			$this->form_validation->set_rules('main_account_id', 'Account detail', 'required|callback_opt_check');
+			// FIX: adjustment account එක bank/current-reconciling account එකම නම් reject කරනවා.
+			// Nethnam cr_val සහ dr_val දෙකම tbl_bank_rec_revision reload වෙනකොට 1 වෙලා
+			// එකිනෙක cancel වෙලා balance change නොවෙන bug එක හදුනගන්නවා.
+			$this->form_validation->set_rules('main_account_id', 'Account detail', 'required|callback_opt_check|callback_adj_account_check');
 			$this->form_validation->set_rules('main_account_narration', 'Narration', 'required');
+			$this->form_validation->set_rules('transaction_date', 'Transaction date', 'required');
 		}
 		
 		if($this->input->post('main_account_id')!='-1'){
@@ -223,6 +409,10 @@ class BankReconciliation extends CI_Controller {
 			if($validationErrors == ''){
 				$validationErrors = form_error('bank_amount', '<div class="errormsg">', '</div>');
 			}
+
+			if($validationErrors == ''){
+				$validationErrors = form_error('transaction_date', '<div class="errormsg">', '</div>');
+			}
 			
 			$data = array();
 			$data['resMsg'] = $validationErrors;
@@ -244,6 +434,7 @@ class BankReconciliation extends CI_Controller {
 			$accPeriod = $this->input->post('acc_period');
 			$mainAccountNarration = $this->input->post('main_account_narration');
 			$bankAmount = $this->input->post('bank_amount');
+			$transactionDate = $this->input->post('transaction_date');
 			
 			$userName = $_SESSION['userid'];
 			
@@ -256,6 +447,14 @@ class BankReconciliation extends CI_Controller {
 								'statement_closed_bal'=>$statementClosedBal, 'status'=>1);
 			
 			$recApproved = 0;
+
+			if($recMainId == '' && floatval($statementOpenBal) == 0){
+				$prevApproved = $this->BankReconciliationinfo->getLastApprovedRecBefore($recAccId, $recPeriodYear, $recPeriodMonth);
+				if(!empty($prevApproved)){
+					$statementOpenBal = $prevApproved->statement_closed_bal;
+					$headerData['statement_open_bal'] = $statementOpenBal;
+				}
+			}
 			
 			if($recMainId!=''){
 				$prevAccRecProfile = $this->getProfile($recAccId, $recMainId);
@@ -276,7 +475,7 @@ class BankReconciliation extends CI_Controller {
 				$bankDetailData = array('tbl_bank_rec_list_idtbl_bank_rec_list'=>'',
 										'tbl_account_idtbl_account_cr'=>$accountCr, 'tbl_account_idtbl_account_dr'=>$accountDr,
 										'bank_narration'=>$mainAccountNarration, 
-										'bank_amount'=>$bankAmount, 'status'=>'1',
+										'bank_amount'=>$bankAmount, 'trans_date'=>$transactionDate, 'status'=>'1',
 										'tbl_user_idtbl_user'=>$userName, 'tbl_master_idtbl_master'=>$accPeriod);
 			}
 			
@@ -340,6 +539,20 @@ class BankReconciliation extends CI_Controller {
 		return true;
 	}
 	
+	// FIX: Bank Adjustment එකේ account එක current bank/reconciling account එකම වෙන්න බැහැ.
+	// (එහෙම වුනොත් tbl_bank_rec_revision reload query එකේදී cr_val සහ dr_val දෙකම 1 වෙලා
+	// cancel වෙනවා → balance change නොවෙන bug එක හටගන්නවා)
+	public function adj_account_check($field_val){
+		$recAccId = $this->input->post('rec_acc_id');
+
+		if($field_val == $recAccId){
+			$this->form_validation->set_message('adj_account_check', 'Adjustment account cannot be the same as the bank account being reconciled');
+			return false;
+		}
+
+		return true;
+	}
+
 	public function opt_check($field_val){
 		$opt_valid = true;
 		

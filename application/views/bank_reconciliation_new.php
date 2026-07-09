@@ -911,6 +911,7 @@ $(document).ready(function(){
             $('#txt_statement_open_bal').val(fnum(h.statement_open_bal));
             $('#txt_statement_tot_cr').val(fnum(h.statement_tot_cr));
             $('#txt_statement_tot_dr').val(fnum(h.statement_tot_dr));
+            calcStatementClose();
             $('#txt_statement_closed_bal').val(fnum(h.statement_closed_bal));
             $('#txt_account_open_bal').val(fnum(h.acc_open_bal));
             $('#h_rec_period_year').val(STATE.rec_year);
