@@ -1,294 +1,59 @@
--- MySQL Workbench Synchronization
--- Generated: 2026-05-18 16:33
--- Model: New Model
--- Version: 1.0
--- Project: Name of the project
--- Author: asela
-
-SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL,ALLOW_INVALID_DATES';
-
-ALTER SCHEMA `erav_multioffset`  DEFAULT CHARACTER SET utf8mb4  DEFAULT COLLATE utf8mb4_general_ci ;
-
-ALTER TABLE `erav_multioffset`.`tbl_user` 
-DROP FOREIGN KEY `fk_tbl_user_tbl_user_type1`;
-
-ALTER TABLE `erav_multioffset`.`tbl_supplier` 
-DROP FOREIGN KEY `fk_tbl_supplier_tbl_tbl_company_branch1`,
-DROP FOREIGN KEY `fk_tbl_supplier_tbl_tbl_company1`;
-
-ALTER TABLE `erav_multioffset`.`tbl_customer` 
-DROP FOREIGN KEY `fk_tbl_print_material_info_tbl_company_branch1`,
-DROP FOREIGN KEY `fk_tbl_print_material_info_tbl_company1`;
-
-ALTER TABLE `erav_multioffset`.`tbl_menu_list` 
-CHANGE COLUMN `menu` `menu` VARCHAR(450) NOT NULL ;
-
-ALTER TABLE `erav_multioffset`.`tbl_user` 
-CHARACTER SET = utf8 , COLLATE = utf8_general_ci ,
-CHANGE COLUMN `name` `name` VARCHAR(150) NOT NULL ,
-ADD INDEX `fk_tbl_user_tbl_user_type_idx` (`tbl_user_type_idtbl_user_type` ASC),
-DROP INDEX `fk_tbl_user_tbl_user_type1_idx` ;
-
-ALTER TABLE `erav_multioffset`.`tbl_user_type` 
-CHANGE COLUMN `type` `type` VARCHAR(450) NOT NULL ;
-
-ALTER TABLE `erav_multioffset`.`tbl_bank` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_bank_branch` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_category` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_subcategory` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_transaction` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_finacial_year` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_finacial_month` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_master` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_company` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_company_branch` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_allocation` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_cheque_info` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_pettycash` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_pettycash_reimburse` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_finacialtype` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_transactiontype` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_type` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_receivable` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_payable` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_transaction_full` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_receivable_main` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_payable_main` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_detail` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ,
-CHANGE COLUMN `accountname` `accountname` VARCHAR(45) NOT NULL ;
-
-ALTER TABLE `erav_multioffset`.`tbl_batch_num_register` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_paysettle` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_paysettle_info` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_cheque_issue` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_paysettle_has_tbl_cheque_issue` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_pettycash_summary` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_pettycash_reimburse_has_tbl_pettycash` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_supplier` 
-CHANGE COLUMN `supcode` `supcode` VARCHAR(45) NOT NULL ,
-ADD INDEX `fk_tbl_supplier_tbl_company1_idx` (`tbl_company_idtbl_company` ASC),
-ADD INDEX `fk_tbl_supplier_tbl_company_branch1_idx` (`tbl_company_branch_idtbl_company_branch` ASC),
-DROP INDEX `fk_tbl_supplier_tbl_tbl_company_branch1_idx` ,
-DROP INDEX `fk_tbl_supplier_tbl_tbl_company1_idx` ;
-
-ALTER TABLE `erav_multioffset`.`tbl_customer` 
-CHANGE COLUMN `vat_customer` `vat_customer` INT(11) NOT NULL COMMENT '0-non vat\\r\\n1-vat customer	' ,
-CHANGE COLUMN `imagepath` `imagepath` MEDIUMTEXT NOT NULL ,
-ADD INDEX `fk_tbl_customer_tbl_company1_idx` (`tbl_company_idtbl_company` ASC),
-ADD INDEX `fk_tbl_customer_tbl_company_branch1_idx` (`tbl_company_branch_idtbl_company_branch` ASC),
-DROP INDEX `fk_tbl_print_material_info_tbl_company_branch1_idx` ,
-DROP INDEX `fk_tbl_print_material_info_tbl_company1_idx` ;
-
-ALTER TABLE `erav_multioffset`.`tbl_sales_info` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_expence_info` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_open_bal` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_receivable` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_receivable_info` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_receivable_type` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_bank_rec_info` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_bank_rec_list` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_bank_rec_revision` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_gl_report_head_sections` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_gl_report_sub_section_particulars` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_gl_report_sub_sections` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_transaction_manual` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_transaction_manual_main` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_special_category` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_nestcategory` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_asset` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_asset_type` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_asset_sell` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_asset_destroy` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_upgrade_dipreciation` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_depreciation_category` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_depreciation_method` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_depreciation_type` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_depreciation_info` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_asset_has_tbl_account_detail` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_other_payincome` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_batch_trans_type` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_batch_trans_type_info` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_batch_trans_type_tax` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_batch_category` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_batch_transaction` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_batch_transaction_main` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_detail_other` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_receivable_entry` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_account_paysettle_entry` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_supplier_type` 
-CHANGE COLUMN `type` `type` VARCHAR(45) NULL DEFAULT NULL ;
-
-ALTER TABLE `erav_multioffset`.`tbl_material_type` 
-CHARACTER SET = utf8mb4 , COLLATE = DEFAULT ;
-
-ALTER TABLE `erav_multioffset`.`tbl_user` 
-ADD CONSTRAINT `fk_tbl_user_tbl_user_type`
-  FOREIGN KEY (`tbl_user_type_idtbl_user_type`)
-  REFERENCES `erav_multioffset`.`tbl_user_type` (`idtbl_user_type`)
-  ON DELETE NO ACTION
-  ON UPDATE NO ACTION;
-
-ALTER TABLE `erav_multioffset`.`tbl_supplier` 
-ADD CONSTRAINT `fk_tbl_supplier_tbl_company1`
-  FOREIGN KEY (`tbl_company_idtbl_company`)
-  REFERENCES `erav_multioffset`.`tbl_company` (`idtbl_company`)
-  ON DELETE NO ACTION
-  ON UPDATE NO ACTION,
-ADD CONSTRAINT `fk_tbl_supplier_tbl_company_branch1`
-  FOREIGN KEY (`tbl_company_branch_idtbl_company_branch`)
-  REFERENCES `erav_multioffset`.`tbl_company_branch` (`idtbl_company_branch`)
-  ON DELETE NO ACTION
-  ON UPDATE NO ACTION;
-
-ALTER TABLE `erav_multioffset`.`tbl_customer` 
-ADD CONSTRAINT `fk_tbl_customer_tbl_company1`
-  FOREIGN KEY (`tbl_company_idtbl_company`)
-  REFERENCES `erav_multioffset`.`tbl_company` (`idtbl_company`)
-  ON DELETE NO ACTION
-  ON UPDATE NO ACTION,
-ADD CONSTRAINT `fk_tbl_customer_tbl_company_branch1`
-  FOREIGN KEY (`tbl_company_branch_idtbl_company_branch`)
-  REFERENCES `erav_multioffset`.`tbl_company_branch` (`idtbl_company_branch`)
-  ON DELETE NO ACTION
-  ON UPDATE NO ACTION;
-
-
-SET SQL_MODE=@OLD_SQL_MODE;
-SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+Based on the account list visible in your screenshot, here's my suggested mapping. A few rows on the left are hidden behind your "Logged in as" panel — I've marked those as unconfirmed.
+
+## Revenue
+| Account | Heading |
+|---|---|
+| IN004000 - Property Sale Revenue - Athurugiriya | **Revenue** |
+| IN004001 - Property Sale Revenue - Dodamgoda | **Revenue** |
+
+## Other Income
+| Account | Heading |
+|---|---|
+| IN004500 - Fixed Deposit Interest - SAM - 21578553161 | **Other Income** |
+| IN004501 - Fixed Deposit Interest - SAM - 21578609066 | **Other Income** |
+| IN004600 - Income from Forfeited Customer Deposits | **Other Income** |
+| IN004601 - Income from Scrap Sale | **Other Income** |
+
+## Finance Costs
+| Account | Heading |
+|---|---|
+| EX005600 - Loan Interest - Sampath - 63000098 | **Finance Costs** |
+| EX005601 - Loan Interest - Sampath - 63000105 | **Finance Costs** |
+| EX005650 - Bank Charges | **Finance Costs** |
+| EX005651 - Bank Overdraft Interest | **Finance Costs** |
+
+## Operating Expenses (Indirect)
+| Account | Heading |
+|---|---|
+| EX005032 - Printing & Office Stationary | **Operating Expenses** |
+| EX005033 - Staff Welfare | **Operating Expenses** |
+| EX005034 - Donations | **Operating Expenses** |
+| EX005035 - Fines & Surcharges | **Operating Expenses** |
+| EX005036 - Stamp & Legal Charges | **Operating Expenses** |
+| EX005037 - Lawyer Fee | **Operating Expenses** |
+| EX005038 - Audit Fee | **Operating Expenses** |
+| EX005039 - Security Charges | **Operating Expenses** |
+| EX005040 - Office Equipment Maintenance & repair | **Operating Expenses** |
+| EX005041 - Other Office Expenses | **Operating Expenses** |
+| EX005042 - Business Promotion & Social Media Expenses | **Operating Expenses** |
+| EX005043 - Recruitment Expenses | **Operating Expenses** |
+| EX005044 - Secretarial Expenses | **Operating Expenses** |
+| EX005045 - Other Transport Expenses | **Operating Expenses** |
+| EX005046 - Curior & Postage Charges | **Operating Expenses** |
+| EX005500 - Advertising & Media Expenses | **Operating Expenses** |
+| EX005501 - Branding & Promotion Expenses | **Operating Expenses** |
+
+## ⚠️ Needs your judgment (Cost of Sales vs. Operating Expenses)
+Since this is a **property development** business, a few of these could arguably be direct project/land costs (Cost of Sales) rather than general overhead:
+
+| Account | My guess | Why it's ambiguous |
+|---|---|---|
+| EX005502 - Sales Commission Expenses | Operating Expenses (selling cost) | Could be Cost of Sales if commission is tied per-unit-sold |
+| EX005503 - Land Related Other Expenses | **Cost of Sales** | Sounds like a direct project/land cost, not overhead |
+| EX005504 - Material Transport Charges | **Cost of Sales** | Sounds like a direct project cost, not overhead |
+
+## Not mappable yet
+No **Taxes** (Income Tax, Deferred Tax) or **Dividends/Earnings Allocation** accounts appear in this list — those two headings will stay empty until such accounts exist in your chart of accounts.
+
+## Rows I couldn't read (hidden behind the sidebar panel)
+These EXPENDITURES rows are cut off — likely staff salary/allowance/utility items based on the visible fragments (`...ary - Basic`, `...lowance`, `...ne & Network Expense`, `...g & Fuel Charges`, `...Wages`, etc.), but I don't want to guess the exact account names and misclassify them. Could you close that "Logged in as" panel and re-share the screenshot, or just list those account codes/names directly? Once I can see them, I'll fold them into the Operating Expenses group (staff costs, utilities, transport are almost certainly all Operating Expenses, not Finance Costs or Cost of Sales).

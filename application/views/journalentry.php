@@ -204,7 +204,7 @@ include "include/topnavbar.php";
 </div>
 <!-- Modal Payment Segregation -->
 <div class="modal fade" id="modalviewpost" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="modalviewpostLabel" aria-hidden="true">
-	<div class="modal-dialog modal-lg modal-dialog-centered">
+	<div class="modal-dialog modal-xl modal-dialog-centered">
 		<div class="modal-content">
 			<div class="modal-header">
 				<h6 class="modal-title" id="modalviewpostLabel">View & Post Information</h6>
@@ -320,7 +320,7 @@ include "include/topnavbar.php";
                 <div class="row">
                     <div class="col-12">
                         <form id="journalformbatch">
-                            <div class="row">
+                            <div class="form-row">
                                 <div class="col">
                                     <label class="small font-weight-bold">Company*</label>
                                     <input type="text" name="glbatchcompany" id="glbatchcompany" class="form-control form-control-sm" readonly>
@@ -333,7 +333,7 @@ include "include/topnavbar.php";
                                     <label class="small font-weight-bold">Date*</label>
                                     <input type="date" name="glbatchtradate" id="glbatchtradate" class="form-control form-control-sm" max="<?php echo date('Y-m-d') ?>" required>
                                 </div>
-                                <div class="col">
+                                <div class="col-2">
                                     <label class="small font-weight-bold">Credit/ Debit*</label>
                                     <select name="glbatchcreditdebit" id="glbatchcreditdebit" class="form-control form-control-sm" required>
                                         <option value="">Select</option>
@@ -342,17 +342,19 @@ include "include/topnavbar.php";
                                         <?php } ?>
                                     </select>
                                 </div>
-                            </div>
-                            <div class="row">
-                                <div class="col">
-                                    <div class="form-row mb-1">
-                                        <div class="col">
-                                            <label class="small font-weight-bold">Account No*</label><br>
-                                            <select name="glbatchaccountno" id="glbatchaccountno" class="form-control form-control-sm" style="width: 100%;" required>
-                                                <option value="">Select</option>
-                                            </select>
-                                        </div>
+                                <div class="col-2 pt-2">
+                                    <div class="custom-control custom-checkbox mt-4">
+                                        <input type="checkbox" class="custom-control-input" id="payablebatch" name="payablebatch" value="1" disabled>
+                                        <label class="custom-control-label font-weight-bold small" for="payablebatch">Payable Entry</label>
                                     </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="col">
+                                    <label class="small font-weight-bold">Account No*</label><br>
+                                    <select name="glbatchaccountno" id="glbatchaccountno" class="form-control form-control-sm" style="width: 100%;" required>
+                                        <option value="">Select</option>
+                                    </select>
                                 </div>
                                 <div class="col-6">
                                     <label class="small font-weight-bold">Narration*</label>
@@ -481,6 +483,7 @@ include "include/topnavbar.php";
                     "data": null,
                     "render": function(data, type, full) {
                         var button='';
+                        button+='<a href="<?php echo base_url() ?>Journalentry/Printjournalentry/'+full['idtbl_account_transaction_manual_main']+'" target="_blank" class="btn btn-primary btn-sm btnprint mr-1" id="'+full['idtbl_account_transaction_manual_main']+'" data-toggle="tooltip" data-placement="bottom" title="Print entry" data-poststatus="'+full['poststatus']+'"><i class="fas fa-print"></i></a>';
                         button+='<button class="btn btn-dark btn-sm btnview mr-1" id="'+full['idtbl_account_transaction_manual_main']+'" data-toggle="tooltip" data-placement="bottom" title="View and post" data-poststatus="'+full['poststatus']+'" data-recordstatus="'+full['status']+'">';
                         if(full['poststatus']==0){
                             button+='<i class="fas fa-exchange-alt"></i>';
@@ -506,6 +509,11 @@ include "include/topnavbar.php";
                             if(deletecheck==1){
                                 button+='<button type="button" data-url="Journalentry/Journalentrystatus/'+full['idtbl_account_transaction_manual_main']+'/3" data-actiontype="3" class="btn btn-danger btn-sm text-light btntableaction"><i class="fas fa-trash-alt"></i></button>';
                             }
+                        }
+                        else if(full['status']==1 && editcheck==1){
+                            // Posted entries can no longer be edited/deleted — offer a one-click
+                            // reversal instead (creates a brand-new offsetting entry).
+                            button+='<button type="button" class="btn btn-secondary btn-sm mr-1 btnreverse" id="'+full['idtbl_account_transaction_manual_main']+'" data-toggle="tooltip" data-placement="bottom" title="Create reversal entry"><i class="fas fa-undo"></i></button>';
                         }
                         
                         return button;
@@ -609,6 +617,54 @@ include "include/topnavbar.php";
 
                             $('#batchtransactionmodal').modal('show');
                         }                 
+                    }
+                });
+            }
+        });
+        $('#dataTable tbody').on('click', '.btnreverse', async function() {
+            var r = await Otherconfirmation("Create a reversal entry for this transaction? This cannot be undone.");
+            if (r == true) {
+                var id = $(this).attr('id');
+
+                Swal.fire({
+                    title: '',
+                    html: '<div class="div-spinner"><div class="custom-loader"></div></div>',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    backdrop: `
+                        rgba(255, 255, 255, 0.5) 
+                    `,
+                    customClass: {
+                        popup: 'fullscreen-swal'
+                    },
+                    didOpen: () => {
+                        document.body.style.overflow = 'hidden';
+
+                        $.ajax({
+                            type: "POST",
+                            data: {
+                                recordID: id
+                            },
+                            url: '<?php echo base_url() ?>Journalentry/Journalentryreverse',
+                            success: function(result) {
+                                Swal.close();
+                                var obj = JSON.parse(result);
+                                if (obj.status == 1) {
+                                    $('#dataTable').DataTable().ajax.reload(null, false);
+                                }
+                                action(obj.action);
+                            },
+                            error: function(error) {
+                                Swal.close();
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: 'Something went wrong. Please try again later.'
+                                });
+                            }
+                        });
+
+                        document.body.style.overflow = 'visible';
                     }
                 });
             }
@@ -961,6 +1017,10 @@ include "include/topnavbar.php";
         });
 
         //Batch Transaction
+        $('#glbatchcreditdebit').change(function(){
+            if($(this).val() == 1){$('#payablebatch').prop('disabled', false);}
+            else{$('#payablebatch').prop('disabled', true);}
+        });
         $('#btnjurnalbatches').click(function(){
             $('#glbatchcompany').val('<?php echo $_SESSION['company'] ?>');
             $('#glbatchbranch').val('<?php echo $_SESSION['branch'] ?>');
@@ -989,6 +1049,7 @@ include "include/topnavbar.php";
                 var batchMainTransID = $('#batchMainTransID').val();
                 var batchMainTransBatchNo = $('#batchMainTransBatchNo').val();
                 var batchMainTransMaster = $('#batchMainTransMaster').val();
+                var payablebatch = $('#payablebatch').is(':checked') ? 1 : 0;
 
                 if(glbatchcreditdebit==1){
                     var cdtype = 'C';
@@ -1023,6 +1084,7 @@ include "include/topnavbar.php";
                                 glbatchaccountID: glbatchaccountID,
                                 glbatchnarration: glbatchnarration,
                                 accounttype: accounttype,
+                                payablebatch: payablebatch,
                                 glbatchamount: glbatchamount,
                                 batchMainTransID: batchMainTransID,
                                 batchMainTransBatchNo: batchMainTransBatchNo,
@@ -1051,6 +1113,8 @@ include "include/topnavbar.php";
                                     $('#glbatchaccountno').val('').trigger('change');
                                     $('#glbatchnarration').val('');
                                     $('#glbatchamount').val('');
+                                    $('#payablebatch').prop('checked', false);
+                                    $('#payablebatch').prop('disabled', true);
                                     
                                     $('#batchMainTransID').val(obj.batchtransmainID);
                                     $('#batchMainTransBatchNo').val(obj.batchno);

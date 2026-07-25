@@ -1,4 +1,9 @@
 <?php
+// session_start();
+require_once '../external.php';
+
+$CI =& get_instance();
+$CI->load->library('session');
 
 /*
  * DataTables example server-side processing script.
@@ -55,9 +60,12 @@ $sql_details = array(
 // require( 'ssp.class.php' );
 require('ssp.customized.class.php' );
 
+$companyid=$_SESSION['companyid'];
+$branchid=$_SESSION['branchid'];
+
 $joinQuery = "FROM `tbl_finacial_year` AS `u`";
 
-$extraWhere = "`u`.`status` IN (1, 2)";
+$extraWhere = "`u`.`status` IN (1, 2) AND `u`.`tbl_company_idtbl_company` = '$companyid' AND `u`.`tbl_company_branch_idtbl_company_branch` = '$branchid'";
 
 echo json_encode(
 	SSP::simple( $_POST, $sql_details, $table, $primaryKey, $columns, $joinQuery, $extraWhere)

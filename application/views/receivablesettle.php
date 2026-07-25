@@ -132,9 +132,20 @@ include "include/topnavbar.php";
                                     <label class="small font-weight-bold">Branch*</label>
                                     <input type="text" name="showbranch" id="showbranch" class="form-control form-control-sm" readonly>
                                 </div>
-                                <div class="col">
+                            </div>   
+                            <div class="form-row mt-2">
+                                <div class="col-3">
                                     <label class="small font-weight-bold">Date*</label>
                                     <input type="date" name="recsettdate" id="recsettdate" class="form-control form-control-sm" max="<?php echo date('Y-m-d'); ?>" value="<?php echo date('Y-m-d'); ?>" required>
+                                </div>
+                                <div class="col-4">
+                                    <label class="small font-weight-bold">Receivable Filter</label>
+                                    <select name="receivablefilter" id="receivablefilter" class="form-control form-control-sm" style="width:100%;" required>
+                                        <option value="">Select</option>
+                                        <option value="1">Receivable Customer</option>
+                                        <option value="2">Receivable Journal</option>
+                                        <option value="3">Receivable Voucher</option>
+                                    </select>
                                 </div>
                                 <div class="col">
                                     <label class="small font-weight-bold">Customer*</label><br>
@@ -142,42 +153,71 @@ include "include/topnavbar.php";
                                         <option value="">Select</option>
                                     </select>
                                 </div>
-                            </div>   
-                            <div class="row mt-3">
-                                <div class="col-12">
-                                    <h6 class="small title-style"><span>Unapplied Payment Information</span></h6>
-                                    <table class="table table-striped table-bordered table-sm small" id="tableunappliedpayment">
-                                        <thead>
-                                            <tr>
-                                                <th class="text-center">&nbsp;</th>
-                                                <th class="d-none">Receivable Info ID</th>
-                                                <th>Customer</th>
-                                                <th class="d-none">Invoice ID</th>
-                                                <th>Invoice No</th>
-                                                <th class="text-right">Unapplied Payment</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
+                            </div>
+                            <div class="collapse" id="collapseCreditNote">
+                                <div class="card card-body shadow-none p-0 border-0 rounded-0">
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <h6 class="small title-style"><span>Credit Note Information</span></h6>
+                                            <table class="table table-striped table-bordered table-sm small mb-0" id="tablecreditnotepayment">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="text-center">&nbsp;</th>
+                                                        <th class="d-none">Credit Note ID</th>
+                                                        <th>Credit Note No</th>
+                                                        <th>Customer</th>
+                                                        <th class="text-right">Amount</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>                     
-                            <div class="row mt-3">
-                                <div class="col-12">
-                                    <h6 class="small title-style"><span>Invoice Information</span></h6>
-                                    <table class="table table-striped table-bordered table-sm small" id="tableinvoicepayment">
-                                        <thead>
-                                            <tr>
-                                                <th class="text-center">&nbsp;</th>
-                                                <th class="d-none">Customer ID</th>
-                                                <th>Customer</th>
-                                                <th class="d-none">Invoice ID</th>
-                                                <th>Invoice No</th>
-                                                <th class="text-right">Total</th>
-                                                <th class="text-right">Balance Amount</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
+                            <div class="collapse" id="collapseUnappliedPayment">
+                                <div class="card card-body shadow-none p-0 border-0 rounded-0">
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <h6 class="small title-style"><span>Unapplied Payment Information</span></h6>
+                                            <table class="table table-striped table-bordered table-sm small mb-0" id="tableunappliedpayment">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="text-center">&nbsp;</th>
+                                                        <th class="d-none">Receivable Info ID</th>
+                                                        <th>Customer</th>
+                                                        <th class="d-none">Invoice ID</th>
+                                                        <th>Invoice No</th>
+                                                        <th class="text-right">Unapplied Payment</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>   
+                            <div class="collapse" id="collapseInvoiceList">
+                                <div class="card card-body shadow-none p-0 border-0 rounded-0">                  
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <h6 class="small title-style"><span>Invoice Information</span></h6>
+                                            <table class="table table-striped table-bordered table-sm small" id="tableinvoicepayment">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="text-center">&nbsp;</th>
+                                                        <th class="d-none">Customer ID</th>
+                                                        <th>Customer</th>
+                                                        <th class="d-none">Invoice ID</th>
+                                                        <th>Invoice No</th>
+                                                        <th class="text-right">Total</th>
+                                                        <th class="text-right">Balance Amount</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <div class="row mt-3">
@@ -244,6 +284,7 @@ include "include/topnavbar.php";
                             <input type="submit" id="hidesegsubmit" class="d-none">
                             <input type="reset" id="hidesegreset" class="d-none">
                             <input type="hidden" name="hideunappliedtotal" id="hideunappliedtotal" value="0.00">
+                            <input type="hidden" name="hidecreditnotetotal" id="hidecreditnotetotal" value="0.00">
                         </form>
                     </div>
                     <div class="col-12">
@@ -367,6 +408,12 @@ include "include/topnavbar.php";
         var editcheck='<?php echo $editcheck; ?>';
         var statuscheck='<?php echo $statuscheck; ?>';
         var deletecheck='<?php echo $deletecheck; ?>';
+
+        $('#receivablefilter').change(function() {
+            var recefilter = $(this).val();
+
+            // if()
+        });
 
         // $('#chartofdetailaccount').select2({dropdownParent: $('#modalreceivable')});
         $('.input-integer').inputNumber({
@@ -647,7 +694,31 @@ include "include/topnavbar.php";
                 },
                 url: '<?php echo base_url() ?>Receivablesettle/Getunappliedpaymentaccocustomer',
                 success: function(result) { // alert(result);
-                    $('#tableunappliedpayment tbody').empty().append(result);
+                    if(result.trim()!=""){
+                        $('#tableunappliedpayment tbody').empty().append(result);
+                        $('#collapseUnappliedPayment').collapse('show'); 
+                    }
+                    else{
+                        $('#collapseUnappliedPayment').collapse('hide'); 
+                        $('#tableunappliedpayment tbody').empty();
+                    }
+                }
+            });
+            $.ajax({
+                type: "POST",
+                data: {
+                    recordID: id
+                },
+                url: '<?php echo base_url() ?>Receivablesettle/Getcreditnoteaccocustomer',
+                success: function(result) { // alert(result);
+                    if(result.trim()!=""){
+                        $('#tablecreditnotepayment tbody').empty().append(result);
+                        $('#collapseCreditNote').collapse('show'); 
+                    }
+                    else{
+                        $('#collapseCreditNote').collapse('hide'); 
+                        $('#tablecreditnotepayment tbody').empty();
+                    }
                 }
             });
         });
@@ -709,10 +780,10 @@ include "include/topnavbar.php";
                 var invoicepayamount = $('#invoicepayamount').val();
                 var receivableamount = addCommas(parseFloat($('#receivableamount').val().replace(/,/g, '')).toFixed(2));
 
-                if ($('#checkpostdated').is(':checked')) {var postdated = '1';}
-                else{var postdated = '0';}
+                if ($('#checkpostdated').is(':checked')) {var postdated = '1'; var rowclass = 'table-warning';}
+                else{var postdated = '0'; var rowclass = '';}
 
-                $('#tblreceivableinfo> tbody:last').append('<tr><td class="d-none">' + receivabletype + '</td><td>' + receivabletypetext + '</td><td>' + chequedate + '</td><td>' + chequeno + '</td><td>' + chartdetailaccount + '</td><td>' + narration + '</td><td class="text-right addamount">' + receivableamount + '</td><td class="d-none">' + chartofdetailaccount + '</td><td class="d-none">' + accounttype + '</td><td class="d-none">' + postdated + '</td></tr>');
+                $('#tblreceivableinfo> tbody:last').append('<tr class="' + rowclass + '"><td class="d-none">' + receivabletype + '</td><td>' + receivabletypetext + '</td><td>' + chequedate + '</td><td>' + chequeno + '</td><td>' + chartdetailaccount + '</td><td>' + narration + '</td><td class="text-right addamount">' + receivableamount + '</td><td class="d-none">' + chartofdetailaccount + '</td><td class="d-none">' + accounttype + '</td><td class="d-none">' + postdated + '</td></tr>');
                 $('#receivabletype').val('');
                 $('#chartofdetailaccount').val(null).trigger('change');
                 $('#chequedate').val('');
@@ -727,7 +798,8 @@ include "include/topnavbar.php";
                     totalpaidamount += parseFloat(amount);
                 });
                 var unappliedamount = parseFloat($('#hideunappliedtotal').val());
-                totalpaidamount = totalpaidamount + unappliedamount;
+                var creditnoteamount = parseFloat($('#hidecreditnotetotal').val());
+                totalpaidamount = totalpaidamount + unappliedamount + creditnoteamount;
                 $('#paidamount').val(addCommas(parseFloat(totalpaidamount).toFixed(2)));
             }
         });
@@ -793,6 +865,18 @@ include "include/topnavbar.php";
                     jsonObjUnapplied.push(item);
                 });
                 var myJSONUnapplied = JSON.stringify(jsonObjUnapplied);
+
+                jsonObjCreditNote = [];
+                $('#tablecreditnotepayment tbody input[type=checkbox]:checked').each(function() {
+                    itemCN = {};
+                    var row = $(this).closest("tr");
+                    itemCN["creditnoteid"] = row.find('td:eq(1)').text();   // hidden CN ID
+                    itemCN["creditnoteno"] = row.find('td:eq(2)').text();
+                    itemCN["customer"]     = row.find('td:eq(3)').text();
+                    itemCN["amount"]       = row.find('td:eq(4)').text();   // gross total
+                    jsonObjCreditNote.push(itemCN);
+                });
+                var myJSONCreditNote = JSON.stringify(jsonObjCreditNote);
                 
                 var recordID = $('#recordID').val();
                 var recordOption = $('#recordOption').val();
@@ -802,6 +886,7 @@ include "include/topnavbar.php";
                 var branch = $('#branch').val();
                 var paidamount = $('#paidamount').val();
                 var unappliedamount = parseFloat($('#hideunappliedtotal').val());
+                var creditnotetotal   = parseFloat($('#hidecreditnotetotal').val());
                 var recsettdate = $('#recsettdate').val();
 
                 Swal.fire({
@@ -824,6 +909,7 @@ include "include/topnavbar.php";
                                 tableData: myJSON,
                                 tableReceData: myJSONPay,
                                 tableUnapplyData: myJSONUnapplied,
+                                tableCreditNoteData: myJSONCreditNote, 
                                 company: company,
                                 branch: branch,
                                 customer: customerID,
@@ -831,6 +917,7 @@ include "include/topnavbar.php";
                                 paidamount: paidamount,
                                 recsettdate: recsettdate,
                                 unappliedamount: unappliedamount,
+                                creditnotetotal: creditnotetotal,
                                 recordOption: recordOption,
                                 recordID: recordID
                             },
@@ -869,11 +956,21 @@ include "include/topnavbar.php";
                                     title: 'Error',
                                     text: 'Something went wrong. Please try again later.'
                                 });
+
+                                $('#btnfullinvoicepayment').prop('disabled', false).html('<i class="fas fa-save mr-2"></i> Complete');
                             }
                         });
 
                         document.body.style.overflow = 'visible';
                     }
+                });
+            }
+            else{
+                $('#btnfullinvoicepayment').prop('disabled', false).html('<i class="fas fa-save mr-2"></i> Complete');
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Error',
+                    text: 'Please select one more invoice or check paid amount is greater than or equal to invoice amount.'
                 });
             }
         }); 
@@ -994,6 +1091,13 @@ include "include/topnavbar.php";
                 checkunapplied();
             } else {
                 checkunapplied();
+            }
+        });
+        $('#tablecreditnotepayment tbody').on('click', '.checkclickcreditnote', function() {
+            if ($(this).is(':checked')) {
+                checkcreditnote();
+            } else {
+                checkcreditnote();
             }
         });
     });
@@ -1148,7 +1252,46 @@ include "include/topnavbar.php";
             });
 
             var unappliedamount = parseFloat($('#hideunappliedtotal').val());
-            totalpaidamount = totalpaidamount + unappliedamount;
+            var creditnoteamount = parseFloat($('#hidecreditnotetotal').val());
+            totalpaidamount = totalpaidamount + unappliedamount + creditnoteamount;
+            $('#paidamount').val(addCommas(parseFloat(totalpaidamount).toFixed(2)));
+        }
+        else{
+            paidtotalamount();
+        }
+    }
+
+    function checkcreditnote(){
+        var intVal = function (i) {
+            return typeof i === 'string' ?
+                i.replace(/[\$,]/g, '') * 1 :
+                typeof i === 'number' ?
+                i : 0;
+        };
+        
+        var sum = 0;
+        var tablelist = $("#tablecreditnotepayment tbody input[type=checkbox]:checked");
+                
+        if(tablelist.length>0){
+            tablelist.each(function() {
+                item = {}
+                var row = $(this).closest("tr");
+                sum += parseFloat(intVal(row.find('td:eq(4)').text()));
+            });
+        }
+
+        $('#hidecreditnotetotal').val(parseFloat(sum).toFixed(2));
+
+        if ($('#tblreceivableinfo tbody tr').length > 0) {
+            var totalpaidamount = 0;
+            $('#tblreceivableinfo tbody tr').each(function() {
+                var amount = $(this).find('.addamount').text().replace(/,/g, '');
+                totalpaidamount += parseFloat(amount);
+            });
+
+            var unappliedamount = parseFloat($('#hideunappliedtotal').val());
+            var creditnoteamount = parseFloat($('#hidecreditnotetotal').val());
+            totalpaidamount = totalpaidamount + unappliedamount + creditnoteamount;
             $('#paidamount').val(addCommas(parseFloat(totalpaidamount).toFixed(2)));
         }
         else{
@@ -1163,8 +1306,9 @@ include "include/topnavbar.php";
             var invoicetotal = 0;
             $('#invoicepayamount').val() ? invoicetotal += parseFloat($('#invoicepayamount').val().replace(/,/g, '')) : 0;   
             var unappliedamount = parseFloat($('#hideunappliedtotal').val());
-            var paidtotal = unappliedamount;
-            if(invoicetotal <= unappliedamount){
+            var creditnoteamount = parseFloat($('#hidecreditnotetotal').val());
+            var paidtotal = unappliedamount + creditnoteamount;
+            if(invoicetotal <= paidtotal){
                 $('#paidamount').val(addCommas(parseFloat(paidtotal).toFixed(2)));
             }
             else{

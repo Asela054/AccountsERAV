@@ -46,7 +46,7 @@ $columns = array(
 	array( 'db' => '`u`.`remark`', 'dt' => 'remark', 'field' => 'remark' ),
 	array( 'db' => '`ua`.`company`', 'dt' => 'company', 'field' => 'company' ),
 	array( 'db' => '`ub`.`branch`', 'dt' => 'branch', 'field' => 'branch' ),
-	array( 'db' => "`uc`.$column2", 'dt' => 'suppliername', 'field' => 'suppliername' ),
+	array( 'db' => "`uc`.`$column2` AS `suppliername`", 'dt' => 'suppliername', 'field' => 'suppliername' ),
 	array( 'db' => '`u`.`status`', 'dt' => 'status', 'field' => 'status' )
 );
 

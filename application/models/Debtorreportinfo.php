@@ -322,44 +322,87 @@ class Debtorreportinfo extends CI_Model{
                 // $transactions = $this->db->query($sql, $params)->result();
 
 
-
+                // SELECT 
+                //         `invno` AS `receiptno`, 
+                //         `invdate` AS `invpaydate`, 
+                //         `invamount` AS `amount`, 
+                //         GROUP_CONCAT(DISTINCT `tbl_print_invoicedetail`.`job`) AS `narration`, 
+                //         'D' AS `tratype`, 
+                //         '' AS `chequedate`, 
+                //         '' AS `chequeno`,
+                //         0 AS `overpayment`,
+                //         '' AS `overpayment_balance`,
+                //         0 AS `is_overpayment_only`
+                //     FROM `tbl_sales_info` 
+                //     LEFT JOIN `tbl_print_invoice` ON (
+                //         `tbl_print_invoice`.`inv_no` = `tbl_sales_info`.`invno` 
+                //         OR 
+                //         `tbl_print_invoice`.`inv_no` = CONCAT('INV', `tbl_sales_info`.`invno`)
+                //     ) 
+                //     AND `tbl_print_invoice`.`tbl_company_idtbl_company`=? 
+                //     AND `tbl_print_invoice`.`tbl_company_branch_idtbl_company_branch`=?
+                //     LEFT JOIN `tbl_print_invoicedetail` ON `tbl_print_invoicedetail`.`tbl_print_invoice_idtbl_print_invoice` = `tbl_print_invoice`.`idtbl_print_invoice` 
+                //     WHERE `tbl_sales_info`.`tbl_customer_idtbl_customer`=? 
+                //     AND `tbl_sales_info`.`tbl_company_idtbl_company`=? 
+                //     AND `tbl_sales_info`.`tbl_company_branch_idtbl_company_branch`=? 
+                //     AND `tbl_sales_info`.`invdate` BETWEEN ? AND ? 
+                //     AND `tbl_sales_info`.`status`=? 
+                //     AND `tbl_sales_info`.`poststatus`=? 
+                //     AND `tbl_sales_info`.`invno` NOT IN (
+                //         SELECT `invoiceno` 
+                //         FROM `tbl_batch_transaction` 
+                //         WHERE `crdr` = 'C' 
+                //         AND `status` = 1
+                //         AND `tbl_customer_idtbl_customer` = ?
+                //     ) 
 
                 $sql = "SELECT * FROM (
                     -- Sales Invoices (Debit transactions)
                     SELECT 
-                        `invno` AS `receiptno`, 
-                        `invdate` AS `invpaydate`, 
-                        `invamount` AS `amount`, 
-                        GROUP_CONCAT(DISTINCT `tbl_print_invoicedetail`.`job`) AS `narration`, 
-                        'D' AS `tratype`, 
+                        `tbl_account_receivable_main`.`receiptno` AS `receiptno`, 
+                        `tbl_account_receivable_main`.`tradate` AS `invpaydate`, 
+                        `tbl_account_receivable`.`amount` AS `amount`, 
+                        `tbl_account_receivable`.`narration` AS `narration`, 
+                        `tbl_account_receivable`.`tratype` AS `tratype`,
                         '' AS `chequedate`, 
                         '' AS `chequeno`,
                         0 AS `overpayment`,
                         '' AS `overpayment_balance`,
                         0 AS `is_overpayment_only`
-                    FROM `tbl_sales_info` 
-                    LEFT JOIN `tbl_print_invoice` ON (
-                        `tbl_print_invoice`.`inv_no` = `tbl_sales_info`.`invno` 
-                        OR 
-                        `tbl_print_invoice`.`inv_no` = CONCAT('INV', `tbl_sales_info`.`invno`)
-                    ) 
-                    AND `tbl_print_invoice`.`tbl_company_idtbl_company`=? 
-                    AND `tbl_print_invoice`.`tbl_company_branch_idtbl_company_branch`=?
-                    LEFT JOIN `tbl_print_invoicedetail` ON `tbl_print_invoicedetail`.`tbl_print_invoice_idtbl_print_invoice` = `tbl_print_invoice`.`idtbl_print_invoice` 
-                    WHERE `tbl_sales_info`.`tbl_customer_idtbl_customer`=? 
-                    AND `tbl_sales_info`.`tbl_company_idtbl_company`=? 
-                    AND `tbl_sales_info`.`tbl_company_branch_idtbl_company_branch`=? 
+                    FROM `tbl_sales_info`
+                    INNER JOIN `tbl_account_receivable_main` 
+                        ON `tbl_account_receivable_main`.`customer` = `tbl_sales_info`.`tbl_customer_idtbl_customer`
+                        AND `tbl_account_receivable_main`.`receiptno` = `tbl_sales_info`.`invno`
+                        AND `tbl_account_receivable_main`.`tbl_company_idtbl_company` = ?
+                        AND `tbl_account_receivable_main`.`tbl_company_branch_idtbl_company_branch` = ?
+                        AND `tbl_account_receivable_main`.`poststatus` = ?
+                        AND `tbl_account_receivable_main`.`status` = ?
+                    INNER JOIN `tbl_account_receivable`
+                        ON `tbl_account_receivable`.`tbl_account_receivable_main_idtbl_account_receivable_main` = `tbl_account_receivable_main`.`idtbl_account_receivable_main`
+                        AND `tbl_account_receivable`.`tbl_company_idtbl_company` = ?
+                        AND `tbl_account_receivable`.`tbl_company_branch_idtbl_company_branch` = ?
+                        AND `tbl_account_receivable`.`poststatus` = ?
+                        AND `tbl_account_receivable`.`status` = ?
+                    INNER JOIN `tbl_account_detail_other`
+                        ON `tbl_account_detail_other`.`tbl_account_detail_idtbl_account_detail` = `tbl_account_receivable`.`tbl_account_detail_idtbl_account_detail`
+                        AND `tbl_account_detail_other`.`otheroptiontype` = 2
+                        AND `tbl_account_detail_other`.`otheroption` = ?        -- customer ID
+                        AND `tbl_account_detail_other`.`tbl_company_idtbl_company` = ?
+                        AND `tbl_account_detail_other`.`tbl_company_branch_idtbl_company_branch` = ?
+                    WHERE `tbl_sales_info`.`tbl_customer_idtbl_customer` = ? 
+                    AND `tbl_sales_info`.`tbl_company_idtbl_company` = ? 
+                    AND `tbl_sales_info`.`tbl_company_branch_idtbl_company_branch` = ? 
                     AND `tbl_sales_info`.`invdate` BETWEEN ? AND ? 
-                    AND `tbl_sales_info`.`status`=? 
-                    AND `tbl_sales_info`.`poststatus`=? 
+                    AND `tbl_sales_info`.`status` = ? 
+                    AND `tbl_sales_info`.`poststatus` = ? 
                     AND `tbl_sales_info`.`invno` NOT IN (
                         SELECT `invoiceno` 
                         FROM `tbl_batch_transaction` 
                         WHERE `crdr` = 'C' 
                         AND `status` = 1
                         AND `tbl_customer_idtbl_customer` = ?
-                    ) 
-                    GROUP BY `tbl_sales_info`.`invno` 
+                    )
+                    GROUP BY `tbl_account_receivable_main`.`receiptno` 
                     
                     UNION ALL 
                     
@@ -479,7 +522,18 @@ class Debtorreportinfo extends CI_Model{
 
                     -- Manual Account Transactions
                     SELECT
-                        `tbl_account_transaction_manual`.`batchno` AS `receiptno`,
+                        CASE 
+                            WHEN `tbl_account_transaction_manual`.`narration` LIKE '%CRN%' THEN 
+                                SUBSTRING_INDEX(
+                                    SUBSTRING(
+                                        `tbl_account_transaction_manual`.`narration`, 
+                                        LOCATE('CRN', `tbl_account_transaction_manual`.`narration`)
+                                    ), 
+                                    ' ', 
+                                    1
+                                )
+                            ELSE `tbl_account_transaction_manual`.`batchno`
+                        END AS `receiptno`,
                         `tbl_account_transaction_manual`.`tradate` AS `invpaydate`,
                         `tbl_account_transaction_manual`.`amount` AS `amount`,
                         `tbl_account_transaction_manual`.`narration` AS `narration`,
@@ -512,11 +566,24 @@ class Debtorreportinfo extends CI_Model{
 
                 $params = [
                     // Sales Invoices parameters (positions 1-10)
-                    $companyID, $branchID,                        // print invoice join
-                    $cust->idtbl_customer, $companyID, $branchID, // customer and company
-                    $fromdate, $todate,                           // date range
-                    1, 1,                                         // status, poststatus
-                    $cust->idtbl_customer,                        // NOT IN subquery
+                    // $companyID, $branchID,                        // print invoice join
+                    // $cust->idtbl_customer, $companyID, $branchID, // customer and company
+                    // $fromdate, $todate,                           // date range
+                    // 1, 1,                                         // status, poststatus
+                    // $cust->idtbl_customer,  
+                    
+                    // Sales Invoices parameters
+                    $companyID, $branchID,              // receivable_main company/branch (JOIN)
+                    1, 1,                               // receivable_main poststatus, status (JOIN)
+                    $companyID, $branchID,              // receivable company/branch (JOIN)
+                    1, 1,                               // receivable poststatus, status (JOIN)
+                    $cust->idtbl_customer,              // account_detail_other otheroption = customer ID (JOIN)
+                    $companyID, $branchID,              // account_detail_other company/branch (JOIN)
+                    $cust->idtbl_customer,              // WHERE customer
+                    $companyID, $branchID,              // WHERE company/branch
+                    $fromdate, $todate,                 // date range
+                    1, 1,                               // status, poststatus
+                    $cust->idtbl_customer,              // NOT IN subquery
 
                     // Receivable Payments parameters (positions 11-17)
                     $fromdate, $todate,                           // date range
@@ -576,14 +643,25 @@ class Debtorreportinfo extends CI_Model{
                         $customerTotalDebit += $transaction->amount;
                         $debitAmount = number_format($transaction->amount, 2);
                         $creditAmount = '-';
-                        $typeBadge = 'Invoice';
+
+                        if (strpos($transaction->narration, 'CRN') !== false) {
+                            $typeBadge = 'Credit Note';
+                        }
+                        else {
+                            $typeBadge = 'Invoice';
+                        }
                     } else {
                         // Receipt/Credit
                         $runningBalance -= $transaction->amount;
                         $customerTotalCredit += $transaction->amount;
                         $debitAmount = '-';
                         $creditAmount = number_format($transaction->amount, 2);
-                        $typeBadge = 'Receipt';
+                        if (strpos($transaction->narration, 'CRN') !== false) {
+                            $typeBadge = 'Credit Note';
+                        }
+                        else {
+                            $typeBadge = 'Receipt';
+                        }
                     }
 
                     $html .= '<tr>';
@@ -622,6 +700,8 @@ class Debtorreportinfo extends CI_Model{
             $this->db->where('tbl_receivable.status', '1');
             $this->db->where('tbl_receivable.postdatedstatus', '1');
             $this->db->where('tbl_receivable.poststatus', '0');
+            $this->db->where('tbl_receivable.tbl_company_idtbl_company', $companyID);
+            $this->db->where('tbl_receivable.tbl_company_branch_idtbl_company_branch', $branchID);
             if(!empty($customer)) {
                 $this->db->where('tbl_receivable.payer', $customer);
             }

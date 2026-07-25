@@ -63,4 +63,10 @@ class Paymentsettle extends CI_Controller {
     public function Paymentsettlecancel(){
         $result=$this->Paymentsettleinfo->Paymentsettlecancel();
     }
+    public function Getadvanceaccosupplier(){
+        $result=$this->Paymentsettleinfo->Getadvanceaccosupplier();
+    }
+    public function Getaccountinfoaccoaccountlist(){
+        $result=$this->Paymentsettleinfo->Getaccountinfoaccoaccountlist();
+    }
 }

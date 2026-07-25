@@ -54,7 +54,9 @@ $sql_details = array(
 // require( 'ssp.class.php' );
 require('ssp.customized.class.php' );
 
-$joinQuery = "FROM (select distinct tbl_account_idtbl_account, tbl_bank_idtbl_bank, tbl_bank_branch_idtbl_bank_branch from tbl_cheque_info where status=1) as drv_doc inner join (select idtbl_account, accountname, accountno from tbl_account where tbl_account_type_idtbl_account_type=1) as drv_acc on drv_doc.tbl_account_idtbl_account=drv_acc.idtbl_account";
+$joinQuery = "FROM (select distinct tbl_account_idtbl_account, tbl_bank_idtbl_bank, tbl_bank_branch_idtbl_bank_branch from tbl_cheque_info where status=1) as drv_doc inner join (select idtbl_account, accountname, accountno from tbl_account where 1=1) as drv_acc on drv_doc.tbl_account_idtbl_account=drv_acc.idtbl_account";
+
+// select drv_acc.idtbl_account, drv_acc.accountname, drv_doc.tbl_bank_idtbl_bank, drv_doc.tbl_bank_branch_idtbl_bank_branch as idtbl_bank_branch from (select distinct tbl_account_idtbl_account, tbl_bank_idtbl_bank, tbl_bank_branch_idtbl_bank_branch from tbl_cheque_info where status=1) as drv_doc inner join (select idtbl_account, accountname from tbl_account where 1=1) as drv_acc on drv_doc.tbl_account_idtbl_account=drv_acc.idtbl_account
 
 $extraWhere = "";//"`u`.`status` IN (1, 2)";
 

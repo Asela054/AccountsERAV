@@ -37,7 +37,7 @@ include "include/topnavbar.php";
 										<option value="">Select</option>
 									</select>
 								</div>
-								<?php if($functionmenu2=='ledger_folio'){ ?>
+								<?php if($functionmenu2=='ledger_folio' || $functionmenu2=='bank_reconciliation_report'){ ?>
 								<div class="col">
 									<label class="small font-weight-bold">Account</label>
 									<select class="form-control form-control-sm" id="drp_filter_chart_of_acc" name="chart_acc_id">
@@ -327,6 +327,25 @@ function exportoption(){
 								rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
 							}
 						}
+						else if(row.cells.length==4){
+							if(j==0){
+								rowData.push({content: col.innerText, colSpan: 2, styles: {halign: 'right', fontStyle: 'bold'}});
+							}
+							else if(j==4){
+								rowData.push({content: col.innerText, colSpan: 2, styles: {halign: 'right', fontStyle: 'bold'}});
+							}
+							else{
+								rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
+							}
+						}
+						else if(row.cells.length==3){
+							if(j==0){
+								rowData.push({content: col.innerText, colSpan: 4, styles: {halign: 'right', fontStyle: 'bold'}});
+							}
+							else{
+								rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
+							}
+						}
 						else if(row.cells.length==5){
 							if(j==0){
 								rowData.push({content: col.innerText, colSpan: 2, styles: {halign: 'left', fontStyle: 'bold'}});
@@ -424,6 +443,294 @@ function exportoption(){
 						}
 						else{
 							rowData.push(col.innerText);
+						}
+					}
+				}
+				else if(reporttype==7){
+					// if(row.cells.length==1){					
+					// 	if (col.tagName.toLowerCase() === 'th') {						
+					// 		rowData.push({content: col.innerText, styles: {halign: 'left', fontStyle: 'bold'}});
+					// 	}
+					// }
+					// else{
+					// 	if(j==0 && col.tagName.toLowerCase() === 'th') {					
+					// 		rowData.push({content: col.innerText, styles: {halign: 'left', fontStyle: 'bold'}});
+					// 	}
+					// 	else if(j==1 && col.tagName.toLowerCase() === 'th') {
+					// 		rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
+					// 	}
+					// 	else if(j==0){
+					// 		rowData.push({content: col.innerText, styles: {halign: 'left', cellPadding: [5, 15]}});
+					// 	}
+					// 	else if(j==1){
+					// 		rowData.push({content: col.innerText, styles: {halign: 'right'}});
+					// 	}
+					// }
+					if(row.cells.length==1){
+						// Section headers / spacer rows, e.g. "Bank Statement", "Reconciled
+						// Transactions (14)", the blank "&nbsp;" divider rows, and the
+						// "No Bank Reconciliation Found" message.
+						var col = row.cells[0];
+						var isHeader = col.tagName.toLowerCase() === 'th';
+						var span = parseInt(col.getAttribute('colspan')) || 5;
+				
+						rowData.push({
+							content: col.innerText,
+							colSpan: span,
+							styles: { halign: 'left', fontStyle: isHeader ? 'bold' : 'normal' }
+						});
+					}
+					else{
+						for(var j = 0, col; col = row.cells[j]; j++){
+							var isHeader  = col.tagName.toLowerCase() === 'th';
+							var isRight   = col.classList.contains('text-right');
+							var span      = parseInt(col.getAttribute('colspan')) || 1;
+				
+							rowData.push({
+								content: col.innerText,
+								colSpan: span,
+								styles: {
+									halign: isRight ? 'right' : 'left',
+									fontStyle: isHeader ? 'bold' : 'normal'
+								}
+							});
+						}
+					}
+				}
+				else if(reporttype==8){
+					if(row.cells.length==1){					
+						if (col.tagName.toLowerCase() === 'th') {						
+							rowData.push({content: col.innerText, styles: {halign: 'left', fontStyle: 'bold'}});
+						}
+					}
+					else if(row.cells.length==3){					
+						if (col.tagName.toLowerCase() === 'th' && j==0) {						
+							rowData.push({content: col.innerText, colSpan: 3, styles: {halign: 'right', fontStyle: 'bold'}});
+						}
+						else{
+							rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
+						}
+					}
+					else{
+						if(j==4){
+							rowData.push({content: col.innerText, styles: {halign: 'right'}});
+						}
+						else if(j==5){
+							rowData.push({content: col.innerText, styles: {halign: 'center'}});
+						}
+						else{
+							rowData.push({content: col.innerText, styles: {halign: 'left'}});
+						}
+					}
+				}
+				else if(reporttype==9){
+					if(row.cells.length==1){					
+						if (col.tagName.toLowerCase() === 'th') {						
+							rowData.push({content: col.innerText, styles: {halign: 'left', fontStyle: 'bold'}});
+						}
+					}
+					else if(row.cells.length==3){					
+						if (col.tagName.toLowerCase() === 'th' && j==0) {						
+							rowData.push({content: col.innerText, colSpan: 3, styles: {halign: 'right', fontStyle: 'bold'}});
+						}
+						else{
+							rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
+						}
+					}
+					else{
+						if(j==4){
+							rowData.push({content: col.innerText, styles: {halign: 'right'}});
+						}
+						else if(j==5){
+							rowData.push({content: col.innerText, styles: {halign: 'center'}});
+						}
+						else{
+							rowData.push({content: col.innerText, styles: {halign: 'left'}});
+						}
+					}
+				}
+				else if(reporttype==10){
+					if(row.cells.length==1){					
+						if (col.tagName.toLowerCase() === 'th') {						
+							rowData.push({content: col.innerText, styles: {halign: 'left', fontStyle: 'bold'}});
+						}
+						else{
+							rowData.push({content: col.innerText, styles: {halign: 'left'}});
+						}
+					}
+					else if(row.cells.length==3){					
+						if (col.tagName.toLowerCase() === 'th') {						
+							rowData.push({content: col.innerText, styles: {halign: 'left', fontStyle: 'bold'}});
+						}
+						else if (j==1 || j==2) {
+							rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
+						}
+						else{
+							rowData.push({content: col.innerText, styles: {halign: 'left', fontStyle: 'bold'}});
+						}
+					}
+					else if(row.cells.length==2){					
+						if (col.tagName.toLowerCase() === 'th') {						
+							rowData.push({content: col.innerText, styles: {halign: 'left', fontStyle: 'bold'}});
+						}
+						else if (j==1) {
+							rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
+						}
+						else{
+							rowData.push({content: col.innerText, styles: {halign: 'left', fontStyle: 'bold'}});
+						}
+					}
+					else{
+						rowData.push({content: col.innerText, styles: {halign: 'left'}});
+					}
+				}
+				else if(reporttype==11){
+					if(row.cells.length==1){					
+						if (col.tagName.toLowerCase() === 'th') {						
+							rowData.push({content: col.innerText, styles: {halign: 'left', fontStyle: 'bold'}});
+						}
+						else{
+							rowData.push({content: col.innerText, styles: {halign: 'left'}});
+						}
+					}
+					else if(row.cells.length==2){					
+						if (col.tagName.toLowerCase() === 'th') {	
+							if(j==0){
+								rowData.push({content: col.innerText, styles: {halign: 'left', fontStyle: 'bold'}});
+							}
+							else{
+								rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
+							}
+						}
+						else if (j==1) {
+							if (col.tagName.toLowerCase() === 'th') {	
+								rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
+							}
+							else{
+								rowData.push({content: col.innerText, styles: {halign: 'right'}});
+							}
+						}
+						else{
+							if (col.tagName.toLowerCase() === 'th') {	
+								rowData.push({content: col.innerText, styles: {halign: 'left', fontStyle: 'bold'}});
+							}
+							else{
+								rowData.push({content: col.innerText, styles: {halign: 'left'}});
+							}
+						}
+					}
+					else{
+						rowData.push({content: col.innerText, styles: {halign: 'left'}});
+					}
+				}
+				// else if(reporttype==12){
+				// 	if(row.cells.length==1){					
+				// 		if (col.tagName.toLowerCase() === 'th') {						
+				// 			rowData.push({content: col.innerText, styles: {halign: 'left', fontStyle: 'bold'}});
+				// 		}
+				// 		else{
+				// 			rowData.push({content: col.innerText, styles: {halign: 'left'}});
+				// 		}
+				// 	}
+				// 	else if(row.cells.length==2){	
+				// 		if(j==0 && col.tagName.toLowerCase() === 'th') {					
+				// 			rowData.push({content: col.innerText, styles: {halign: 'left', fontStyle: 'bold'}});
+				// 		}
+				// 		else if(j==1 && col.tagName.toLowerCase() === 'th') {
+				// 			rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
+				// 		}
+				// 		else if(j==0){
+				// 			rowData.push({content: col.innerText, styles: {halign: 'left', cellPadding: [5, 15]}});
+				// 		}
+				// 		else if(j==1){
+				// 			rowData.push({content: col.innerText, styles: {halign: 'right'}});
+							
+				// 		}
+				// 	}
+				// 	else if(row.cells.length==3){	
+				// 		if(j==0 && col.tagName.toLowerCase() === 'th') {					
+				// 			rowData.push({content: col.innerText, styles: {halign: 'left', fontStyle: 'bold'}});
+				// 		}
+				// 		else if(j==1 && col.tagName.toLowerCase() === 'th') {
+				// 			rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
+				// 		}
+				// 		else if(j==2 && col.tagName.toLowerCase() === 'th') {
+				// 			rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
+				// 		}
+				// 		else if(j==0){
+				// 			rowData.push({content: col.innerText, styles: {halign: 'left', cellPadding: [5, 15]}});
+				// 		}
+				// 		else if(j==1){
+				// 			rowData.push({content: col.innerText, styles: {halign: 'right'}});
+							
+				// 		}
+				// 		else if(j==2){
+				// 			rowData.push({content: col.innerText, styles: {halign: 'right'}});
+							
+				// 		}
+				// 	}
+				// 	else if(row.cells.length==4){	
+				// 		if(j==0 && col.tagName.toLowerCase() === 'th') {					
+				// 			rowData.push({content: col.innerText, styles: {halign: 'left', fontStyle: 'bold'}});
+				// 		}
+				// 		else if(j==1 && col.tagName.toLowerCase() === 'th') {
+				// 			rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
+				// 		}
+				// 		else if(j==2 && col.tagName.toLowerCase() === 'th') {
+				// 			rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
+				// 		}
+				// 		else if(j==3 && col.tagName.toLowerCase() === 'th') {
+				// 			rowData.push({content: col.innerText, styles: {halign: 'right', fontStyle: 'bold'}});
+				// 		}
+				// 		else if(j==0){
+				// 			rowData.push({content: col.innerText, styles: {halign: 'left', cellPadding: [5, 15]}});
+				// 		}
+				// 		else if(j==1){
+				// 			rowData.push({content: col.innerText, styles: {halign: 'right'}});
+							
+				// 		}
+				// 		else if(j==2){
+				// 			rowData.push({content: col.innerText, styles: {halign: 'right'}});
+							
+				// 		}
+				// 		else if(j==3){
+				// 			rowData.push({content: col.innerText, styles: {halign: 'right'}});
+							
+				// 		}
+				// 	}
+				// 	else{
+				// 		rowData.push({content: col.innerText, styles: {halign: 'left'}});
+				// 	}
+				// }
+				else if(reporttype==12){
+					if(row.cells.length==1){
+						// Section headers / spacer rows, e.g. "Bank Statement", "Reconciled
+						// Transactions (14)", the blank "&nbsp;" divider rows, and the
+						// "No Bank Reconciliation Found" message.
+						var col = row.cells[0];
+						var isHeader = col.tagName.toLowerCase() === 'th';
+						var span = parseInt(col.getAttribute('colspan')) || 5;
+				
+						rowData.push({
+							content: col.innerText,
+							colSpan: span,
+							styles: { halign: 'left', fontStyle: isHeader ? 'bold' : 'normal' }
+						});
+					}
+					else{
+						for(var j = 0, col; col = row.cells[j]; j++){
+							var isHeader  = col.tagName.toLowerCase() === 'th';
+							var isRight   = col.classList.contains('text-right');
+							var span      = parseInt(col.getAttribute('colspan')) || 1;
+				
+							rowData.push({
+								content: col.innerText,
+								colSpan: span,
+								styles: {
+									halign: isRight ? 'right' : 'left',
+									fontStyle: isHeader ? 'bold' : 'normal'
+								}
+							});
 						}
 					}
 				}

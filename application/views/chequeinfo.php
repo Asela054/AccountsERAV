@@ -185,8 +185,16 @@ include "include/topnavbar.php";
                         $('#bank').val(obj.bank).trigger('change');;    
                         getbankbranch(obj.bank, obj.branch);         
                         $('#startno').val(obj.startno);                       
-                        $('#endno').val(obj.endno);                       
-                        $('#chartaccount').val(obj.chartaccount);                       
+                        $('#endno').val(obj.endno);      
+                        
+                        var newOption = new Option(obj.chartaccountname, obj.chartaccount, true, true);
+                        $('#chartaccount').append(newOption).trigger('change');
+                        var optionDatacr = $('#chartaccount').select2('data');
+                        var lastOptioncr = optionDatacr[optionDatacr.length - 1]; 
+                        lastOptioncr.data = { type: obj.chartaccounttype };
+                        $('#chartaccount').trigger('change'); 
+
+                        // $('#chartaccount').val(obj.chartaccount);                       
 
                         $('#recordOption').val('2');
                         $('#submitBtn').html('<i class="far fa-save"></i>&nbsp;Update');

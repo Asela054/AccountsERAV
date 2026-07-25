@@ -132,19 +132,32 @@ include "include/topnavbar.php";
                                     <label class="small font-weight-bold">Branch*</label>
                                     <input type="text" name="showbranch" id="showbranch" class="form-control form-control-sm" readonly>
                                 </div>
-                            </div>
-                            <div class="form-row mt-2">
-                                <div class="col">
+                                <div class="col-3">
                                     <label class="small font-weight-bold">Paid Date*</label>
                                     <input type="date" name="paiddate" id="paiddate" class="form-control form-control-sm" value="<?php echo date('Y-m-d'); ?>" max="<?php echo date('Y-m-d'); ?>" required>
                                 </div>
+                            </div>
+                            <div class="form-row mt-2">
                                 <div class="col">
                                     <label class="small font-weight-bold">Payble Filter</label>
-                                    <select name="payablefilter" id="payablefilter" class="form-control form-control-sm" style="width:100%;" required>
+                                    <div class="input-group input-group-sm">
+                                        <select name="payablefilter" id="payablefilter" class="form-control form-control-sm" style="width:100%;" required>
+                                            <option value="">Select</option>
+                                            <option value="1">Payment Supplier</option>
+                                            <option value="2">Payment Journal</option>
+                                            <option value="3">Payment Voucher</option>
+                                        </select>
+                                        <div class="input-group-append">
+                                            <div class="input-group-text">
+                                                <input type="checkbox" class="mr-2" id="checkadvanced" name="checkadvanced" value="1" aria-label="Checkbox for following text input" disabled><label class="form-check-label" for="checkadvanced">As advance payment</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <label class="small font-weight-bold">Advance Payment Supplier</label>
+                                    <select name="advancesupplier" id="advancesupplier" style="width: 100%;" class="form-control form-control-sm" disabled>
                                         <option value="">Select</option>
-                                        <option value="1">Payment Supplier</option>
-                                        <option value="2">Payment Journal</option>
-                                        <option value="3">Payment Voucher</option>
                                     </select>
                                 </div>
                                 <div class="col">
@@ -153,10 +166,66 @@ include "include/topnavbar.php";
                                         <option value="">Select</option>
                                     </select>
                                 </div>
-                            </div>                        
+                            </div>  
+                            <div class="form-row mt-2 d-none" id="divpaymentlist">
+                                <div class="col">
+                                    <label class="small font-weight-bold">Description*</label>
+                                    <input type="text" name="settledesc" id="settledesc" class="form-control form-control-sm" value="" readonly>
+                                </div>
+                                <div class="col-3">
+                                    <label class="small font-weight-bold">Amount*</label>
+                                    <input type="text" name="settleamount" id="settleamount" class="form-control form-control-sm text-right input-integer" value="" readonly>
+                                </div>
+                                <div class="col-2 text-right">
+                                    <label class="small font-weight-bold">&nbsp;</label><br>
+                                    <button type="button" class="btn btn-primary btn-sm w-100" id="btnaddlist" disabled><i class="fas fa-list mr-2"></i>Add List</button>
+                                </div>
+                            </div>                      
                             <div class="row mt-3">
                                 <div class="col-12">
-                                    <div class="collapse" id="collapseInvoiceInfo">
+                                    <div class="collapse" id="collapsevoucherlist">
+                                        <div class="card card-body shadow-none p-0 border-0 rounded-0">
+                                            <h6 class="small title-style"><span>Voucher Payment Information</span></h6>
+                                            <table class="table table-striped table-bordered table-sm small mb-0" id="tablevoucherlist">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Date</th>
+                                                        <th>Advance Payment</th>
+                                                        <th class="d-none">AdvanceType</th>
+                                                        <th>Advance Pay Supplier</th>
+                                                        <th class="d-none">AdvancePaySuppID</th>
+                                                        <th>Account | Supplier</th>
+                                                        <th class="d-none">AccountID</th>
+                                                        <th class="d-none">AccountType</th>
+                                                        <th>Description</th>
+                                                        <th class="text-right">Amount</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="collapse" id="collapseAdvancePayment">
+                                        <div class="card card-body shadow-none p-0 border-0 rounded-0">
+                                            <h6 class="small title-style"><span>Advance Payment Information</span></h6>
+                                            <table class="table table-striped table-bordered table-sm small mb-0" id="tableAdvancepayment">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="text-center">&nbsp;</th>
+                                                        <th class="d-none">Advancepay ID</th>
+                                                        <th>Receipt Date</th>
+                                                        <th class="d-none">Supplier ID</th>
+                                                        <th>Supplier</th>
+                                                        <th class="d-none">Payment Receipt No</th>
+                                                        <th>Payment Receipt</th>
+                                                        <th class="text-right">Advance Payment</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                    </div> 
+                                    <div class="collapse mt-3" id="collapseInvoiceInfo">
                                         <div class="card card-body shadow-none border-0 p-0">
                                             <h6 class="small title-style"><span>Invoice Information</span></h6>
                                             <table class="table table-striped table-bordered table-sm small" id="tableinvoicepayment">
@@ -183,11 +252,11 @@ include "include/topnavbar.php";
                                 </div>
                             </div>
                             <div class="form-row">
-                                <div class="col">
+                                <div class="col-2">
                                     <label class="small font-weight-bold">Invoice Total*</label>
                                     <input type="text" name="invoicepayamount" id="invoicepayamount" class="form-control form-control-sm text-right" value="0" readonly>
                                 </div>
-                                <div class="col">
+                                <div class="col-3">
                                     <label class="small font-weight-bold">Payable Type*</label><br>
                                     <select name="payabletype" id="payabletype" class="form-control form-control-sm" required>
                                         <option value="">Select</option>
@@ -196,21 +265,32 @@ include "include/topnavbar.php";
                                         <?php } ?>
                                     </select>
                                 </div>
-                                <div class="col-5">
+                                <div class="col-4">
                                     <label class="small font-weight-bold">Account No*</label>
                                     <select name="chartofdetailaccount" id="chartofdetailaccount" class="form-control form-control-sm" style="width: 100%;" required>
                                         <option value="">Select</option>
                                     </select>
                                 </div>
-                            </div>
-                            <div class="form-row">
                                 <div class="col">
                                     <label class="small font-weight-bold">Cheq. | Dep. | Trans. | Pay. Date</label>
                                     <div class="input-group input-group-sm">
-                                        <input type="date" name="chequedate" id="chequedate" min="<?php echo date('Y-m-d'); ?>" class="form-control">
+                                        <input type="date" name="chequedate" id="chequedate" min="<?php // echo date('Y-m-d'); ?>" class="form-control">
                                         <div class="input-group-append">
                                             <div class="input-group-text">
                                                 <input type="checkbox" class="mr-2" id="checkpostdated" name="checkpostdated" value="1" aria-label="Checkbox for following text input"><label class="form-check-label" for="checkpostdated">Post-dated</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="col-4">
+                                    <label class="small font-weight-bold">Payee info</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="test" name="chequepayee" id="chequepayee" class="form-control" readonly>
+                                        <div class="input-group-append">
+                                            <div class="input-group-text">
+                                                <input type="checkbox" class="mr-2" id="checkaccountpay" name="checkaccountpay" value="1" aria-label="Checkbox for following text input" disabled><label class="form-check-label" for="checkaccountpay">A/C pay only</label>
                                             </div>
                                         </div>
                                     </div>
@@ -220,7 +300,7 @@ include "include/topnavbar.php";
                                     <input type="text" name="narration" id="narration" class="form-control form-control-sm" required>
                                 </div>
                                 <div class="col">
-                                    <label class="small font-weight-bold">Paid Amount*</label>
+                                    <label class="small font-weight-bold mr-2">Paid Amount* </label>                                   
                                     <input type="text" name="paidamount" id="paidamount" class="form-control form-control-sm text-right input-integer" required>
                                 </div>
                             </div>
@@ -237,6 +317,11 @@ include "include/topnavbar.php";
                     </div>
                     <div class="col-12 text-right">
                         <button type="button" class="btn btn-primary btn-sm px-4" id="btnfullinvoicepayment" <?php if($addcheck==0){echo 'disabled';} ?>><i class="fas fa-save mr-2"></i>Complete</button>
+                    </div>
+                    <div class="col-12 d-none" id="divadvalert">
+                        <div class="alert alert-primary mt-2" role="alert">
+                            If you select an advance payment, please issue the payment voucher before entering any other payment methods.
+                        </div>
                     </div>
                 </div>
 			</div>
@@ -333,10 +418,22 @@ include "include/topnavbar.php";
             if($(this).val()==2){
                 $('#checkpostdated').prop('checked', false);
                 $('#checkpostdated').prop('disabled', false);
+                $('#checkaccountpay').prop('checked', false);
+                $('#checkaccountpay').prop('disabled', false);
+                $('#chequepayee').prop('readonly', false);
+                $('#chequepayee').prop('required', true);
+                $('#chequedate').prop('required', true);
+                // var payeetext = $('#supplier option:selected').text();
+                // $('#chequepayee').val(payeetext);
             }
             else{
                 $('#checkpostdated').prop('checked', false);
                 $('#checkpostdated').prop('disabled', true);
+                $('#checkaccountpay').prop('checked', false);
+                $('#checkaccountpay').prop('disabled', true);
+                $('#chequepayee').val('').prop('readonly', true);
+                $('#chequepayee').prop('required', false);
+                $('#chequedate').prop('required', false);
             }
         });
 
@@ -349,15 +446,55 @@ include "include/topnavbar.php";
 
             if(payablefilter == 1 || payablefilter == 2){ 
                 $('#collapseInvoiceInfo').collapse('show');
+                if(payablefilter == 1){
+                    $('#collapseAdvancePayment').collapse('show');
+                }
                 $('#invoicepayamount').prop('readonly', true).val('0');
+
+                $('#checkadvanced').prop('checked', false);
+                $('#checkadvanced').prop('disabled', true);
+                $("#advancesupplier").val('').trigger('change');
+                $("#advancesupplier").prop('disabled', true);
+
+                $('#collapsevoucherlist').collapse('hide');
+                $('#divpaymentlist').addClass('d-none');
+                $('#btnaddlist').prop('disabled', true);
+                $('#settleamount').prop('readonly', true);
+                $('#settledesc').prop('readonly', true);
+                $('#supplier').prop('required', true);
+
+                $('#tablevoucherlist tbody').empty();
             }
             else if(payablefilter == 3){
                 $('#collapseInvoiceInfo').collapse('hide');
-                $('#invoicepayamount').prop('readonly', false).val('');
+                $('#collapseAdvancePayment').collapse('hide');
+                // $('#invoicepayamount').prop('readonly', false).val('');
+                $('#checkadvanced').prop('disabled', false);
+
+                $('#collapsevoucherlist').collapse('show');
+                $('#divpaymentlist').removeClass('d-none');
+                $('#btnaddlist').prop('disabled', false);
+                $('#settleamount').prop('readonly', false);
+                $('#settledesc').prop('readonly', false);
+                $('#supplier').prop('required', false);
             }
             else{
                 $('#collapseInvoiceInfo').collapse('hide');
+                $('#collapseAdvancePayment').collapse('hide');
                 $('#invoicepayamount').prop('readonly', true).val('0');
+
+                $('#checkadvanced').prop('checked', false);
+                $('#checkadvanced').prop('disabled', true);
+                $("#advancesupplier").val('').trigger('change');
+                $("#advancesupplier").prop('disabled', true);
+
+                $('#collapsevoucherlist').collapse('hide');
+                $('#divpaymentlist').addClass('d-none');
+                $('#btnaddlist').prop('disabled', true);
+                $('#settleamount').prop('readonly', true);
+                $('#settledesc').prop('readonly', true);
+                $('#supplier').prop('required', true);
+                $('#tablevoucherlist tbody').empty();
             }
         });
 
@@ -720,6 +857,18 @@ include "include/topnavbar.php";
                         $('#tableinvoicepayment tbody').empty().append(result);
                     }
                 });
+                $.ajax({
+                    type: "POST",
+                    data: {
+                        recordID: id,
+                        payablefilter : payablefilter,
+                        accounttype : accounttype
+                    },
+                    url: '<?php echo base_url() ?>Paymentsettle/Getadvanceaccosupplier',
+                    success: function(result) { // alert(result);
+                        $('#tableAdvancepayment tbody').empty().append(result);
+                    }
+                });
             }
         });
         
@@ -749,8 +898,8 @@ include "include/topnavbar.php";
                 var tablelist = $("#tableinvoicepayment tbody input[type=checkbox]:checked");
                 var payablefilter = $('#payablefilter').val();
 
-                if (payablefilter == 3 || tablelist.length > 0) {
-                    $('#customer').attr('disabled', false);
+                if (payablefilter == 3 && $('#invoicepayamount').val() > 0 || tablelist.length > 0) {
+                    $('#supplier').attr('disabled', false);
                     jsonObj = [];
                     tablelist.each(function() {
                         item = {}
@@ -764,12 +913,42 @@ include "include/topnavbar.php";
                     });
                     var myJSON = JSON.stringify(jsonObj);
 
+                    jsonObjAdvance = [];
+                    $('#tableAdvancepayment tbody tr').each(function() {
+                        item = {}
+                        var row = $(this).closest("tr");
+                        item["advid"] = row.find('td:eq(1)').text();
+                        item["paysetno"] = row.find('td:eq(5)').text();
+                        item["amount"] = row.find('td:eq(7)').text();
+                        jsonObjAdvance.push(item);
+                    });
+                    var myJSONAdvance = JSON.stringify(jsonObjAdvance);
+
+                    jsonObjVoucher = [];
+                    $('#tablevoucherlist tbody tr').each(function() {
+                        item = {}
+                        var row = $(this).closest("tr");
+                        item["voucherdate"] = row.find('td:eq(0)').text();
+                        item["advancetext"] = row.find('td:eq(1)').text();
+                        item["advancestatus"] = row.find('td:eq(2)').text();
+                        item["advancesupplier"] = row.find('td:eq(3)').text();
+                        item["advancesupplierid"] = row.find('td:eq(4)').text();
+                        item["accountname"] = row.find('td:eq(5)').text();
+                        item["accountid"] = row.find('td:eq(6)').text();
+                        item["accounttype"] = row.find('td:eq(7)').text();
+                        item["desc"] = row.find('td:eq(8)').text();
+                        item["amount"] = row.find('td:eq(9)').text();
+                        jsonObjVoucher.push(item);
+                    });
+                    var myJSONVoucher = JSON.stringify(jsonObjVoucher);
+
+
                     var recordID = $('#recordID').val();
                     var recordOption = $('#recordOption').val();
                     var company = $('#company').val();
                     var branch = $('#branch').val();
                     var supplierID = $('#supplier').val();
-                    if($('#payablefilter').val() == 2 || $('#payablefilter').val() == 3){
+                    if($('#payablefilter').val() == 2){
                         var selectedSupplierData = $('#supplier').select2('data')[0];
                         var supplierAccountType = selectedSupplierData ? selectedSupplierData.data.type : null;
                     }
@@ -790,6 +969,19 @@ include "include/topnavbar.php";
                     if ($('#checkpostdated').is(':checked')) {var postdated = '1';}
                     else{var postdated = '0';}
 
+                    if ($('#checkaccountpay').is(':checked')) {var checkaccountpay = '1';}
+                    else{var checkaccountpay = '0';}
+                    var chequepayee = $('#chequepayee').val();
+
+                    if ($('#checkadvanced').is(':checked')) {
+                        var checkadvanced = '1';
+                        var advancesupplierID = $('#advancesupplier').val();
+                    }
+                    else{
+                        var checkadvanced = '0';
+                        var advancesupplierID = '0';
+                    }
+
                     Swal.fire({
                         title: '',
                         html: '<div class="div-spinner"><div class="custom-loader"></div></div>',
@@ -808,6 +1000,8 @@ include "include/topnavbar.php";
                                 type: "POST",
                                 data: {
                                     tableData: myJSON,
+                                    tableAdvData: myJSONAdvance,
+                                    tableVoucherData: myJSONVoucher,
                                     company: company,
                                     branch: branch,
                                     supplier: supplierID,
@@ -822,6 +1016,10 @@ include "include/topnavbar.php";
                                     postdated: postdated,
                                     payablefilter: payablefilter,
                                     supplierAccountType: supplierAccountType,
+                                    checkaccountpay: checkaccountpay,
+                                    chequepayee: chequepayee,
+                                    checkadvanced: checkadvanced,
+                                    advancesupplierID: advancesupplierID,
                                     recordOption: recordOption,
                                     recordID: recordID
                                 },
@@ -834,7 +1032,7 @@ include "include/topnavbar.php";
                                         // $('#hidesegreset').click();
                                         $('#tableinvoicepayment> tbody').empty();
                                         $('#supplier').val('').trigger('change');
-                                        $('#payabletype').val('');
+                                        $('#payabletype').val('').trigger('change');
                                         $('#chequedate').val('');
                                         // $('#chequeno').val('');
                                         $('#chartofdetailaccount').val('').trigger('change');
@@ -842,6 +1040,7 @@ include "include/topnavbar.php";
                                         $('#invoicepayamount').val('0');
                                         $('#paidamount').val('0');
                                         $('#btnfullinvoicepayment').prop('disabled', false).html('<i class="fas fa-save mr-2"></i> Complete');
+                                        $('#payablefilter').val('').trigger('change');
 
                                         if(recordOption==2){
                                             setTimeout( function(){ 
@@ -868,12 +1067,22 @@ include "include/topnavbar.php";
                         }
                     });
                 }
-                else {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'No invoice selected',
-                        text: 'Please select at least one invoice to proceed.'
-                    });
+                else {                    
+                    if($('#invoicepayamount').val() == 0 && payablefilter == 3){
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'No entry',
+                            text: 'Please add at least one payment voucher entry to list.'
+                        });
+                    }
+                    else if(tablelist.length == 0){
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'No invoice selected',
+                            text: 'Please select at least one invoice to proceed.'
+                        });
+                    }
+                    
                     $('#btnfullinvoicepayment').prop('disabled', false).html('<i class="fas fa-save mr-2"></i> Complete');
                 }
             }
@@ -952,10 +1161,27 @@ include "include/topnavbar.php";
                 delay: 250,
                 data: function (params) {
                     return {
-                        searchTerm: params.term // search term
+                        searchTerm: params.term, // search term
+                        payablefilter : '1'
                     };
                 },
                 processResults: function (response) {
+                    var payablefilter = '1';
+
+                    if (payablefilter == 2 || payablefilter == 3) {
+                        return {
+                            results: response.map(function (item) {
+                                return {
+                                    id: item.id,
+                                    text: item.text,
+                                    data: {
+                                        type: item.acctype
+                                    }
+                                };
+                            })
+                        };
+                    }
+
                     return {
                         results: response
                     };
@@ -983,7 +1209,139 @@ include "include/topnavbar.php";
                 var printinvoicereceipt = $('#printinvoicereceipt').val();
                 window.open("<?php echo base_url() ?>Reportprint/Paymentsettlereceipt/"+printinvoicereceipt+"/"+printtype, "_blank");
             }
-        })
+        });
+
+        $('#checkadvanced').change(function(){
+            if ($('#checkadvanced').is(':checked')) {
+                $("#advancesupplier").prop('disabled', false);
+            }
+            else{
+                $("#advancesupplier").val('').trigger('change');
+                $("#advancesupplier").prop('disabled', true);
+            }
+        });
+        $("#advancesupplier").select2({
+            dropdownParent: $('#modalreceivable'),
+            ajax: {
+                url: "<?php echo base_url() ?>Paymentsettle/Getsupplierlist",
+                type: "post",
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return {
+                        searchTerm: params.term, // search term
+                        payablefilter : '1'
+                    };
+                },
+                processResults: function (response) {
+                    var payablefilter = '1';
+
+                    if (payablefilter == 2 || payablefilter == 3) {
+                        return {
+                            results: response.map(function (item) {
+                                return {
+                                    id: item.id,
+                                    text: item.text,
+                                    data: {
+                                        type: item.acctype
+                                    }
+                                };
+                            })
+                        };
+                    }
+
+                    return {
+                        results: response
+                    };
+                },
+                cache: true
+            }
+        });
+        $('#tableAdvancepayment tbody').on('click', '.checkadvanceclick', function() {
+            if ($(this).is(':checked')) {
+                checkunapplied();
+            } else {
+                checkunapplied();
+            }
+        });
+
+        $('#btnaddlist').click(function(){
+            var payablefilter = $('#payablefilter').val();
+            var advancechecked = $('#checkadvanced').is(':checked') ? 1 : 0;
+            var advancecheckedtext = $('#checkadvanced').is(':checked') ? 'Advance' : '';
+            var advancesupplier = $('#advancesupplier').val();
+            var advancesupplierText = $('#checkadvanced').is(':checked') ? $('#advancesupplier').find(':selected').text() : '';
+            var accountid = $('#supplier').val();
+            var selectedSupplierData = $('#supplier').select2('data')[0];
+            var accounttype = selectedSupplierData ? selectedSupplierData.data.type : null;
+            
+            var accounttext = $('#supplier').find(':selected').text();
+            var description = $('#settledesc').val();
+            var settleamount = $('#settleamount').val();
+            var paiddate = $('#paiddate').val();
+
+            if(payablefilter != '3'){
+                $swl.fire({
+                    title: 'Warning',
+                    text: 'This method only use for payment voucher. Please select payment voucher in payable filter.',
+                    icon: 'warning',
+                    confirmButtonText: 'OK'
+                });
+            }
+            else if(advancechecked == 1 && advancesupplier == ''){
+                var el = document.getElementById('advancesupplier');
+                el.setCustomValidity('Please select an advance payment supplier.');
+                el.reportValidity();
+                el.oninput = function(){ this.setCustomValidity(''); };
+            }
+            else if(accountid == ''){
+                var el = document.getElementById('supplier');
+                el.setCustomValidity('Please select a supplier / account no.');
+                el.reportValidity();
+                el.onchange = function(){ this.setCustomValidity(''); };
+            }
+            else if(description == ''){
+                var el = document.getElementById('settledesc');
+                el.setCustomValidity('Please enter a description.');
+                el.reportValidity();
+                el.oninput = function(){ this.setCustomValidity(''); };
+            }
+            else if(settleamount == '' || settleamount <= 0){
+                var el = document.getElementById('settleamount');
+                el.setCustomValidity(settleamount == '' ? 'Please enter an amount.' : 'Amount must be greater than 0.');
+                el.reportValidity();
+                el.oninput = function(){ this.setCustomValidity(''); };
+            }
+            else{
+                var rowCount = $("#tablevoucherlist tbody tr").length;
+                if(advancechecked == 1 && rowCount > 0){
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Error',
+                        text: "Advance payments must be processed separately from other transactions."
+                    });
+                }
+                else{
+                    $('#tablevoucherlist tbody').append('<tr><td>'+paiddate+'</td><td>'+advancecheckedtext+'</td><td class="d-none">'+advancechecked+'</td><td>'+advancesupplierText+'</td><td class="d-none">'+advancesupplier+'</td><td>'+accounttext+'</td><td class="d-none">'+accountid+'</td><td class="d-none">'+accounttype+'</td><td>'+description+'</td><td class="text-right">'+settleamount+'</td></tr>');
+
+                    setTotalAmount();
+                }
+
+                $('#checkadvanced').prop('checked', false);
+                $('#advancesupplier').val('').trigger('change');
+                $("#advancesupplier").prop('disabled', true);
+                $('#supplier').val('').trigger('change');
+                $('#settledesc').val('');
+                $('#settleamount').val('');
+            }
+        });
+        $('#tablevoucherlist tbody').on('click', 'td', async function() {
+            var r = await Otherconfirmation("You want to remove this record ? ");
+    		if (r == true) {
+    			$(this).closest('tr').remove();
+                setTotalAmount();
+    		}
+    	});
     });
 
     function getbranchlist(id, value){
@@ -1109,6 +1467,131 @@ include "include/topnavbar.php";
     function createprint(){
         var printtype = $('#printtype').val();
         var printinvoicereceipt = $('#printinvoicereceipt').val();
+    }
+
+    function checkunapplied(){
+        var intVal = function (i) {
+            return typeof i === 'string' ?
+                i.replace(/[\$,]/g, '') * 1 :
+                typeof i === 'number' ?
+                i : 0;
+        };
+        
+        var sum = 0;
+        var tablelist = $("#tableAdvancepayment tbody input[type=checkbox]:checked");
+        accountlist = [];
+                
+        if(tablelist.length>0){
+            tablelist.each(function() {
+                item = {}
+                var row = $(this).closest("tr");
+                sum += parseFloat(intVal(row.find('td:eq(7)').text()));
+
+                // Account type 1 for td:eq(8)
+                if(row.find('td:eq(8)').text() > '0'){
+                    var accId8 = row.find('td:eq(8)').text().trim();
+                    // Check duplicate before push
+                    var isDuplicate = accountlist.some(function(acc){
+                        return acc.account_id === accId8 && acc.account_type === 1;
+                    });
+                    if(!isDuplicate){
+                        accountlist.push({
+                            account_id   : accId8,
+                            account_type : 1
+                        });
+                    }
+                }
+
+                // Account type 2 for td:eq(9)
+                if(row.find('td:eq(9)').text() > '0'){
+                    var accId9 = row.find('td:eq(9)').text().trim();
+                    // Check duplicate before push
+                    var isDuplicate = accountlist.some(function(acc){
+                        return acc.account_id === accId9 && acc.account_type === 2;
+                    });
+                    if(!isDuplicate){
+                        accountlist.push({
+                            account_id   : accId9,
+                            account_type : 2
+                        });
+                    }
+                }
+            });
+
+            $('#divadvalert').removeClass('d-none');
+        }
+        else{
+            $('#divadvalert').addClass('d-none');
+        }
+
+        // Get unique account IDs to check if different accounts selected
+        var uniqueAccountIds = accountlist.map(function(acc){
+            return acc.account_id;
+        }).filter(function(value, index, self){
+            return self.indexOf(value) === index;
+        });
+
+
+        if(uniqueAccountIds.length > 1){
+            // Show SweetAlert warning
+            Swal.fire({
+                icon: 'warning',
+                title: 'Warning!',
+                text: "You can't create this payment settlement. Because you selected different account advance payment.",
+                confirmButtonColor: '#3085d6',
+                confirmButtonText: 'OK'
+            }).then((result) => {
+                if(result.isConfirmed){
+                    // Uncheck all checkboxes
+                    $("#tableAdvancepayment tbody input[type=checkbox]:checked").prop('checked', false);
+                    // Reset sum and accountlist
+                    sum = 0;
+                    accountlist = [];
+                    $('#paidamount').val('0.00');
+                }
+            });
+            return; // Stop further execution
+        }
+        else{
+            $('#payabletype').val('5').trigger('change');
+
+            $.ajax({
+                type: "POST",
+                data: {
+                    accountlist: accountlist,
+                },
+                url: '<?php echo base_url() ?>Paymentsettle/Getaccountinfoaccoaccountlist',
+                success: function(result) { //alert(result);
+                    var obj = JSON.parse(result);
+
+                    var newOption = new Option(obj.account, obj.accountid, true, true);
+                    $('#chartofdetailaccount').append(newOption).trigger('change');
+                    var optionData = $('#chartofdetailaccount').select2('data');
+                    var lastOption = optionData[optionData.length - 1]; 
+                    lastOption.data = { type: obj.accounttype };
+                    $('#chartofdetailaccount').trigger('change'); 
+                }
+            });
+        }
+
+        $('#paidamount').val(addCommas(parseFloat(sum).toFixed(2)));
+    }
+
+    function setTotalAmount(){
+        var intVal = function (i) {
+            return typeof i === 'string' ?
+                i.replace(/[\$,]/g, '') * 1 :
+                typeof i === 'number' ?
+                i : 0;
+        };
+        
+        var sum = 0;
+        $('#tablevoucherlist tbody tr').each(function() {
+            var row = $(this).closest("tr");
+            sum += parseFloat(intVal(row.find('td:eq(9)').text()));
+        });
+
+        $('#invoicepayamount').val(addCommas(parseFloat(sum).toFixed(2)));
     }
 
     function addCommas(nStr){

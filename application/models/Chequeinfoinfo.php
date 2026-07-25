@@ -257,10 +257,11 @@ class Chequeinfoinfo extends CI_Model{
     public function Chequeinfoedit(){
         $recordID=$this->input->post('recordID');
 
-        $this->db->select('*');
+        $this->db->select('tbl_cheque_info.*, tbl_account.accountno, tbl_account.accountname');
         $this->db->from('tbl_cheque_info');
-        $this->db->where('idtbl_cheque_info', $recordID);
-        $this->db->where('status', 1);
+        $this->db->join('tbl_account', 'tbl_account.idtbl_account = tbl_cheque_info.tbl_account_idtbl_account', 'left');
+        $this->db->where('tbl_cheque_info.idtbl_cheque_info', $recordID);
+        $this->db->where('tbl_cheque_info.status', 1);
 
         $respond=$this->db->get();
 
@@ -269,6 +270,8 @@ class Chequeinfoinfo extends CI_Model{
         $obj->startno=$respond->row(0)->startno;
         $obj->endno=$respond->row(0)->endno;
         $obj->chartaccount=$respond->row(0)->tbl_account_idtbl_account;
+        $obj->chartaccountname=$respond->row(0)->accountname.' - '.$respond->row(0)->accountno;
+        $obj->chartaccounttype=1;
         $obj->bank=$respond->row(0)->tbl_bank_idtbl_bank;
         $obj->branch=$respond->row(0)->tbl_bank_branch_idtbl_bank_branch;
 

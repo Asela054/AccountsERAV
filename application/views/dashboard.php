@@ -25,7 +25,7 @@ include "include/topnavbar.php";
 							<div class="col mb-3">
 								<div class="card shadow-none h-100">
 									<div class="card-body">
-										<h6 class="title-style small"><span>Cash flow</span></h6>
+										<h6 class="title-style small"><span>Monthly Income vs Expense (P&L Trend)</span></h6>
 										<h4 >Rs. <?php echo $dataForChart['totalCurrenBal']; ?></h4>
 										<h6 class="small">Current cash balance</h6>
 										<div style="height: auto; min-height: 300px;">

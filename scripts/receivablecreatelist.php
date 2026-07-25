@@ -45,9 +45,10 @@ $columns = array(
 	array( 'db' => '`u`.`remark`', 'dt' => 'remark', 'field' => 'remark' ),
 	array( 'db' => '`ua`.`company`', 'dt' => 'company', 'field' => 'company' ),
 	array( 'db' => '`ub`.`branch`', 'dt' => 'branch', 'field' => 'branch' ),
-	array( 'db' => "`uc`.$column2", 'dt' => 'customer', 'field' => 'customer' ),
+	array( 'db' => "`uc`.`$column2` AS `customer`", 'dt' => 'customer', 'field' => 'customer' ),
 	array( 'db' => '`u`.`status`', 'dt' => 'status', 'field' => 'status' )
 );
+// print_r($columns);
 
 // SQL server connection information
 require('config.php');
@@ -69,7 +70,7 @@ require('ssp.customized.class.php' );
 $companyid=$_SESSION['companyid'];
 $branchid=$_SESSION['branchid'];
 
-$joinQuery = "FROM `tbl_sales_info` AS `u` LEFT JOIN `tbl_company` AS `ua` ON (`ua`.`idtbl_company` = `u`.`tbl_company_idtbl_company`) LEFT JOIN `tbl_company_branch` AS `ub` ON (`ub`.`idtbl_company_branch` = `u`.`tbl_company_branch_idtbl_company_branch`) LEFT JOIN $tablename AS `uc` ON (`uc`.$column1 = `u`.`tbl_customer_idtbl_customer`)";
+$joinQuery = "FROM `tbl_sales_info` AS `u` LEFT JOIN `tbl_company` AS `ua` ON (`ua`.`idtbl_company` = `u`.`tbl_company_idtbl_company`) LEFT JOIN `tbl_company_branch` AS `ub` ON (`ub`.`idtbl_company_branch` = `u`.`tbl_company_branch_idtbl_company_branch`) LEFT JOIN $tablename AS `uc` ON (`uc`.`$column1` = `u`.`tbl_customer_idtbl_customer`)";
 
 $extraWhere = "`u`.`status` IN (1, 2) AND `u`.`tbl_company_idtbl_company`='$companyid' AND `u`.`tbl_company_branch_idtbl_company_branch`='$branchid' AND `u`.`saletype`=2";
 

@@ -115,7 +115,8 @@ $permissionallowed = array_unique($permissionallowed);
                     <?php if(in_array("Receivablecreate", $permissionallowed)){ ?>
                     <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'Receivablecreate'; ?>">Receivable Create</a>
                     <?php } if(in_array("Receiptsegregation", $permissionallowed)){ ?>
-                    <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'Receiptsegregation'; ?>">Receivable Segregation</a>
+                    <!-- <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'Receiptsegregation'; ?>">Receivable Segregation</a> -->
+                    <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'Receiptsegregation'; ?>">Receivable Create</a>
                     <?php } if(in_array("Receivablesettle", $permissionallowed)){ ?>
                     <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'Receivablesettle'; ?>">Receivable Settle</a>
                     <?php } ?>
@@ -135,7 +136,8 @@ $permissionallowed = array_unique($permissionallowed);
                     <?php if(in_array("Paymentcreate", $permissionallowed)){ ?>
                     <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'Paymentcreate'; ?>">Payment Create</a>
                     <?php } if(in_array("Payablesegregation", $permissionallowed)){ ?>
-                    <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'Payablesegregation'; ?>">Payment Segregation</a>
+                    <!-- <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'Payablesegregation'; ?>">Payment Segregation</a> -->
+                    <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'Payablesegregation'; ?>">Payment Create</a>
                     <?php } if(in_array("Paymentsettle", $permissionallowed)){ ?>
                     <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'Paymentsettle'; ?>">Payment Settle</a>
                     <?php } ?>
@@ -167,6 +169,37 @@ $permissionallowed = array_unique($permissionallowed);
                 <div class="nav-link-icon"><i class="fas fa-clipboard-list"></i></div>
                 Batch Transaction
             </a>
+            <?php } ?>
+
+            <?php if(in_array("BankReconciliation", $permissionallowed)){ ?> 
+            <a class="nav-link p-0 px-3 py-2" href="<?php echo base_url().'BankReconciliation'; ?>">
+                <div class="nav-link-icon"><i class="fas fa-cash-register"></i></div>
+                Bank Reconciliation
+            </a>
+            <?php } ?>
+
+            <?php if(in_array("Customer", $permissionallowed)){ ?> 
+            <a class="nav-link p-0 px-3 py-2" href="<?php echo base_url().'Customer'; ?>">
+                <div class="nav-link-icon"><i class="fas fa-users"></i></div>
+                Customers
+            </a>
+            <?php } ?>
+
+            <?php if(in_array("Supplier", $permissionallowed) || in_array("Suppliertype", $permissionallowed)){ ?>
+            <a class="nav-link p-0 px-3 py-2 collapsed text-dark" href="javascript:void(0);" data-toggle="collapse" data-target="#collapsesupplierinfo" aria-expanded="false" aria-controls="collapsesupplierinfo">
+                <div class="nav-link-icon"><i class="fas fa-people-carry"></i></div>
+                Supplier Info
+                <div class="sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
+            </a>
+            <div class="collapse <?php if(in_array($controllermenu, ["Supplier", "Suppliertype"])){echo 'show';} ?>" id="collapsesupplierinfo" data-parent="#accordionSidenav">
+                <nav class="sidenav-menu-nested nav accordion" id="accordionSidenavPages">
+                    <?php if(in_array("Suppliertype", $permissionallowed)){ ?>
+                    <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'Suppliertype'; ?>">Supplier Type</a>
+                    <?php } if(in_array("Supplier", $permissionallowed)){ ?>
+                    <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'Supplier'; ?>">Suppliers</a>
+                    <?php } ?>
+                </nav>
+            </div>
             <?php } ?>
             
             <!-- Petty Cash -->
@@ -216,13 +249,13 @@ $permissionallowed = array_unique($permissionallowed);
             <?php } ?>
             
             <!-- Reports -->
-            <?php if(in_array("periodic_pnl", $permissionallowed) || in_array("periodic_balancesheet", $permissionallowed) || in_array("trial_balance", $permissionallowed) || in_array("period_trial_balance", $permissionallowed) || in_array("Debtorreport", $permissionallowed) || in_array("Creditorreport", $permissionallowed) || in_array("Expencereport", $permissionallowed) || in_array("Pettycashreport", $permissionallowed) || in_array("PettyCashSummeryReport", $permissionallowed) || in_array("Audittrailreport", $permissionallowed)){ ?> 
+            <?php if(in_array("periodic_pnl", $permissionallowed) || in_array("periodic_balancesheet", $permissionallowed) || in_array("trial_balance", $permissionallowed) || in_array("period_trial_balance", $permissionallowed) || in_array("Debtorreport", $permissionallowed) || in_array("Creditorreport", $permissionallowed) || in_array("Expencereport", $permissionallowed) || in_array("Pettycashreport", $permissionallowed) || in_array("PettyCashSummeryReport", $permissionallowed) || in_array("Audittrailreport", $permissionallowed) || in_array("cash_flow", $permissionallowed) || in_array("audit_purchase", $permissionallowed) || in_array("audit_sales", $permissionallowed) || in_array("internal_audit_control", $permissionallowed) || in_array("complete_audit_summary", $permissionallowed) || in_array("bank_reconciliation_report", $permissionallowed)){ ?> 
             <a class="nav-link p-0 px-3 py-2 collapsed text-dark" href="javascript:void(0);" data-toggle="collapse" data-target="#collapseReport" aria-expanded="false" aria-controls="collapseReport">
                 <div class="nav-link-icon"><i class="far fa-file-pdf"></i></div>
                 Reports
                 <div class="sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
             </a>
-            <div class="collapse <?php if(in_array($functionmenu2, ["periodic_pnl", "periodic_balancesheet", "ledger_folio", "trial_balance", "period_trial_balance"]) || in_array($controllermenu, ["Debtorreport", "Creditorreport", "Expencereport", "Pettycashreport", "PettyCashSummeryReport", "Audittrailreport"])){echo 'show';} ?>" id="collapseReport" data-parent="#accordionSidenav">
+            <div class="collapse <?php if(in_array($functionmenu2, ["periodic_pnl", "periodic_balancesheet", "ledger_folio", "trial_balance", "period_trial_balance", "cash_flow", "audit_purchase", "audit_sales", "internal_audit_control", "complete_audit_summary", "bank_reconciliation_report"]) || in_array($controllermenu, ["Debtorreport", "Creditorreport", "Expencereport", "Pettycashreport", "PettyCashSummeryReport", "Audittrailreport"])){echo 'show';} ?>" id="collapseReport" data-parent="#accordionSidenav">
                 <nav class="sidenav-menu-nested nav accordion" id="accordionSidenavPages">
                     <?php if(in_array("periodic_pnl", $permissionallowed)){ ?>
                     <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'ReportModule/periodic_pnl'; ?>">Profit & Lost</a> 
@@ -244,7 +277,21 @@ $permissionallowed = array_unique($permissionallowed);
                     <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'Pettycashreport'; ?>">Petty Cash Report</a>
                     <?php } if(in_array("PettyCashSummeryReport", $permissionallowed)){ ?>
                     <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'PettyCashSummeryReport'; ?>">Petty Cash Summery Report</a>
+                    <?php } if(in_array("cash_flow", $permissionallowed)){ ?>
+                    <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'ReportModule/cash_flow'; ?>">Cash Flow Report</a>
+                    <?php } if(in_array("audit_purchase", $permissionallowed)){ ?>
+                    <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'ReportModule/audit_purchase'; ?>">Audit Purchase Report</a>
+                    <?php } if(in_array("audit_sales", $permissionallowed)){ ?>
+                    <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'ReportModule/audit_sales'; ?>">Audit Sales Report</a>
+                    <?php } if(in_array("internal_audit_control", $permissionallowed)){ ?>
+                    <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'ReportModule/internal_audit_control'; ?>">Audit Internal Control Report</a>
+                    <?php } if(in_array("complete_audit_summary", $permissionallowed)){ ?>
+                    <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'ReportModule/complete_audit_summary'; ?>">Complete Audit Summary Report</a>
+                    <?php } if(in_array("bank_reconciliation_report", $permissionallowed)){ ?>
+                    <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'ReportModule/bank_reconciliation_report'; ?>">Bank Reconciliation Statement</a>
                     <?php } ?>
+                    <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'PnlSetupModule/manage_headings'; ?>">Manage Headings</a>
+                    <a class="nav-link p-0 px-3 py-1 text-dark" href="<?php echo base_url().'PnlSetupModule/manage_mapping'; ?>">Accounts Mapping</a>
                 </nav>
             </div>
             <?php } ?>

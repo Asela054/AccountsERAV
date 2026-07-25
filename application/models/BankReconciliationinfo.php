@@ -1,12 +1,45 @@
 <?php
 class BankReconciliationinfo extends CI_Model{
-    public function getRecByYearMonth($rec_accno, $rec_year, $rec_month){
+	public function getRecByYearMonth($rec_accno, $rec_year, $rec_month){
 		$this->db->where('tbl_account_idtbl_account', $rec_accno);
 		$this->db->where('tbl_finacial_year_idtbl_finacial_year', $rec_year);
 		$this->db->where('tbl_finacial_month_idtbl_finacial_month', $rec_month);
 		//$this->db->or_where('salesorder_ref', $orderRef);
 		$row = $this->db->get('tbl_bank_rec_list')->row();
 		return $row;
+	}
+
+	public function getLastApprovedRecBefore($bankAcc, $selectedYear, $selectedMonth){
+		if(empty($selectedYear) || empty($selectedMonth)){
+			$sql = "SELECT idtbl_bank_rec_list, statement_closed_bal,
+					       tbl_finacial_year_idtbl_finacial_year,
+					       tbl_finacial_month_idtbl_finacial_month
+					FROM tbl_bank_rec_list
+					WHERE rec_approved = 1
+					AND tbl_account_idtbl_account = ?
+					ORDER BY tbl_finacial_year_idtbl_finacial_year DESC,
+					         tbl_finacial_month_idtbl_finacial_month DESC
+					LIMIT 1";
+			return $this->db->query($sql, array($bankAcc))->row();
+		}
+
+		$sql = "SELECT idtbl_bank_rec_list, statement_closed_bal,
+				       tbl_finacial_year_idtbl_finacial_year,
+				       tbl_finacial_month_idtbl_finacial_month
+				FROM tbl_bank_rec_list
+				WHERE rec_approved = 1
+				AND tbl_account_idtbl_account = ?
+				AND (
+						tbl_finacial_year_idtbl_finacial_year < ?
+						OR (
+							tbl_finacial_year_idtbl_finacial_year = ?
+							AND tbl_finacial_month_idtbl_finacial_month < ?
+						)
+					)
+				ORDER BY tbl_finacial_year_idtbl_finacial_year DESC,
+				         tbl_finacial_month_idtbl_finacial_month DESC
+				LIMIT 1";
+		return $this->db->query($sql, array($bankAcc, $selectedYear, $selectedYear, $selectedMonth))->row();
 	}
 	
 	public function getNonBankAccounts(){
@@ -48,49 +81,320 @@ class BankReconciliationinfo extends CI_Model{
 		where ((a.tbl_finacial_year_idtbl_finacial_year-ifnull(b.tbl_finacial_year_idtbl_finacial_year, 0))+(a.idtbl_finacial_month-ifnull(b.tbl_finacial_month_idtbl_finacial_month, 0)))>0 limit 1) as drv 
 	ON (tbl_master.tbl_finacial_year_idtbl_finacial_year=drv.tbl_finacial_year_idtbl_finacial_year AND tbl_master.tbl_finacial_month_idtbl_finacial_month=drv.idtbl_finacial_month)
 	*/
-	public function getAccountHeader($bankAcc){
-		$sql_acc = "SELECT *, count(*) AS ucnt, acc_rec_batchno as rec_batchno from tbl_bank_rec_list where rec_approved=0 and tbl_account_idtbl_account=?";
-		$result_acc = $this->db->query($sql_acc, array($bankAcc));//echo $this->db->last_query();die;
-		$row_acc = $result_acc->row();
+
+	// public function getAccountHeader($bankAcc){
+	// 	$sql_acc = "SELECT *, count(*) AS ucnt, acc_rec_batchno as rec_batchno from tbl_bank_rec_list where rec_approved=0 and tbl_account_idtbl_account=?";
+	// 	$result_acc = $this->db->query($sql_acc, array($bankAcc));//echo $this->db->last_query();die;
+	// 	$row_acc = $result_acc->row();
 		
+	// 	$acc_info = new stdClass();
+		
+	// 	$acc_info->idtbl_bank_rec_list = $row_acc->idtbl_bank_rec_list;
+	// 	$acc_info->bank_rec_date = $row_acc->bank_rec_date;
+	// 	$acc_info->statement_open_bal = $row_acc->statement_open_bal;
+	// 	$acc_info->statement_closed_bal = $row_acc->statement_closed_bal;
+	// 	$acc_info->statement_tot_cr = $row_acc->statement_tot_cr;
+	// 	$acc_info->statement_tot_dr = $row_acc->statement_tot_dr;
+	// 	$acc_info->status = 1;
+	// 	$acc_info->rec_approved = 0;
+	// 	$acc_info->rec_batchno = $row_acc->rec_batchno;
+		
+	// 	$acc_info->tbl_finacial_year_idtbl_finacial_year = 0;
+	// 	$acc_info->tbl_finacial_month_idtbl_finacial_month = 0;
+	// 	$acc_info->acc_open_bal = 0;
+		
+	// 	$sql_approved = "select max(idtbl_bank_rec_list) as last_approved_rec from tbl_bank_rec_list where rec_approved=1 and tbl_account_idtbl_account=?";
+	// 	$result_approved = $this->db->query($sql_approved, array($bankAcc));
+	// 	$row_approved = $result_approved->row();
+	// 	$lastApprovedRec = $row_approved->last_approved_rec;
+		
+	// 	$sql_bal = "select coalesce(drv.closed_bal, tbl_account_open_bal.openbal) as acc_bal, drv.tbl_finacial_year_idtbl_finacial_year, drv.idtbl_finacial_month from (select openbal, tbl_master_idtbl_master from tbl_account_open_bal where tbl_account_idtbl_account=?) as tbl_account_open_bal inner join tbl_master on tbl_account_open_bal.tbl_master_idtbl_master=tbl_master.idtbl_master inner join (";
+	// 	$sql_bal .= "select b.closed_bal as closed_bal, a.tbl_finacial_year_idtbl_finacial_year, a.idtbl_finacial_month from (";
+	// 	$sql_bal .= "SELECT tbl_finacial_year_idtbl_finacial_year, idtbl_finacial_month from tbl_finacial_month where activestatus=1 order by idtbl_finacial_month) as a ";
+	// 	$sql_bal .= "left outer join (";
+	// 	$sql_bal .= "select ((statement_open_bal+statement_tot_cr)-statement_tot_dr) as closed_bal, tbl_finacial_year_idtbl_finacial_year, tbl_finacial_month_idtbl_finacial_month from tbl_bank_rec_list where idtbl_bank_rec_list=?) as b ";
+	// 	$sql_bal .= "ON (a.tbl_finacial_year_idtbl_finacial_year>=ifnull(b.tbl_finacial_year_idtbl_finacial_year, 0) and a.idtbl_finacial_month>=ifnull(b.tbl_finacial_month_idtbl_finacial_month, 0)) ";
+	// 	$sql_bal .= "where ((a.tbl_finacial_year_idtbl_finacial_year-ifnull(b.tbl_finacial_year_idtbl_finacial_year, 0))+(a.idtbl_finacial_month-ifnull(b.tbl_finacial_month_idtbl_finacial_month, 0)))>0 limit 1) as drv ";
+	// 	$sql_bal .= "ON (tbl_master.tbl_finacial_year_idtbl_finacial_year=drv.tbl_finacial_year_idtbl_finacial_year AND tbl_master.tbl_finacial_month_idtbl_finacial_month=drv.idtbl_finacial_month)";
+	// 	$result_bal = $this->db->query($sql_bal, array($bankAcc, $lastApprovedRec));
+	// 	$row_bal = $result_bal->row();
+		
+	// 	if(!empty($row_bal)){
+	// 		$acc_info->tbl_finacial_year_idtbl_finacial_year = $row_bal->tbl_finacial_year_idtbl_finacial_year;
+	// 		$acc_info->tbl_finacial_month_idtbl_finacial_month = $row_bal->idtbl_finacial_month;
+	// 		$acc_info->acc_open_bal = $row_bal->acc_bal;
+	// 	}
+		
+	// 	return $acc_info;
+	// }
+
+	//-------------------- Change on 09/07/2026 -----------------------------//
+	// public function getAccountHeader($bankAcc, $selectedYear = null, $selectedMonth = null){
+	// 	$acc_info = new stdClass();
+	// 	$acc_info->idtbl_bank_rec_list                     = '';
+	// 	$acc_info->bank_rec_date                           = '';
+	// 	$acc_info->statement_open_bal                      = '0.00';
+	// 	$acc_info->statement_closed_bal                    = '0.00';
+	// 	$acc_info->statement_tot_cr                        = '0.00';
+	// 	$acc_info->statement_tot_dr                        = '0.00';
+	// 	$acc_info->status                                  = 1;
+	// 	$acc_info->rec_approved                            = 0;
+	// 	$acc_info->rec_batchno                             = '';
+	// 	$acc_info->tbl_finacial_year_idtbl_finacial_year   = 0;
+	// 	$acc_info->tbl_finacial_month_idtbl_finacial_month = 0;
+	// 	$acc_info->acc_open_bal                            = 0;
+
+	// 	$row_acc = null;
+
+	// 	// Existing rec for the selected period (ongoing or approved)
+	// 	if(!empty($selectedYear) && !empty($selectedMonth)){
+	// 		$periodRec = $this->getRecByYearMonth($bankAcc, $selectedYear, $selectedMonth);
+	// 		if(!empty($periodRec)){
+	// 			$row_acc = $periodRec;
+	// 		}
+	// 	}
+
+	// 	// Fallback: unapproved rec only when it matches the selected period
+	// 	if(empty($row_acc)){
+	// 		$sql_acc = "SELECT *, acc_rec_batchno AS rec_batchno
+	// 					FROM tbl_bank_rec_list
+	// 					WHERE rec_approved = 0
+	// 					AND tbl_account_idtbl_account = ?
+	// 					LIMIT 1";
+	// 		$ongoingRec = $this->db->query($sql_acc, array($bankAcc))->row();
+	// 		if(!empty($ongoingRec)){
+	// 			$periodMatches = empty($selectedYear) || empty($selectedMonth)
+	// 				|| (
+	// 					$ongoingRec->tbl_finacial_year_idtbl_finacial_year == $selectedYear
+	// 					&& $ongoingRec->tbl_finacial_month_idtbl_finacial_month == $selectedMonth
+	// 				);
+	// 			if($periodMatches){
+	// 				$row_acc = $ongoingRec;
+	// 			}
+	// 		}
+	// 	}
+
+	// 	if(!empty($row_acc)){
+	// 		$acc_info->idtbl_bank_rec_list                     = $row_acc->idtbl_bank_rec_list;
+	// 		$acc_info->bank_rec_date                           = $row_acc->bank_rec_date;
+	// 		$acc_info->statement_open_bal                      = $row_acc->statement_open_bal;
+	// 		$acc_info->statement_closed_bal                    = $row_acc->statement_closed_bal;
+	// 		$acc_info->statement_tot_cr                        = $row_acc->statement_tot_cr;
+	// 		$acc_info->statement_tot_dr                        = $row_acc->statement_tot_dr;
+	// 		$acc_info->rec_approved                            = $row_acc->rec_approved;
+	// 		$acc_info->rec_batchno                             = $row_acc->acc_rec_batchno;
+	// 		$acc_info->tbl_finacial_year_idtbl_finacial_year   = $row_acc->tbl_finacial_year_idtbl_finacial_year;
+	// 		$acc_info->tbl_finacial_month_idtbl_finacial_month = $row_acc->tbl_finacial_month_idtbl_finacial_month;
+	// 	}
+
+	// 	if(!empty($selectedYear) && !empty($selectedMonth)){
+	// 		$prevApproved = $this->getLastApprovedRecBefore($bankAcc, $selectedYear, $selectedMonth);
+	// 	} else {
+	// 		$prevApproved = $this->getLastApprovedRecBefore($bankAcc, null, null);
+	// 	}
+
+	// 	$lastApprovedRec = !empty($prevApproved) ? $prevApproved->idtbl_bank_rec_list : null;
+
+	// 	// Carry forward: new period OR unapproved rec still saved with 0.00 opening balance
+	// 	if(!empty($prevApproved) && $acc_info->rec_approved == 0){
+	// 		$needsCarryForward = empty($acc_info->idtbl_bank_rec_list)
+	// 			|| floatval($acc_info->statement_open_bal) == 0;
+
+	// 		if($needsCarryForward){
+	// 			$acc_info->statement_open_bal = $prevApproved->statement_closed_bal;
+
+	// 			if(!empty($acc_info->idtbl_bank_rec_list)){
+	// 				$this->db->where('idtbl_bank_rec_list', $acc_info->idtbl_bank_rec_list);
+	// 				$this->db->update('tbl_bank_rec_list', array(
+	// 					'statement_open_bal' => $prevApproved->statement_closed_bal
+	// 				));
+	// 			}
+	// 		}
+	// 	}
+	
+	// 	// ── Balance query (original logic, same as before) ──
+	// 	$sql_bal  = "SELECT coalesce(drv.closed_bal, tbl_account_open_bal.openbal) AS acc_bal, ";
+	// 	$sql_bal .= "       drv.tbl_finacial_year_idtbl_finacial_year, ";
+	// 	$sql_bal .= "       drv.idtbl_finacial_month ";
+	// 	$sql_bal .= "FROM (SELECT openbal, tbl_master_idtbl_master ";
+	// 	$sql_bal .= "      FROM tbl_account_open_bal WHERE tbl_account_idtbl_account = ?) AS tbl_account_open_bal ";
+	// 	$sql_bal .= "INNER JOIN tbl_master ON tbl_account_open_bal.tbl_master_idtbl_master = tbl_master.idtbl_master ";
+	// 	$sql_bal .= "INNER JOIN ( ";
+	// 	$sql_bal .= "  SELECT b.closed_bal, a.tbl_finacial_year_idtbl_finacial_year, a.idtbl_finacial_month ";
+	// 	$sql_bal .= "  FROM ( ";
+	// 	$sql_bal .= "    SELECT tbl_finacial_year_idtbl_finacial_year, idtbl_finacial_month ";
+	// 	$sql_bal .= "    FROM tbl_finacial_month WHERE activestatus IN (1, 3) ";
+	// 	$sql_bal .= "    ORDER BY idtbl_finacial_month ";
+	// 	$sql_bal .= "  ) AS a ";
+	// 	$sql_bal .= "  LEFT OUTER JOIN ( ";
+	// 	$sql_bal .= "    SELECT ((statement_open_bal+statement_tot_cr)-statement_tot_dr) AS closed_bal, ";
+	// 	$sql_bal .= "           tbl_finacial_year_idtbl_finacial_year, ";
+	// 	$sql_bal .= "           tbl_finacial_month_idtbl_finacial_month ";
+	// 	$sql_bal .= "    FROM tbl_bank_rec_list WHERE idtbl_bank_rec_list = ? ";
+	// 	$sql_bal .= "  ) AS b ";
+	// 	$sql_bal .= "  ON (a.tbl_finacial_year_idtbl_finacial_year >= IFNULL(b.tbl_finacial_year_idtbl_finacial_year,0) ";
+	// 	$sql_bal .= "      AND a.idtbl_finacial_month >= IFNULL(b.tbl_finacial_month_idtbl_finacial_month,0)) ";
+	// 	$sql_bal .= "  WHERE ((a.tbl_finacial_year_idtbl_finacial_year - IFNULL(b.tbl_finacial_year_idtbl_finacial_year,0)) ";
+	// 	$sql_bal .= "         +(a.idtbl_finacial_month - IFNULL(b.tbl_finacial_month_idtbl_finacial_month,0))) > 0 ";
+	// 	$sql_bal .= "  LIMIT 1 ";
+	// 	$sql_bal .= ") AS drv ";
+	// 	$sql_bal .= "ON (tbl_master.tbl_finacial_year_idtbl_finacial_year = drv.tbl_finacial_year_idtbl_finacial_year ";
+	// 	$sql_bal .= "    AND tbl_master.tbl_finacial_month_idtbl_finacial_month = drv.idtbl_finacial_month) ";
+	
+	// 	$result_bal = $this->db->query($sql_bal, array($bankAcc, $lastApprovedRec));
+	// 	$row_bal    = $result_bal->row();
+	
+	// 	if(!empty($row_bal)){
+	// 		$acc_info->tbl_finacial_year_idtbl_finacial_year   = $row_bal->tbl_finacial_year_idtbl_finacial_year;
+	// 		$acc_info->tbl_finacial_month_idtbl_finacial_month = $row_bal->idtbl_finacial_month;
+	// 		$acc_info->acc_open_bal                            = $row_bal->acc_bal;
+	// 	}
+	// 	// echo $this->db->last_query();die;
+	// 	return $acc_info;
+	// }
+
+	public function getAccountHeader($bankAcc, $selectedYear = null, $selectedMonth = null){
 		$acc_info = new stdClass();
+		$acc_info->idtbl_bank_rec_list                     = '';
+		$acc_info->bank_rec_date                           = '';
+		$acc_info->statement_open_bal                      = '0.00';
+		$acc_info->statement_closed_bal                    = '0.00';
+		$acc_info->statement_tot_cr                        = '0.00';
+		$acc_info->statement_tot_dr                        = '0.00';
+		$acc_info->status                                  = 1;
+		$acc_info->rec_approved                            = 0;
+		$acc_info->rec_batchno                             = '';
 		
-		$acc_info->idtbl_bank_rec_list = $row_acc->idtbl_bank_rec_list;
-		$acc_info->bank_rec_date = $row_acc->bank_rec_date;
-		$acc_info->statement_open_bal = $row_acc->statement_open_bal;
-		$acc_info->statement_closed_bal = $row_acc->statement_closed_bal;
-		$acc_info->statement_tot_cr = $row_acc->statement_tot_cr;
-		$acc_info->statement_tot_dr = $row_acc->statement_tot_dr;
-		$acc_info->status = 1;
-		$acc_info->rec_approved = 0;
-		$acc_info->rec_batchno = $row_acc->rec_batchno;
-		
-		$acc_info->tbl_finacial_year_idtbl_finacial_year = 0;
-		$acc_info->tbl_finacial_month_idtbl_finacial_month = 0;
-		$acc_info->acc_open_bal = 0;
-		
-		$sql_approved = "select max(idtbl_bank_rec_list) as last_approved_rec from tbl_bank_rec_list where rec_approved=1 and tbl_account_idtbl_account=?";
-		$result_approved = $this->db->query($sql_approved, array($bankAcc));
-		$row_approved = $result_approved->row();
-		$lastApprovedRec = $row_approved->last_approved_rec;
-		
-		$sql_bal = "select coalesce(drv.closed_bal, tbl_account_open_bal.openbal) as acc_bal, drv.tbl_finacial_year_idtbl_finacial_year, drv.idtbl_finacial_month from (select openbal, tbl_master_idtbl_master from tbl_account_open_bal where tbl_account_idtbl_account=?) as tbl_account_open_bal inner join tbl_master on tbl_account_open_bal.tbl_master_idtbl_master=tbl_master.idtbl_master inner join (";
-		$sql_bal .= "select b.closed_bal as closed_bal, a.tbl_finacial_year_idtbl_finacial_year, a.idtbl_finacial_month from (";
-		$sql_bal .= "SELECT tbl_finacial_year_idtbl_finacial_year, idtbl_finacial_month from tbl_finacial_month where activestatus=1 order by idtbl_finacial_month) as a ";
-		$sql_bal .= "left outer join (";
-		$sql_bal .= "select ((statement_open_bal+statement_tot_cr)-statement_tot_dr) as closed_bal, tbl_finacial_year_idtbl_finacial_year, tbl_finacial_month_idtbl_finacial_month from tbl_bank_rec_list where idtbl_bank_rec_list=?) as b ";
-		$sql_bal .= "ON (a.tbl_finacial_year_idtbl_finacial_year>=ifnull(b.tbl_finacial_year_idtbl_finacial_year, 0) and a.idtbl_finacial_month>=ifnull(b.tbl_finacial_month_idtbl_finacial_month, 0)) ";
-		$sql_bal .= "where ((a.tbl_finacial_year_idtbl_finacial_year-ifnull(b.tbl_finacial_year_idtbl_finacial_year, 0))+(a.idtbl_finacial_month-ifnull(b.tbl_finacial_month_idtbl_finacial_month, 0)))>0 limit 1) as drv ";
-		$sql_bal .= "ON (tbl_master.tbl_finacial_year_idtbl_finacial_year=drv.tbl_finacial_year_idtbl_finacial_year AND tbl_master.tbl_finacial_month_idtbl_finacial_month=drv.idtbl_finacial_month)";
-		$result_bal = $this->db->query($sql_bal, array($bankAcc, $lastApprovedRec));
-		$row_bal = $result_bal->row();
-		
-		if(!empty($row_bal)){
-			$acc_info->tbl_finacial_year_idtbl_finacial_year = $row_bal->tbl_finacial_year_idtbl_finacial_year;
-			$acc_info->tbl_finacial_month_idtbl_finacial_month = $row_bal->idtbl_finacial_month;
-			$acc_info->acc_open_bal = $row_bal->acc_bal;
+		$acc_info->tbl_finacial_year_idtbl_finacial_year   = !empty($selectedYear) ? intval($selectedYear) : 0;
+		$acc_info->tbl_finacial_month_idtbl_finacial_month = !empty($selectedMonth) ? intval($selectedMonth) : 0;
+		$acc_info->acc_open_bal                            = '0.00';
+
+		$row_acc = null;
+
+		// Try to find an existing record for the selected month/year
+		if(!empty($selectedYear) && !empty($selectedMonth)){
+			$periodRec = $this->getRecByYearMonth($bankAcc, $selectedYear, $selectedMonth);
+			if(!empty($periodRec)){
+				$row_acc = $periodRec;
+			}
 		}
+
+		// Fallback: look for an open unapproved record
+		if(empty($row_acc)){
+			$sql_acc = "SELECT *, acc_rec_batchno AS rec_batchno
+						FROM tbl_bank_rec_list
+						WHERE rec_approved = 0
+						AND tbl_account_idtbl_account = ?
+						LIMIT 1";
+			$ongoingRec = $this->db->query($sql_acc, array($bankAcc))->row();
+			if(!empty($ongoingRec)){
+				$periodMatches = empty($selectedYear) || empty($selectedMonth)
+					|| ($ongoingRec->tbl_finacial_year_idtbl_finacial_year == $selectedYear
+						&& $ongoingRec->tbl_finacial_month_idtbl_finacial_month == $selectedMonth);
+				if($periodMatches){
+					$row_acc = $ongoingRec;
+				}
+			}
+		}
+
+		if(!empty($row_acc)){
+			$acc_info->idtbl_bank_rec_list                     = $row_acc->idtbl_bank_rec_list;
+			$acc_info->bank_rec_date                           = $row_acc->bank_rec_date;
+			$acc_info->statement_open_bal                      = $row_acc->statement_open_bal;
+			$acc_info->statement_closed_bal                    = $row_acc->statement_closed_bal;
+			$acc_info->statement_tot_cr                        = $row_acc->statement_tot_cr;
+			$acc_info->statement_tot_dr                        = $row_acc->statement_tot_dr;
+			$acc_info->rec_approved                            = $row_acc->rec_approved;
+			$acc_info->rec_batchno                             = $row_acc->acc_rec_batchno;
+			$acc_info->tbl_finacial_year_idtbl_finacial_year   = $row_acc->tbl_finacial_year_idtbl_finacial_year;
+			$acc_info->tbl_finacial_month_idtbl_finacial_month = $row_acc->tbl_finacial_month_idtbl_finacial_month;
+		}
+
+		// Fetch the last approved closing balance
+		if(!empty($selectedYear) && !empty($selectedMonth)){
+			$prevApproved = $this->getLastApprovedRecBefore($bankAcc, $selectedYear, $selectedMonth);
+		} else {
+			$prevApproved = $this->getLastApprovedRecBefore($bankAcc, null, null);
+		}
+
+		$lastApprovedRec = !empty($prevApproved) ? $prevApproved->idtbl_bank_rec_list : null;
+
+		// Carry forward balance to Statement Opening Balance (only if not already saved)
+		// and Account Opening Balance (always — it's never persisted in tbl_bank_rec_list,
+		// so it must be recomputed every load. At approval, statement_closed_bal was
+		// verified equal to the account's closing balance via the diff_check closing-balance
+		// check, so it's safe to reuse here).
+		if(!empty($prevApproved)){
+			// Always recompute acc_open_bal, whether this period's rec is approved or not —
+			// it is never persisted, so every load must derive it from the prior approved rec.
+			$acc_info->acc_open_bal = $prevApproved->statement_closed_bal;
+
+			if($acc_info->rec_approved == 0){
+				$needsCarryForward = empty($acc_info->idtbl_bank_rec_list) || floatval($acc_info->statement_open_bal) == 0;
+
+				if($needsCarryForward){
+					$acc_info->statement_open_bal = $prevApproved->statement_closed_bal;
+
+					if(!empty($acc_info->idtbl_bank_rec_list)){
+						$this->db->where('idtbl_bank_rec_list', $acc_info->idtbl_bank_rec_list);
+						$this->db->update('tbl_bank_rec_list', array(
+							'statement_open_bal' => $prevApproved->statement_closed_bal
+						));
+					}
+				}
+			}
+		}
+	
+		// Fallback Book/Account Balance Subquery — only needed when there's no prior
+		// approved reconciliation to carry forward from (very first reconciliation ever
+		// for this account, using the static tbl_account_open_bal table).
+		if(empty($prevApproved)){
+			$sql_bal  = "SELECT coalesce(drv.closed_bal, tbl_account_open_bal.openbal) AS acc_bal, ";
+			$sql_bal .= "       drv.tbl_finacial_year_idtbl_finacial_year, ";
+			$sql_bal .= "       drv.idtbl_finacial_month ";
+			$sql_bal .= "FROM (SELECT openbal, tbl_master_idtbl_master ";
+			$sql_bal .= "      FROM tbl_account_open_bal WHERE tbl_account_idtbl_account = ?) AS tbl_account_open_bal ";
+			$sql_bal .= "INNER JOIN tbl_master ON tbl_account_open_bal.tbl_master_idtbl_master = tbl_master.idtbl_master ";
+			$sql_bal .= "INNER JOIN ( ";
+			$sql_bal .= "  SELECT b.closed_bal, a.tbl_finacial_year_idtbl_finacial_year, a.idtbl_finacial_month ";
+			$sql_bal .= "  FROM ( ";
+			$sql_bal .= "    SELECT tbl_finacial_year_idtbl_finacial_year, idtbl_finacial_month ";
+			$sql_bal .= "    FROM tbl_finacial_month WHERE activestatus IN (1, 3) ";
+			$sql_bal .= "    ORDER BY idtbl_finacial_month ";
+			$sql_bal .= "  ) AS a ";
+			$sql_bal .= "  LEFT OUTER JOIN ( ";
+			$sql_bal .= "    SELECT ((statement_open_bal+statement_tot_cr)-statement_tot_dr) AS closed_bal, ";
+			$sql_bal .= "           tbl_finacial_year_idtbl_finacial_year, ";
+			$sql_bal .= "           tbl_finacial_month_idtbl_finacial_month ";
+			$sql_bal .= "    FROM tbl_bank_rec_list WHERE idtbl_bank_rec_list = ? ";
+			$sql_bal .= "  ) AS b ";
+			$sql_bal .= "  ON (a.tbl_finacial_year_idtbl_finacial_year >= IFNULL(b.tbl_finacial_year_idtbl_finacial_year,0) ";
+			$sql_bal .= "      AND a.idtbl_finacial_month >= IFNULL(b.tbl_finacial_month_idtbl_finacial_month,0)) ";
+			$sql_bal .= "  WHERE ((a.tbl_finacial_year_idtbl_finacial_year - IFNULL(b.tbl_finacial_year_idtbl_finacial_year,0)) ";
+			$sql_bal .= "         +(a.idtbl_finacial_month - IFNULL(b.tbl_finacial_month_idtbl_finacial_month,0))) > 0 ";
+			$sql_bal .= "  LIMIT 1 ";
+			$sql_bal .= ") AS drv ";
+			$sql_bal .= "ON (tbl_master.tbl_finacial_year_idtbl_finacial_year = drv.tbl_finacial_year_idtbl_finacial_year ";
+			$sql_bal .= "    AND tbl_master.tbl_finacial_month_idtbl_finacial_month = drv.idtbl_finacial_month) ";
 		
+			$result_bal = $this->db->query($sql_bal, array($bankAcc, $lastApprovedRec));
+			$row_bal    = $result_bal->row();
+		
+			if(!empty($row_bal)){
+				$acc_info->acc_open_bal = $row_bal->acc_bal;
+			}
+		}
+
+		// ── CRITICAL ENFORCEMENT ──
+		// Force the returned object to strictly use your dropdown inputs.
+		// This guarantees September data is targeted regardless of internal DB fallbacks.
+		if(!empty($selectedYear)){
+			$acc_info->tbl_finacial_year_idtbl_finacial_year = intval($selectedYear);
+		}
+		if(!empty($selectedMonth)){
+			$acc_info->tbl_finacial_month_idtbl_finacial_month = intval($selectedMonth);
+		}
+
 		return $acc_info;
 	}
 	
@@ -116,29 +420,187 @@ class BankReconciliationinfo extends CI_Model{
 		return $str_y.' '.$str_m;
 	}
 	
+	// public function getOrderDetail($accRef, $bankRecId, $bankRecBatchNo, $maxYear, $maxMonth, $matchConfirm, $chkConfirm){
+	// 	$sql = "select drv_transacts.idtbl_account_transaction_full as transaction_id, ifnull(drv_recinfo.idtbl_bank_rec_info, '') as rec_info_id, COALESCE(drv_recinfo.rec_info_status, ?, ((?-tbl_finacial_year.idtbl_finacial_year)+(?-tbl_finacial_month.idtbl_finacial_month)=0)) as rec_info_status, ifnull(drv_recinfo.rec_info_status, 0) AS rec_revise_status, CONCAT(tbl_finacial_year.`year`, ' ', tbl_finacial_month.monthname) as acc_period_txt, drv_transacts.narration as narration_txt, drv_transacts.tradate as transaction_date, ((drv_transacts.crdr='C')*drv_transacts.accamount) as cr_val, ((drv_transacts.crdr='D')*drv_transacts.accamount) as dr_val, drv_transacts.rec_info_origin_name from (select idtbl_account_transaction_full, tradate, tbl_master_idtbl_master, crdr, accamount, narration, 'transaction_full' AS rec_info_origin_name from tbl_account_transaction_full where status=1 and ismatch=? and tbl_account_idtbl_account=? AND batchno<>IFNULL(?, '') ";
+	// 	/*
+	// 	$sql .= "UNION ALL ";
+	// 	$sql .= "select idtbl_account_transaction_full, tradate, tbl_master_idtbl_master, crdr, accamount, narration from tbl_account_transaction_full where status=1 and batchno=?";
+	// 	*/
+	// 	$sql .= ") as drv_transacts ";
+		
+	// 	$sql .= "inner join (select idtbl_master, tbl_finacial_year_idtbl_finacial_year, tbl_finacial_month_idtbl_finacial_month from tbl_master where status=1 and tbl_finacial_year_idtbl_finacial_year<=? and tbl_finacial_month_idtbl_finacial_month<=?) as drv_master on drv_transacts.tbl_master_idtbl_master=drv_master.idtbl_master ";
+		
+	// 	$sql .= "inner join tbl_finacial_year ON drv_master.tbl_finacial_year_idtbl_finacial_year=tbl_finacial_year.idtbl_finacial_year ";
+	// 	$sql .= "inner join tbl_finacial_month ON drv_master.tbl_finacial_month_idtbl_finacial_month=tbl_finacial_month.idtbl_finacial_month ";
+		
+	// 	$sql .= "left outer join (select idtbl_bank_rec_info, tbl_account_transaction_idtbl_account_transaction, status as rec_info_status, rec_info_origin_name from tbl_bank_rec_info where tbl_bank_rec_list_idtbl_bank_rec_list=? and rec_info_origin_name='transaction_full') as drv_recinfo ";
+	// 	$sql .= "ON (drv_transacts.idtbl_account_transaction_full=drv_recinfo.tbl_account_transaction_idtbl_account_transaction AND BINARY drv_transacts.rec_info_origin_name=drv_recinfo.rec_info_origin_name)";
+		
+	// 	$qry_transactions = $this->db->query($sql, array($chkConfirm, $maxYear, $maxMonth, $matchConfirm, $accRef, $bankRecBatchNo, $maxYear, $maxMonth, $bankRecId));
+	// 	//echo $this->db->last_query();die;
+	// 	return $qry_transactions->result();
+	// }
+
 	public function getOrderDetail($accRef, $bankRecId, $bankRecBatchNo, $maxYear, $maxMonth, $matchConfirm, $chkConfirm){
-		$sql = "select drv_transacts.idtbl_account_transaction_full as transaction_id, ifnull(drv_recinfo.idtbl_bank_rec_info, '') as rec_info_id, COALESCE(drv_recinfo.rec_info_status, ?, ((?-tbl_finacial_year.idtbl_finacial_year)+(?-tbl_finacial_month.idtbl_finacial_month)=0)) as rec_info_status, ifnull(drv_recinfo.rec_info_status, 0) AS rec_revise_status, CONCAT(tbl_finacial_year.`year`, ' ', tbl_finacial_month.monthname) as acc_period_txt, drv_transacts.narration as narration_txt, drv_transacts.tradate as transaction_date, ((drv_transacts.crdr='C')*drv_transacts.accamount) as cr_val, ((drv_transacts.crdr='D')*drv_transacts.accamount) as dr_val, drv_transacts.rec_info_origin_name from (select idtbl_account_transaction_full, tradate, tbl_master_idtbl_master, crdr, accamount, narration, 'transaction_full' AS rec_info_origin_name from tbl_account_transaction_full where status=1 and ismatch=? and tbl_account_idtbl_account=? AND batchno<>IFNULL(?, '') ";
-		/*
-		$sql .= "UNION ALL ";
-		$sql .= "select idtbl_account_transaction_full, tradate, tbl_master_idtbl_master, crdr, accamount, narration from tbl_account_transaction_full where status=1 and batchno=?";
-		*/
-		$sql .= ") as drv_transacts ";
+
+		$sql  = "SELECT ";
+		$sql .= "  drv_transacts.idtbl_account_transaction_full AS transaction_id, ";
+		$sql .= "  IFNULL(drv_recinfo.idtbl_bank_rec_info, '') AS rec_info_id, ";
+		$sql .= "  COALESCE( ";
+		$sql .= "    drv_recinfo.rec_info_status, ";
+		$sql .= "    ?, ";                                          /* $chkConfirm */
+		$sql .= "    ((?-tbl_finacial_year.idtbl_finacial_year)+(?-tbl_finacial_month.idtbl_finacial_month)=0) "; /* $maxYear, $maxMonth */
+		$sql .= "  ) AS rec_info_status, ";
+		$sql .= "  IFNULL(drv_recinfo.rec_info_status, 0) AS rec_revise_status, ";
+		$sql .= "  CONCAT(tbl_finacial_year.`year`, ' ', tbl_finacial_month.monthname) AS acc_period_txt, ";
+		$sql .= "  drv_transacts.narration AS narration_txt, ";
+		$sql .= "  drv_transacts.tradate AS transaction_date, ";
+		$sql .= "  ((drv_transacts.crdr='C') * drv_transacts.accamount) AS cr_val, ";
+		$sql .= "  ((drv_transacts.crdr='D') * drv_transacts.accamount) AS dr_val, ";
+		$sql .= "  drv_transacts.rec_info_origin_name, ";
+		$sql .= "  drv_cheque.cheque_no ";                          /* NEW: cheque no. */
+
+		/* ── Transactions sub-query ── */
+		$sql .= "FROM ( ";
+		$sql .= "  SELECT ";
+		$sql .= "    idtbl_account_transaction_full, tradate, tbl_master_idtbl_master, ";
+		$sql .= "    crdr, accamount, narration, batchno, ";        /* NEW: batchno - needed to look up cheque_no */
+		$sql .= "    'transaction_full' AS rec_info_origin_name ";
+		$sql .= "  FROM tbl_account_transaction_full ";
+		$sql .= "  WHERE status = 1 ";
+		$sql .= "    AND ismatch = ? ";                            /* $matchConfirm */
+		$sql .= "    AND tbl_account_idtbl_account = ? ";          /* $accRef */
+		$sql .= "    AND batchno <> IFNULL(?, '') ";               /* $bankRecBatchNo */
+		$sql .= ") AS drv_transacts ";
+
+		/* NEW: cheque_no lookup - keyed by batchno so it's a single row per
+		   transaction (no GROUP BY needed on the outer query, no row duplication).
+		   Walks the same 3 origin chains as before:
+		     PS%  -> tbl_account_paysettle -> tbl_cheque_issue (own cheque, can be >1 -> GROUP_CONCAT)
+		     RE%  -> tbl_receivable.chequeno (receipt/settle cheque)
+		     PR%  -> tbl_pettycash_reimburse (no cheque no. on this chain, kept for completeness) */
+		$sql .= "LEFT JOIN ( ";
+		$sql .= "  SELECT ta.batchno AS acc_batchno, ";
+		$sql .= "    COALESCE( ";
+		$sql .= "      GROUP_CONCAT(DISTINCT ci.chequeno SEPARATOR ', '), ";
+		$sql .= "      MAX(r_re.chequeno), ";
+		$sql .= "      MAX(pcr.chequeno) ";
+		$sql .= "    ) AS cheque_no ";
+		$sql .= "  FROM tbl_account_transaction ta ";
+		$sql .= "  LEFT JOIN tbl_account_paysettle aps ";
+		$sql .= "    ON aps.batchno = ta.trabatchotherno AND ta.trabatchotherno LIKE 'PS%' ";
+		$sql .= "  LEFT JOIN tbl_account_paysettle_has_tbl_cheque_issue psc ";
+		$sql .= "    ON psc.tbl_account_paysettle_idtbl_account_paysettle = aps.idtbl_account_paysettle ";
+		$sql .= "  LEFT JOIN tbl_cheque_issue ci ";
+		$sql .= "    ON ci.idtbl_cheque_issue = psc.tbl_cheque_issue_idtbl_cheque_issue ";
+		$sql .= "  LEFT JOIN tbl_receivable r_re ";
+		$sql .= "    ON r_re.batchno = ta.trabatchotherno AND ta.trabatchotherno LIKE 'RE%' ";
+		$sql .= "  LEFT JOIN tbl_pettycash_reimburse pcr ";
+		$sql .= "    ON pcr.reimbursecode = ta.trabatchotherno AND ta.trabatchotherno LIKE 'PR%' ";
+		$sql .= "  GROUP BY ta.batchno ";
+		$sql .= ") AS drv_cheque ON drv_cheque.acc_batchno = drv_transacts.batchno ";
+
+		/* FIX: ismatch is a GLOBAL flag on tbl_account_transaction_full - it is NOT scoped
+		   to a single reconciliation batch. Filtering only by date range meant a transaction
+		   matched inside (say) August's batch would ALSO satisfy every later month's
+		   "<= selected month" condition, so it kept reappearing (duplicated) in September's,
+		   October's, etc. completed/approved views too.
 		
-		$sql .= "inner join (select idtbl_master, tbl_finacial_year_idtbl_finacial_year, tbl_finacial_month_idtbl_finacial_month from tbl_master where status=1 and tbl_finacial_year_idtbl_finacial_year<=? and tbl_finacial_month_idtbl_finacial_month<=?) as drv_master on drv_transacts.tbl_master_idtbl_master=drv_master.idtbl_master ";
-		
-		$sql .= "inner join tbl_finacial_year ON drv_master.tbl_finacial_year_idtbl_finacial_year=tbl_finacial_year.idtbl_finacial_year ";
-		$sql .= "inner join tbl_finacial_month ON drv_master.tbl_finacial_month_idtbl_finacial_month=tbl_finacial_month.idtbl_finacial_month ";
-		
-		$sql .= "left outer join (select idtbl_bank_rec_info, tbl_account_transaction_idtbl_account_transaction, status as rec_info_status, rec_info_origin_name from tbl_bank_rec_info where tbl_bank_rec_list_idtbl_bank_rec_list=? and rec_info_origin_name='transaction_full') as drv_recinfo ";
-		$sql .= "ON (drv_transacts.idtbl_account_transaction_full=drv_recinfo.tbl_account_transaction_idtbl_account_transaction AND BINARY drv_transacts.rec_info_origin_name=drv_recinfo.rec_info_origin_name)";
-		
-		$qry_transactions = $this->db->query($sql, array($chkConfirm, $maxYear, $maxMonth, $matchConfirm, $accRef, $bankRecBatchNo, $maxYear, $maxMonth, $bankRecId));
-		//echo $this->db->last_query();die;
+		   Correct scope, branched on $matchConfirm:
+		   - MATCHED / completed view (matchConfirm==1): only show transactions that were
+		     actually reconciled under THIS specific $bankRecId - via an INNER JOIN to
+		     tbl_bank_rec_info scoped to that batch. No date range needed at all here,
+		     since batch membership is now the source of truth (not date <= selected month).
+		   - ONGOING / unmatched view (matchConfirm==0): keep the original carry-forward -
+		     selected period AND any earlier period whose transactions are still unmatched,
+		     so uncleared items from prior months show as outstanding until cleared. */
+		if($matchConfirm == 1){
+			$sql .= "INNER JOIN tbl_master AS drv_master ";
+			$sql .= "  ON drv_transacts.tbl_master_idtbl_master = drv_master.idtbl_master ";
+			$sql .= "INNER JOIN tbl_finacial_year ";
+			$sql .= "  ON drv_master.tbl_finacial_year_idtbl_finacial_year = tbl_finacial_year.idtbl_finacial_year ";
+			$sql .= "INNER JOIN tbl_finacial_month ";
+			$sql .= "  ON drv_master.tbl_finacial_month_idtbl_finacial_month = tbl_finacial_month.idtbl_finacial_month ";
+			$sql .= "INNER JOIN ( ";
+			$sql .= "  SELECT idtbl_bank_rec_info, ";
+			$sql .= "         tbl_account_transaction_idtbl_account_transaction, ";
+			$sql .= "         status AS rec_info_status, ";
+			$sql .= "         rec_info_origin_name ";
+			$sql .= "  FROM tbl_bank_rec_info ";
+			$sql .= "  WHERE tbl_bank_rec_list_idtbl_bank_rec_list = ? ";             /* $bankRecId */
+			$sql .= "    AND rec_info_origin_name = 'transaction_full' ";
+			$sql .= "    AND status = 1 ";
+			$sql .= ") AS drv_recinfo ";
+			$sql .= "  ON ( ";
+			$sql .= "       drv_transacts.idtbl_account_transaction_full = drv_recinfo.tbl_account_transaction_idtbl_account_transaction ";
+			$sql .= "       AND BINARY drv_transacts.rec_info_origin_name = drv_recinfo.rec_info_origin_name ";
+			$sql .= "     ) ";
+		} else {
+			$sql .= "INNER JOIN ( ";
+			$sql .= "  SELECT idtbl_master, ";
+			$sql .= "         tbl_finacial_year_idtbl_finacial_year, ";
+			$sql .= "         tbl_finacial_month_idtbl_finacial_month ";
+			$sql .= "  FROM tbl_master ";
+			$sql .= "  WHERE status = 1 ";
+			$sql .= "    AND ( ";
+			$sql .= "      tbl_finacial_year_idtbl_finacial_year < ? ";              /* $maxYear (earlier fiscal year) */
+			$sql .= "      OR (tbl_finacial_year_idtbl_finacial_year = ? ";          /* $maxYear (same fiscal year...) */
+			$sql .= "          AND tbl_finacial_month_idtbl_finacial_month <= ?) ";  /* $maxMonth (...up to selected fiscal month) */
+			$sql .= "    ) ";
+			$sql .= ") AS drv_master ";
+			$sql .= "  ON drv_transacts.tbl_master_idtbl_master = drv_master.idtbl_master ";
+			$sql .= "INNER JOIN tbl_finacial_year ";
+			$sql .= "  ON drv_master.tbl_finacial_year_idtbl_finacial_year = tbl_finacial_year.idtbl_finacial_year ";
+			$sql .= "INNER JOIN tbl_finacial_month ";
+			$sql .= "  ON drv_master.tbl_finacial_month_idtbl_finacial_month = tbl_finacial_month.idtbl_finacial_month ";
+			$sql .= "LEFT OUTER JOIN ( ";
+			$sql .= "  SELECT idtbl_bank_rec_info, ";
+			$sql .= "         tbl_account_transaction_idtbl_account_transaction, ";
+			$sql .= "         status AS rec_info_status, ";
+			$sql .= "         rec_info_origin_name ";
+			$sql .= "  FROM tbl_bank_rec_info ";
+			$sql .= "  WHERE tbl_bank_rec_list_idtbl_bank_rec_list = ? ";             /* $bankRecId */
+			$sql .= "    AND rec_info_origin_name = 'transaction_full' ";
+			$sql .= ") AS drv_recinfo ";
+			$sql .= "  ON ( ";
+			$sql .= "       drv_transacts.idtbl_account_transaction_full = drv_recinfo.tbl_account_transaction_idtbl_account_transaction ";
+			$sql .= "       AND BINARY drv_transacts.rec_info_origin_name = drv_recinfo.rec_info_origin_name ";
+			$sql .= "     ) ";
+		}
+
+		// FIX: bind params now differ per branch -- matched view only needs $bankRecId
+		// (for the INNER JOIN drv_recinfo); ongoing view needs the full carry-forward
+		// date-range params plus $bankRecId (for the LEFT JOIN drv_recinfo).
+		$joinParams = ($matchConfirm == 1)
+			? array($bankRecId)
+			: array($maxYear, $maxYear, $maxMonth, $bankRecId);
+
+		$qry_transactions = $this->db->query($sql, array_merge(
+			array($chkConfirm, $maxYear, $maxMonth, $matchConfirm, $accRef, $bankRecBatchNo),
+			$joinParams
+		));
+
+		// debug: uncomment කරලා SQL verify කරන්න
+		// echo $this->db->last_query(); die;
+
 		return $qry_transactions->result();
 	}
 	
 	public function getBankRevisionDetail($bankRecId, $accRef){
-		$sql = "select (bank_amount*(tbl_account_idtbl_account_cr=?)) as cr_val, (bank_amount*(tbl_account_idtbl_account_dr=?)) as dr_val, idtbl_bank_rec_revision, bank_narration from tbl_bank_rec_revision where tbl_bank_rec_list_idtbl_bank_rec_list=? and status=1";
+		// FIX: trans_date column එකත්, acc_period_txt (Period) එකත් load කරනවා.
+		// tbl_bank_rec_revision.tbl_master_idtbl_master හරහා tbl_master -> tbl_finacial_year/tbl_finacial_month
+		// join කරලා Period column එකට "2026 2026-April" වගේ text එකක් හදනවා.
+		$sql  = "select (bank_amount*(tbl_account_idtbl_account_cr=?)) as cr_val, ";
+		$sql .= "       (bank_amount*(tbl_account_idtbl_account_dr=?)) as dr_val, ";
+		$sql .= "       tbl_bank_rec_revision.idtbl_bank_rec_revision, ";
+		$sql .= "       tbl_bank_rec_revision.bank_narration, ";
+		$sql .= "       tbl_bank_rec_revision.trans_date, ";
+		$sql .= "       CONCAT(tbl_finacial_year.`year`, ' ', tbl_finacial_month.monthname) as acc_period_txt ";
+		$sql .= "from tbl_bank_rec_revision ";
+		$sql .= "left outer join tbl_master on tbl_bank_rec_revision.tbl_master_idtbl_master = tbl_master.idtbl_master ";
+		$sql .= "left outer join tbl_finacial_year on tbl_master.tbl_finacial_year_idtbl_finacial_year = tbl_finacial_year.idtbl_finacial_year ";
+		$sql .= "left outer join tbl_finacial_month on tbl_master.tbl_finacial_month_idtbl_finacial_month = tbl_finacial_month.idtbl_finacial_month ";
+		$sql .= "where tbl_bank_rec_revision.tbl_bank_rec_list_idtbl_bank_rec_list=? and tbl_bank_rec_revision.status=1";
 		
 		$qry_revisions = $this->db->query($sql, array($accRef, $accRef, $bankRecId));
 		
@@ -146,21 +608,44 @@ class BankReconciliationinfo extends CI_Model{
 	}
 	
 	public function getBankDepositDetails($bankRecId, $maxYear, $maxMonth, $depositConfirm){
-		$sql = "select tbl_receivable.idtbl_receivable, ifnull(drv_recinfo.idtbl_bank_rec_info, '') as rec_info_id, ifnull(drv_recinfo.rec_info_status, ((?-tbl_finacial_year.idtbl_finacial_year)+(?-tbl_finacial_month.idtbl_finacial_month)=0)) as rec_info_status, ifnull(drv_recinfo.rec_info_status, 0) AS rec_revise_status, CONCAT(tbl_finacial_year.`year`, ' ', tbl_finacial_month.monthname) as acc_period_txt, tbl_receivable.narration, tbl_receivable.recdate, tbl_receivable.amount as cr_val, 0 as dr_val, 'receivable_deposit' as rec_info_origin_name from tbl_receivable ";
+		$sql = "select tbl_receivable.idtbl_receivable, ifnull(drv_recinfo.idtbl_bank_rec_info, '') as rec_info_id, ifnull(drv_recinfo.rec_info_status, ((?-tbl_finacial_year.idtbl_finacial_year)+(?-tbl_finacial_month.idtbl_finacial_month)=0)) as rec_info_status, ifnull(drv_recinfo.rec_info_status, 0) AS rec_revise_status, CONCAT(tbl_finacial_year.`year`, ' ', tbl_finacial_month.monthname) as acc_period_txt, tbl_receivable.narration, tbl_receivable.recdate, tbl_receivable.amount as cr_val, 0 as dr_val, 'receivable_deposit' as rec_info_origin_name, tbl_receivable.chequeno as cheque_no from tbl_receivable ";
 		
-		/*
-		$sql .= "inner join tbl_master on tbl_receivable.tbl_master_idtbl_master=tbl_master.idtbl_master ";
-		*/
-		$sql .= "inner join (select idtbl_master, tbl_finacial_year_idtbl_finacial_year, tbl_finacial_month_idtbl_finacial_month from tbl_master where status=1 and tbl_finacial_year_idtbl_finacial_year<=? and tbl_finacial_month_idtbl_finacial_month<=?) as drv_master on tbl_receivable.tbl_master_idtbl_master=drv_master.idtbl_master ";
+		/* FIX: same rule as getOrderDetail() - depositstatus is a GLOBAL flag on
+		   tbl_receivable, not scoped to a single reconciliation batch. A "<=" date range
+		   alone made a deposit matched inside (say) August's batch also satisfy every
+		   later month's completed view (September, October, ...), duplicating it.
 		
-		$sql .= "inner join tbl_finacial_year ON drv_master.tbl_finacial_year_idtbl_finacial_year=tbl_finacial_year.idtbl_finacial_year ";
-		$sql .= "inner join tbl_finacial_month ON drv_master.tbl_finacial_month_idtbl_finacial_month=tbl_finacial_month.idtbl_finacial_month ";
-		
-		$sql .= "left outer join (select idtbl_bank_rec_info, tbl_account_transaction_idtbl_account_transaction, status as rec_info_status from tbl_bank_rec_info where tbl_bank_rec_list_idtbl_bank_rec_list=? and rec_info_origin_name='receivable_deposit') as drv_recinfo on tbl_receivable.idtbl_receivable=drv_recinfo.tbl_account_transaction_idtbl_account_transaction ";
+		   - MATCHED / completed view (depositConfirm==1): only deposits actually
+		     reconciled under THIS specific $bankRecId - via INNER JOIN to
+		     tbl_bank_rec_info scoped to that batch. No date range needed.
+		   - ONGOING / unmatched view (depositConfirm==0): keep the original
+		     carry-forward - selected period AND any earlier still-unmatched period. */
+		if($depositConfirm == 1){
+			$sql .= "inner join tbl_master as drv_master on tbl_receivable.tbl_master_idtbl_master=drv_master.idtbl_master ";
+			$sql .= "inner join tbl_finacial_year ON drv_master.tbl_finacial_year_idtbl_finacial_year=tbl_finacial_year.idtbl_finacial_year ";
+			$sql .= "inner join tbl_finacial_month ON drv_master.tbl_finacial_month_idtbl_finacial_month=tbl_finacial_month.idtbl_finacial_month ";
+			$sql .= "inner join (select idtbl_bank_rec_info, tbl_account_transaction_idtbl_account_transaction, status as rec_info_status from tbl_bank_rec_info where tbl_bank_rec_list_idtbl_bank_rec_list=? and rec_info_origin_name='receivable_deposit' and status=1) as drv_recinfo on tbl_receivable.idtbl_receivable=drv_recinfo.tbl_account_transaction_idtbl_account_transaction ";
+		} else {
+			$sql .= "inner join (select idtbl_master, tbl_finacial_year_idtbl_finacial_year, tbl_finacial_month_idtbl_finacial_month from tbl_master where status=1 and (tbl_finacial_year_idtbl_finacial_year<? or (tbl_finacial_year_idtbl_finacial_year=? and tbl_finacial_month_idtbl_finacial_month<=?))) as drv_master on tbl_receivable.tbl_master_idtbl_master=drv_master.idtbl_master ";
+			$sql .= "inner join tbl_finacial_year ON drv_master.tbl_finacial_year_idtbl_finacial_year=tbl_finacial_year.idtbl_finacial_year ";
+			$sql .= "inner join tbl_finacial_month ON drv_master.tbl_finacial_month_idtbl_finacial_month=tbl_finacial_month.idtbl_finacial_month ";
+			$sql .= "left outer join (select idtbl_bank_rec_info, tbl_account_transaction_idtbl_account_transaction, status as rec_info_status from tbl_bank_rec_info where tbl_bank_rec_list_idtbl_bank_rec_list=? and rec_info_origin_name='receivable_deposit') as drv_recinfo on tbl_receivable.idtbl_receivable=drv_recinfo.tbl_account_transaction_idtbl_account_transaction ";
+		}
 		
 		$sql .= "where tbl_receivable.status=1 and tbl_receivable.tbl_receivable_type_idtbl_receivable_type=1 and tbl_receivable.depositstatus=? and  ((tbl_receivable.idtbl_receivable*tbl_receivable.depositstatus)=ifnull(drv_recinfo.tbl_account_transaction_idtbl_account_transaction, 0)*tbl_receivable.depositstatus)";
 		
-		$qry_deposit = $this->db->query($sql, array($maxYear, $maxMonth, $maxYear, $maxMonth, $bankRecId, $depositConfirm));
+		// FIX: bind params differ per branch - matched view only needs $bankRecId (for the
+		// INNER JOIN drv_recinfo); ongoing view needs the carry-forward date-range params
+		// plus $bankRecId (for the LEFT JOIN drv_recinfo).
+		$joinParams = ($depositConfirm == 1)
+			? array($bankRecId)
+			: array($maxYear, $maxYear, $maxMonth, $bankRecId);
+		
+		$qry_deposit = $this->db->query($sql, array_merge(
+			array($maxYear, $maxMonth),
+			$joinParams,
+			array($depositConfirm)
+		));
 		
 		return $qry_deposit->result();
 	}
@@ -383,7 +868,7 @@ class BankReconciliationinfo extends CI_Model{
 			$this->db->update_batch('tbl_account_transaction_full', $match_recs, 'idtbl_account_transaction_full');
 			//echo 'cnt-full '.count($match_recs).'<br />';
 			//echo 'db-update '.$this->db->affected_rows();die;
-			if(!(count($match_recs==$this->db->affected_rows()))){
+			if(count($match_recs)!=$this->db->affected_rows()){
 				$flag = false;
 			}
 		}
@@ -398,9 +883,9 @@ class BankReconciliationinfo extends CI_Model{
 		
 		if(!empty($deposit_recs)){
 			$this->db->update_batch('tbl_receivable', $deposit_recs, 'idtbl_receivable');
-			//echo 'cnt-full '.count($match_recs).'<br />';
+			//echo 'cnt-full '.count($deposit_recs).'<br />';
 			//echo 'db-update '.$this->db->affected_rows();die;
-			if(!(count($match_recs==$this->db->affected_rows()))){
+			if(count($deposit_recs)!=$this->db->affected_rows()){
 				$flag = false;
 			}
 		}

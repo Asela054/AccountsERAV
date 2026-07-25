@@ -69,7 +69,7 @@ include "include/topnavbar.php";
                 <div class="row">
                     <div class="col-12">
                         <form id="segregationform">
-                            <div class="row">
+                            <div class="form-row">
                                 <div class="col">
                                     <label class="small font-weight-bold">Company*</label>
                                     <input type="text" name="showcompany" id="showcompany" class="form-control form-control-sm" readonly>
@@ -79,11 +79,15 @@ include "include/topnavbar.php";
                                     <input type="text" name="showbranch" id="showbranch" class="form-control form-control-sm" readonly>
                                 </div>
                                 <div class="col">
+                                    <label class="small font-weight-bold">Date*</label>
+                                    <input type="date" name="pettycashdate" id="pettycashdate" class="form-control form-control-sm" required>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="col">
                                     <label class="small font-weight-bold">Account*</label>
                                     <input type="text" name="showaccount" id="showaccount" class="form-control form-control-sm" readonly>
                                 </div>
-                            </div>
-                            <div class="row">
                                 <div class="col">
                                     <label class="small font-weight-bold">Opening Balance*</label>
                                     <input type="text" name="openingbal" id="openingbal" class="form-control form-control-sm text-right" readonly>
@@ -97,12 +101,12 @@ include "include/topnavbar.php";
                                     <input type="text" name="closebal" id="closebal" class="form-control form-control-sm text-right" readonly>
                                 </div>
                             </div>
-                            <div class="row mt-3">
+                            <div class="form-row mt-3">
                                 <div class="col-12">
                                     <h6 class="small title-style"><span>Expenses Account</span></h6>
                                 </div>
                             </div>
-                            <div class="row">
+                            <div class="form-row">
                                 <div class="col-5">
                                     <label class="small font-weight-bold">Account No*</label>
                                     <select name="chartofdetailaccount" id="chartofdetailaccount" class="form-control form-control-sm" style="width: 100%;" required>
@@ -118,7 +122,7 @@ include "include/topnavbar.php";
                                     <input type="text" name="expenseamount" id="expenseamount" class="form-control form-control-sm input-integer" required>
                                 </div>
                             </div>
-                            <div class="row mt-3">
+                            <div class="form-row mt-3">
                                 <div class="col-12 text-right">
                                     <?php if($addcheck==1){ ?>
                                     <button type="button" class="btn btn-primary btn-sm px-4" id="btnaddtolist"><i class="fas fa-list mr-2"></i>Add to list</button>
@@ -455,6 +459,7 @@ include "include/topnavbar.php";
                 var company = $('#company').val();
                 var branch = $('#branch').val();
                 var pettycashacccount = $('#pettycashacccount').val();
+                var pettycashdate = $('#pettycashdate').val();
 
                 var sum = 0;
                 $(".expamount").each(function () {
@@ -490,6 +495,7 @@ include "include/topnavbar.php";
                                     company: company,
                                     branch: branch,
                                     pettycashacccount: pettycashacccount,
+                                    pettycashdate: pettycashdate,
                                     recordOption: recordOption,
                                     recordID: recordID
                                 },
@@ -677,7 +683,7 @@ include "include/topnavbar.php";
                         searchTerm: params.term, // search term
                         companyid: companyid,
                         branchid: branchid,
-                        accountcategory: '2'
+                        accountcategory: ''
                     };
                 },
                 processResults: function (response) {

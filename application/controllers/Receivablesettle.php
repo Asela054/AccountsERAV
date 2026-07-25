@@ -60,4 +60,7 @@ class Receivablesettle extends CI_Controller {
     public function Getunappliedpaymentaccocustomer(){
         $result=$this->Receivablesettleinfo->Getunappliedpaymentaccocustomer();
     }
+    public function Getcreditnoteaccocustomer(){
+        $result=$this->Receivablesettleinfo->Getcreditnoteaccocustomer();
+    }
 }
