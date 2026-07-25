@@ -127,7 +127,9 @@ class BankReconciliation extends CI_Controller {
 							'rec_revise_status'=>$rec_revise_status,
 							'opt_render'=>'chkinput', 
 							'opt_origin'=>$r->rec_info_origin_name,
-							'opt_dtprefix'=>'chk_accd');
+							'opt_dtprefix'=>'chk_accd',
+							// NEW: cheque no. (PS/RE chain) - getOrderDetail() joins drv_cheque now
+							'cheque_no'=>!empty($r->cheque_no) ? $r->cheque_no : '-');
 			
 			if($r->rec_info_status==1){
 				$this->cr_running_total += $r->cr_val;
@@ -153,7 +155,9 @@ class BankReconciliation extends CI_Controller {
 							'rec_revise_status'=>0,
 							'opt_render'=>'btn', 
 							'opt_origin'=>'origin_blank',
-							'opt_dtprefix'=>'rec_accd');
+							'opt_dtprefix'=>'rec_accd',
+							// NEW: adjustment rows don't originate from a cheque source
+							'cheque_no'=>'-');
 			
 			
 			$this->cr_running_total += $o->cr_val;
@@ -175,7 +179,9 @@ class BankReconciliation extends CI_Controller {
 							'rec_revise_status'=>$rec_revise_status,
 							'opt_render'=>'chkinput', 
 							'opt_origin'=>$d->rec_info_origin_name,
-							'opt_dtprefix'=>'dep_accd');
+							'opt_dtprefix'=>'dep_accd',
+							// NEW: cheque no. - tbl_receivable.chequeno directly from getBankDepositDetails()
+							'cheque_no'=>!empty($d->cheque_no) ? $d->cheque_no : '-');
 			
 			if($d->rec_info_status==1){
 				$this->cr_running_total += $d->cr_val;
@@ -287,7 +293,7 @@ class BankReconciliation extends CI_Controller {
 	
 		$bank_rec_master_ids = $this->BankReconciliationinfo->getCompanyBranchAccountPeriods($id_y, $id_m);
 	
-		$checked_flag     = empty($bankrec_id) ? NULL : 0;
+		$checked_flag     = empty($bankrec_id) ? NULL : $bank_rec_header['rec_approved'];
 		$view_detail_data = $this->getRecTransactions(
 								$bankacc_id, $bankrec_id, $rec_batchno,
 								$id_y, $id_m,
@@ -571,21 +577,21 @@ class BankReconciliation extends CI_Controller {
 	public function diff_check($field_val){
 		$rec_ready = false;
 		
-		$s_cr = $this->input->post('statement_cr');
-		$a_cr = $this->input->post('acc_cr');
+		// $s_cr = $this->input->post('statement_cr');
+		// $a_cr = $this->input->post('acc_cr');
 		
-		if(($s_cr-$a_cr)!=0){
-			$this->form_validation->set_message('diff_check', 'CR diffenerence must be 0');
-			return false;
-		}
+		// if(($s_cr-$a_cr)!=0){
+		// 	$this->form_validation->set_message('diff_check', 'CR diffenerence must be 0');
+		// 	return false;
+		// }
 		
-		$s_dr = $this->input->post('statement_dr');
-		$a_dr = $this->input->post('acc_dr');
+		// $s_dr = $this->input->post('statement_dr');
+		// $a_dr = $this->input->post('acc_dr');
 		
-		if(($s_dr-$a_dr)!=0){
-			$this->form_validation->set_message('diff_check', 'DR diffenerence must be 0');
-			return false;
-		}
+		// if(($s_dr-$a_dr)!=0){
+		// 	$this->form_validation->set_message('diff_check', 'DR diffenerence must be 0');
+		// 	return false;
+		// }
 		
 		$s_close = $this->input->post('statement_close');
 		$a_close = $this->input->post('acc_close');
@@ -644,6 +650,148 @@ class BankReconciliation extends CI_Controller {
 		return true;
 	}
 	
+	//------------------------------- Commented out freeze() method - not used currently on 09/07/2026 -------------------------------
+	// public function freeze(){
+	// 	$this->form_validation->set_rules('exp_rows', 'Rec info', 'required');
+		
+	// 	$this->form_validation->set_rules('revised_rows', 'Rec info', 'matches[exp_rows]', 
+	// 											array('matches'=>'Please save changes before posting.')
+	// 										);
+		
+	// 	$this->form_validation->set_rules('selected_opt', 
+	// 									  'Invoice payments', 
+	// 									  'callback_approved_check|callback_doc_check|callback_diff_check'
+	// 									  );
+		
+	// 	$this->form_validation->set_error_delimiters('<div class="error">', '</div>');
+		
+	// 	if($this->form_validation->run() == false) {
+	// 		$validationErrors = form_error('revised_rows', '<div class="errormsg">', '</div>');
+			
+	// 		if($validationErrors == ''){
+	// 			$validationErrors = form_error('selected_opt', '<div class="errormsg">', '</div>');
+	// 		}
+			
+	// 		$data = array();
+	// 		$data['action'] = json_encode(array('message'=>$validationErrors));//resMsg
+	// 		$data['resTheme'] = 'bg-info text-white';
+	// 	}else{
+	// 		$recMainId = $this->input->post('selected_opt');//x
+	// 		$userName = $_SESSION['userid'];
+	// 		$transactionTime = date('Y-m-d H:i:s');
+	// 		$orderData = array('rec_approved'=>1, 'updateuser'=>$userName);
+			
+	// 		$transaction_details = $this->BankReconciliationinfo->generateBankTransactions($recMainId);
+			
+	// 		$bankRecDate = '';
+	// 		$bankRecBatchno = '';
+			
+	// 		if(!empty($transaction_details)){
+	// 			$bankRecDate = $transaction_details[0]->bank_rec_date;
+	// 			$bankRecBatchno = $transaction_details[0]->acc_rec_batchno;
+	// 		}
+			
+	// 		$bankData = array('tradate'=>$bankRecDate, 'batchno'=>$bankRecBatchno, 
+	// 								   'trabatchotherno'=>'', //*
+	// 								   'tratype'=>'D', 
+	// 								   'seqno'=>'', //*
+	// 								   'crdr'=>'', 'accamount'=>'', 'narration'=>'', 
+	// 								   'totamount'=>'', 
+	// 								   'ismatched'=>'1', //'0', //*
+	// 								   'reversstatus'=>'0', //*
+	// 								   'status'=>'1', 
+	// 								   'insertdatetime'=>$transactionTime, 'tbl_user_idtbl_user'=>$userName, 
+	// 								   'tbl_account_idtbl_account'=>'', 
+	// 								   'tbl_master_idtbl_master'=>'', 
+	// 								   'tbl_company_idtbl_company'=>'', 
+	// 								   'tbl_company_branch_idtbl_company_branch'=>''
+	// 						  );
+	// 		$bankFull = array('tradate'=>$bankRecDate, 'batchno'=>$bankRecBatchno, 
+	// 								   'tratype'=>'D', 'crdr'=>'', 'accamount'=>'', 'narration'=>'', 
+	// 								   'totamount'=>'', 
+	// 								   'ismatch'=>'1', //'0', //*
+	// 								   'status'=>'1', 
+	// 								   'insertdatetime'=>$transactionTime, 'tbl_user_idtbl_user'=>$userName, 
+	// 								   'tbl_account_idtbl_account'=>'', 
+	// 								   'tbl_master_idtbl_master'=>'', 
+	// 								   'tbl_company_idtbl_company'=>'', 
+	// 								   'tbl_company_branch_idtbl_company_branch'=>''
+	// 						  );
+			
+	// 		$crdrData = array();
+	// 		$crdrFull = array();
+			
+	// 		$crdrOpts = array('C'=>array('p'=>1), 'D'=>array('p'=>-1));
+			
+	// 		$accOpenDiff = array();
+			
+	// 		foreach($transaction_details as $bt){
+	// 			$bankData['trabatchotherno'] = $bt->b_prefix.str_pad($bt->idtbl_bank_rec_revision, 14, '0', STR_PAD_LEFT);
+	// 			$bankData['seqno'] = $bt->seqno;
+	// 			$bankData['crdr'] = $bt->fig_crdr;
+	// 			$bankData['accamount'] = $bt->bank_amount;
+	// 			$bankData['narration'] = $bt->bank_narration;
+	// 			$bankData['totamount'] = $bt->totamount;
+	// 			$bankData['tbl_account_idtbl_account'] = $bt->tbl_account_idtbl_account;
+	// 			$bankData['tbl_master_idtbl_master'] = $bt->tbl_master_idtbl_master;
+	// 			$bankData['tbl_company_idtbl_company'] = $bt->tbl_company_idtbl_company;
+	// 			$bankData['tbl_company_branch_idtbl_company_branch'] = $bt->tbl_company_branch_idtbl_company_branch;
+				
+	// 			$crdrData[] = $bankData;
+				
+	// 			$newAmount = $bt->bank_amount*$crdrOpts[$bt->fig_crdr]['p'];
+	// 			$optAccount = md5($bt->tbl_account_idtbl_account.'_'.$bt->tbl_company_branch_idtbl_company_branch);
+				
+	// 			if(isset($accOpenDiff[$optAccount])){
+	// 				$preAmount = $accOpenDiff[$optAccount];
+	// 				$accOpenDiff[$optAccount] = $preAmount+$newAmount;
+	// 			}else{
+	// 				$accOpenDiff[$optAccount] = $newAmount;
+	// 			}
+				
+	// 			//$bankFull[''] = str_pad($bt->idtbl_bank_rec_revision, 15, '0', STR_PAD_LEFT);
+	// 			$bankFull['crdr'] = $bt->fig_crdr;
+	// 			$bankFull['accamount'] = $bt->bank_amount;
+	// 			$bankFull['narration'] = $bt->bank_narration;
+	// 			$bankFull['totamount'] = $bt->totamount;
+	// 			$bankFull['tbl_account_idtbl_account'] = $bt->tbl_account_idtbl_account;
+	// 			$bankFull['tbl_master_idtbl_master'] = $bt->tbl_master_idtbl_master;
+	// 			$bankFull['tbl_company_idtbl_company'] = $bt->tbl_company_idtbl_company;
+	// 			$bankFull['tbl_company_branch_idtbl_company_branch'] = $bt->tbl_company_branch_idtbl_company_branch;
+				
+	// 			$crdrFull[] = $bankFull;
+	// 		}
+			
+	// 		$recPeriodYear = $this->input->post('rec_period_year');
+	// 		$recPeriodMonth = $this->input->post('rec_period_month');
+	// 		$acc_unconfirmed_details = $this->BankReconciliationinfo->getUnconfirmedAccountBalance($recPeriodYear, $recPeriodMonth);
+	// 		$accOpenDiffUpdateData = array();
+			
+	// 		foreach($acc_unconfirmed_details as $au){
+	// 			if(isset($accOpenDiff[$au->m_key])){
+	// 				$newAccBal = $au->openbal+$accOpenDiff[$au->m_key];
+	// 				$accOpenDiffUpdateData[] = array('idtbl_account_open_bal'=>$au->idtbl_account_open_bal, 
+	// 											   'openbal'=>$newAccBal, 'updateuser'=>$userName, 
+	// 											   'updatedatetime'=>$transactionTime);
+	// 			}
+	// 		}
+			
+	// 		//var_dump($accOpenDiffUpdateData);
+	// 		//die;
+			
+	// 		/**/
+	// 		$res_info = $this->BankReconciliationinfo->regFreezeOrder($recMainId, $orderData, $crdrData, $crdrFull, $accOpenDiffUpdateData);//
+			
+			
+			
+	// 		$data = array();
+	// 		$data['resMsg'] = $res_info['importMsg'];//'Successfully approved';
+	// 		$data['resTheme'] = $res_info['toastType'];//'bg-info text-white';
+	// 	}
+		
+	// 	echo json_encode($data);
+	// }
+
 	public function freeze(){
 		$this->form_validation->set_rules('exp_rows', 'Rec info', 'required');
 		
@@ -652,12 +800,14 @@ class BankReconciliation extends CI_Controller {
 											);
 		
 		$this->form_validation->set_rules('selected_opt', 
-										  'Invoice payments', 
-										  'callback_approved_check|callback_doc_check|callback_diff_check'
-										  );
+										'Invoice payments', 
+										'callback_approved_check|callback_doc_check|callback_diff_check'
+										);
 		
 		$this->form_validation->set_error_delimiters('<div class="error">', '</div>');
 		
+		$data = array(); // Initialize consistently
+
 		if($this->form_validation->run() == false) {
 			$validationErrors = form_error('revised_rows', '<div class="errormsg">', '</div>');
 			
@@ -665,11 +815,11 @@ class BankReconciliation extends CI_Controller {
 				$validationErrors = form_error('selected_opt', '<div class="errormsg">', '</div>');
 			}
 			
-			$data = array();
-			$data['action'] = json_encode(array('message'=>$validationErrors));//resMsg
+			$data['status'] = false;
+			$data['resMsg'] = !empty($validationErrors) ? $validationErrors : "Validation failed. Please verify criteria.";
 			$data['resTheme'] = 'bg-info text-white';
-		}else{
-			$recMainId = $this->input->post('selected_opt');//x
+		} else {
+			$recMainId = $this->input->post('selected_opt');
 			$userName = $_SESSION['userid'];
 			$transactionTime = date('Y-m-d H:i:s');
 			$orderData = array('rec_approved'=>1, 'updateuser'=>$userName);
@@ -685,31 +835,31 @@ class BankReconciliation extends CI_Controller {
 			}
 			
 			$bankData = array('tradate'=>$bankRecDate, 'batchno'=>$bankRecBatchno, 
-									   'trabatchotherno'=>'', //*
-									   'tratype'=>'D', 
-									   'seqno'=>'', //*
-									   'crdr'=>'', 'accamount'=>'', 'narration'=>'', 
-									   'totamount'=>'', 
-									   'ismatched'=>'1', //'0', //*
-									   'reversstatus'=>'0', //*
-									   'status'=>'1', 
-									   'insertdatetime'=>$transactionTime, 'tbl_user_idtbl_user'=>$userName, 
-									   'tbl_account_idtbl_account'=>'', 
-									   'tbl_master_idtbl_master'=>'', 
-									   'tbl_company_idtbl_company'=>'', 
-									   'tbl_company_branch_idtbl_company_branch'=>''
-							  );
+									'trabatchotherno'=>'', 
+									'tratype'=>'D', 
+									'seqno'=>'', 
+									'crdr'=>'', 'accamount'=>'', 'narration'=>'', 
+									'totamount'=>'', 
+									'ismatched'=>'1', 
+									'reversstatus'=>'0', 
+									'status'=>'1', 
+									'insertdatetime'=>$transactionTime, 'tbl_user_idtbl_user'=>$userName, 
+									'tbl_account_idtbl_account'=>'', 
+									'tbl_master_idtbl_master'=>'', 
+									'tbl_company_idtbl_company'=>'', 
+									'tbl_company_branch_idtbl_company_branch'=>''
+							);
 			$bankFull = array('tradate'=>$bankRecDate, 'batchno'=>$bankRecBatchno, 
-									   'tratype'=>'D', 'crdr'=>'', 'accamount'=>'', 'narration'=>'', 
-									   'totamount'=>'', 
-									   'ismatch'=>'1', //'0', //*
-									   'status'=>'1', 
-									   'insertdatetime'=>$transactionTime, 'tbl_user_idtbl_user'=>$userName, 
-									   'tbl_account_idtbl_account'=>'', 
-									   'tbl_master_idtbl_master'=>'', 
-									   'tbl_company_idtbl_company'=>'', 
-									   'tbl_company_branch_idtbl_company_branch'=>''
-							  );
+									'tratype'=>'D', 'crdr'=>'', 'accamount'=>'', 'narration'=>'', 
+									'totamount'=>'', 
+									'ismatch'=>'1', 
+									'status'=>'1', 
+									'insertdatetime'=>$transactionTime, 'tbl_user_idtbl_user'=>$userName, 
+									'tbl_account_idtbl_account'=>'', 
+									'tbl_master_idtbl_master'=>'', 
+									'tbl_company_idtbl_company'=>'', 
+									'tbl_company_branch_idtbl_company_branch'=>''
+							);
 			
 			$crdrData = array();
 			$crdrFull = array();
@@ -742,7 +892,6 @@ class BankReconciliation extends CI_Controller {
 					$accOpenDiff[$optAccount] = $newAmount;
 				}
 				
-				//$bankFull[''] = str_pad($bt->idtbl_bank_rec_revision, 15, '0', STR_PAD_LEFT);
 				$bankFull['crdr'] = $bt->fig_crdr;
 				$bankFull['accamount'] = $bt->bank_amount;
 				$bankFull['narration'] = $bt->bank_narration;
@@ -764,22 +913,16 @@ class BankReconciliation extends CI_Controller {
 				if(isset($accOpenDiff[$au->m_key])){
 					$newAccBal = $au->openbal+$accOpenDiff[$au->m_key];
 					$accOpenDiffUpdateData[] = array('idtbl_account_open_bal'=>$au->idtbl_account_open_bal, 
-												   'openbal'=>$newAccBal, 'updateuser'=>$userName, 
-												   'updatedatetime'=>$transactionTime);
+												'openbal'=>$newAccBal, 'updateuser'=>$userName, 
+												'updatedatetime'=>$transactionTime);
 				}
 			}
 			
-			//var_dump($accOpenDiffUpdateData);
-			//die;
+			$res_info = $this->BankReconciliationinfo->regFreezeOrder($recMainId, $orderData, $crdrData, $crdrFull, $accOpenDiffUpdateData);
 			
-			/**/
-			$res_info = $this->BankReconciliationinfo->regFreezeOrder($recMainId, $orderData, $crdrData, $crdrFull, $accOpenDiffUpdateData);//
-			
-			
-			
-			$data = array();
-			$data['resMsg'] = $res_info['importMsg'];//'Successfully approved';
-			$data['resTheme'] = $res_info['toastType'];//'bg-info text-white';
+			$data['status'] = true;
+			$data['resMsg'] = $res_info['importMsg'];
+			$data['resTheme'] = $res_info['toastType'];
 		}
 		
 		echo json_encode($data);

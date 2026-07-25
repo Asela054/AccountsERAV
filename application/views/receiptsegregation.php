@@ -13,7 +13,7 @@ include "include/topnavbar.php";
                     <div class="page-header-content py-3">
                         <h1 class="page-header-title font-weight-light">
                             <div class="page-header-icon"><i class="fas fa-tasks"></i></div>
-                            <span>Receivable Segregation</span>
+                            <span>Receivable Create</span>
                         </h1>
                     </div>
                 </div>
@@ -24,7 +24,7 @@ include "include/topnavbar.php";
                         <div class="row">
                             <div class="col-12 text-right">
                                 <!-- <button class="btn btn-primary btn-sm px-4" id="btncreatesegregation" <?php // if($addcheck==0){echo 'disabled';} ?> data-toggle="modal" data-target="#modalcompanychoose"><i class="fas fa-plus mr-2"></i>Create Segregation</button> -->
-                                <button class="btn btn-primary btn-sm px-4" id="btncreatesegregation" <?php if($addcheck==0){echo 'disabled';} ?>><i class="fas fa-plus mr-2"></i>Create Segregation</button>
+                                <button class="btn btn-primary btn-sm px-4" id="btncreatesegregation" <?php if($addcheck==0){echo 'disabled';} ?>><i class="fas fa-plus mr-2"></i>Create Receivable</button>
                                 <hr>
                             </div>
                             <div class="col-12">
@@ -61,7 +61,7 @@ include "include/topnavbar.php";
 	<div class="modal-dialog modal-lg modal-dialog-centered">
 		<div class="modal-content">
 			<div class="modal-header">
-				<h6 class="modal-title" id="modalsegregationLabel">Create Segregation</h6>
+				<h6 class="modal-title" id="modalsegregationLabel">Create Receivable</h6>
 				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
 					<span aria-hidden="true">&times;</span>
 				</button>
@@ -70,24 +70,6 @@ include "include/topnavbar.php";
                 <div class="row">
                     <div class="col-12">
                         <form id="segregationform">
-                            <div class="form-row">
-                                <div class="col">
-                                    <label class="small font-weight-bold">Customer*</label><br>
-                                    <select name="customer" id="customer" class="form-control form-control-sm" style="width:100%;" required>
-                                        <option value="">Select</option>
-                                    </select>
-                                </div>
-                                <div class="col">
-                                    <label class="small font-weight-bold">Invoice*</label>
-                                    <select name="invoice" id="invoice" class="form-control form-control-sm" required>
-                                        <option value="">Select</option>
-                                    </select>
-                                </div>
-                                <div class="col">
-                                    <label class="small font-weight-bold">Invoice Amount*</label>
-                                    <input type="text" name="invoiceamount" id="invoiceamount" class="form-control form-control-sm text-right" readonly>
-                                </div>
-                            </div>
                             <div class="row">
                                 <div class="col">
                                     <label class="small font-weight-bold">Company*</label>
@@ -96,6 +78,38 @@ include "include/topnavbar.php";
                                 <div class="col">
                                     <label class="small font-weight-bold">Branch*</label>
                                     <input type="text" name="showbranch" id="showbranch" class="form-control form-control-sm" readonly>
+                                </div>
+                                <div class="col">
+                                    <label class="small font-weight-bold">Customer*</label><br>
+                                    <select name="customer" id="customer" class="form-control form-control-sm" style="width:100%;" required>
+                                        <option value="">Select</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <!-- <div class="col">
+                                    <label class="small font-weight-bold">Invoice*</label>
+                                    <select name="invoice" id="invoice" class="form-control form-control-sm" required>
+                                        <option value="">Select</option>
+                                    </select>
+                                </div> -->
+                                <div class="col">
+                                    <label class="small font-weight-bold">Invoice Date*</label>
+                                    <input type="date" name="invoicedate" id="invoicedate" class="form-control form-control-sm" max="<?php echo date('Y-m-d') ?>">
+                                </div>
+                                <div class="col">
+                                    <label class="small font-weight-bold">Invoice/Bill no*</label>
+                                    <input type="text" name="invoice" id="invoice" class="form-control form-control-sm">
+                                </div>
+                                <div class="col">
+                                    <label class="small font-weight-bold">Invoice Amount*</label>
+                                    <input type="text" name="invoiceamount" id="invoiceamount" class="form-control form-control-sm text-right">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="col">
+                                    <label class="small font-weight-bold">Remark</label>
+                                    <textarea name="receremark" id="receremark" class="form-control form-control-sm"></textarea>
                                 </div>
                             </div>
                             <div class="row mt-3">
@@ -134,6 +148,7 @@ include "include/topnavbar.php";
                                     <?php } ?>
                                     <input type="hidden" name="recordOption" id="recordOption" value="1">
                                     <input type="hidden" name="recordID" id="recordID" value="">
+                                    <input type="hidden" name="salesrecordID" id="salesrecordID" value="">
 
                                     <input type="submit" id="hidesegsubmit" class="d-none">
                                     <input type="reset" id="hidesegreset" class="d-none">
@@ -323,6 +338,7 @@ include "include/topnavbar.php";
                     "data": null,
                     "render": function(data, type, full) {
                         var button='';
+                        button+='<button class="btn btn-primary btn-sm btnprint mr-1" id="'+full['idtbl_sales_info']+'"><i class="fas fa-print"></i></button>';
                         button+='<button class="btn btn-dark btn-sm btnview mr-1" id="'+full['idtbl_account_receivable_main']+'" data-toggle="tooltip" data-placement="bottom" title="View and post" data-poststatus="'+full['poststatus']+'" data-recordstatus="'+full['status']+'">';
                         if(full['poststatus']==0){
                             button+='<i class="fas fa-exchange-alt"></i>';
@@ -372,10 +388,10 @@ include "include/topnavbar.php";
                         console.log(result);
                         var obj = JSON.parse(result);
                         $('#recordID').val(obj.id);
+                        $('#salesrecordID').val(obj.salesinfoID);
                         $('#company').val(obj.companyid); 
                         getbranchlist(obj.companyid, obj.branchid);  
-                        getaccountlist(obj.companyid, obj.branchid); 
-                        getinvoicelist(obj.customer, obj.receiptno);                      
+                        getaccountlist(obj.companyid, obj.branchid);                     
 
                         var html;
                         html += '<option value="' + obj.customer + '">';
@@ -385,7 +401,10 @@ include "include/topnavbar.php";
                         $('#customer').empty().append(html);
 				        $('#customer').prop('disabled', true);
                         
-                        $('#invoiceamount').val(obj.amount);                       
+                        $('#invoice').val(obj.receiptno);                       
+                        $('#invoicedate').val(obj.invoicedate).prop('readonly', true);     
+                        $('#invoiceamount').val(obj.amount);      
+                        $('#receremark').val(obj.remark);                     
                         $('#showcompany').val(obj.company);                       
                         $('#showbranch').val(obj.branch);   
                         $('#tablesegregate > tbody').append(obj.tabledata);                    
@@ -425,16 +444,31 @@ include "include/topnavbar.php";
                 }
             });
         });
+        $('#dataTable tbody').on('click', '.btnprint', function() {
+            var id = $(this).attr('id');
+            window.open("<?php echo base_url() ?>Reportprint/Receivablereceipt/"+id, "_blank");
+            // $('#modalviewpost').modal('show');
+            // $.ajax({
+            //     type: "POST",
+            //     data: {
+            //         recordID: id
+            //     },
+            //     url: '<?php echo base_url() ?>Paymentcreate/Getviewprintinfo',
+            //     success: function(result) { //alert(result);
+            //         $('#viewdiv').html(result);
+            //     }
+            // });
+        });
 
-        $('#customer').change(function(){
-            var id = $(this).val();
-            getinvoicelist(id, '');
-        });
-        $('#invoice').change(function(){
-            var invoiceamount = $(this).find(':selected').attr("data-amount");
-            $('#invoiceamount').val(parseFloat(invoiceamount).toFixed(2));
-            $('#seperateamount').attr('max', invoiceamount);
-        });
+        // $('#customer').change(function(){
+        //     var id = $(this).val();
+        //     getinvoicelist(id, '');
+        // });
+        // $('#invoice').change(function(){
+        //     var invoiceamount = $(this).find(':selected').attr("data-amount");
+        //     $('#invoiceamount').val(parseFloat(invoiceamount).toFixed(2));
+        //     $('#seperateamount').attr('max', invoiceamount);
+        // });
         // $('#company').change(function(){
         //     var id = $(this).val();
         //     getbranchlist(id, '');
@@ -524,12 +558,15 @@ include "include/topnavbar.php";
     			});
 
                 var recordID = $('#recordID').val();
+                var salesrecordID = $('#salesrecordID').val();
                 var recordOption = $('#recordOption').val();
                 var company = $('#company').val();
                 var branch = $('#branch').val();
                 var customer = $('#customer').val();
                 var invoice = $('#invoice').val();
+                var invoicedate = $('#invoicedate').val();
                 var invoiceamount = $('#invoiceamount').val();
+                var receremark = $('#receremark').val();
 
                 Swal.fire({
                     title: '',
@@ -553,9 +590,12 @@ include "include/topnavbar.php";
                                 branch: branch,
                                 customer: customer,
                                 invoice: invoice,
+                                invoicedate: invoicedate,
                                 invoiceamount: invoiceamount,
+                                receremark: receremark,
                                 recordOption: recordOption,
-                                recordID: recordID
+                                recordID: recordID,
+                                salesrecordID: salesrecordID
                             },
                             url: 'Receiptsegregation/Receiptsegregationinsertupdate',
                             success: function (result) { //alert(result);
@@ -569,6 +609,8 @@ include "include/topnavbar.php";
                                     $('#customer').val('');
                                     $('#invoice').val('');
                                     $('#invoiceamount').val('');
+                                    $('#invoicedate').val('');
+                                    $('#receremark').val('');
                                     $('#btnfullsegregation').prop('disabled', false).html('<i class="fas fa-save mr-2"></i> Complete');
 
                                     if(recordOption==2){
@@ -760,30 +802,30 @@ include "include/topnavbar.php";
         }
     }
 
-    function getinvoicelist(id, value){ // alert(id+value);
-        $.ajax({
-            type: "POST",
-            data: {
-                recordID: id
-            },
-            url: '<?php echo base_url() ?>Receiptsegregation/Getinvoiceaccocustomer',
-            success: function(result) { //alert(result);
-                var obj = JSON.parse(result);
-                var html = '';
-                html += '<option value="">Select</option>';
-                $.each(obj, function (i, item) {
-                    html += '<option value="' + obj[i].invno + '" data-amount="' + obj[i].invamount + '">';
-                    html += obj[i].invno ;
-                    html += '</option>';
-                });
-                $('#invoice').empty().append(html);   
+    // function getinvoicelist(id, value){ // alert(id+value);
+    //     $.ajax({
+    //         type: "POST",
+    //         data: {
+    //             recordID: id
+    //         },
+    //         url: '<?php echo base_url() ?>Receiptsegregation/Getinvoiceaccocustomer',
+    //         success: function(result) { //alert(result);
+    //             var obj = JSON.parse(result);
+    //             var html = '';
+    //             html += '<option value="">Select</option>';
+    //             $.each(obj, function (i, item) {
+    //                 html += '<option value="' + obj[i].invno + '" data-amount="' + obj[i].invamount + '" data-invdate="' + obj[i].invdate + '">';
+    //                 html += obj[i].invno ;
+    //                 html += '</option>';
+    //             });
+    //             $('#invoice').empty().append(html);   
                 
-                if(value!=''){  
-                    $('#invoice').val(value).prop('disabled', true);
-                }
-            }
-        });
-    }
+    //             if(value!=''){  
+    //                 $('#invoice').val(value).prop('disabled', true);
+    //             }
+    //         }
+    //     });
+    // }
 
     function addCommas(nStr){
         nStr += '';

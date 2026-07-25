@@ -4,6 +4,8 @@ class Accountingperiodinfo extends CI_Model{
         $this->db->trans_begin();
 
         $userID=$_SESSION['userid'];
+        $companyid=$_SESSION['companyid'];
+        $branchid=$_SESSION['branchid'];
 
         $frommonth=$this->input->post('frommonth');
         $tomonth=$this->input->post('tomonth');
@@ -31,7 +33,9 @@ class Accountingperiodinfo extends CI_Model{
                 'actstatus'=> '0', 
                 'status'=> '1', 
                 'insertdatetime'=> $updatedatetime, 
-                'tbl_user_idtbl_user'=> $userID
+                'tbl_user_idtbl_user'=> $userID,
+                'tbl_company_idtbl_company'=> $companyid,
+                'tbl_company_branch_idtbl_company_branch'=> $branchid
             );
 
             $this->db->insert('tbl_finacial_year', $data);
@@ -97,7 +101,9 @@ class Accountingperiodinfo extends CI_Model{
                 'desc'=> $desc, 
                 'status'=> '1', 
                 'updateuser'=> $userID, 
-                'updatedatetime' => $updatedatetime
+                'updatedatetime' => $updatedatetime,
+                'tbl_company_idtbl_company'=> $companyid,
+                'tbl_company_branch_idtbl_company_branch'=> $branchid
             );
 
             $this->db->where('idtbl_finacial_year', $recordID);

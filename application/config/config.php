@@ -534,3 +534,30 @@ $config['rewrite_short_tags'] = FALSE;
 $config['proxy_ips'] = '';
 
 $config['composer_autoload'] = 'vendor/autoload.php';
+
+/*
+|--------------------------------------------------------------------------
+| Custom Configurations
+|--------------------------------------------------------------------------
+|
+| You can add your own custom config items here.  For example:
+|	$config['my_config_item'] = 'some_value';
+|
+| Please note that this file will be automatically reloaded if you use
+| the CodeIgniter CLI tool, so you can use it to set config items for
+| different environments.  For example, you could have a config file
+| named 'config.production.php' that sets different values for certain      
+| config items, and then load it in your index.php file based on the
+| environment you are running in.
+|
+| See https://codeigniter.com/userguide3/general/config.html for more information.
+|
+*/
+$config['payment_receipt_print'] = 'PaymentreceiptMulti';
+$config['payment_settle_receipt_print'] = 'PaymentsettlereceiptMulti';
+
+$config['receivable_receipt_print'] = 'ReceivablereceiptMulti';
+$config['receivable_settle_receipt_print'] = 'ReceivablesettlereceiptMulti';
+
+$config['pettycash_receipt_print'] = 'PettycashVoucherMulti';
+$config['pettycash_reimburse_print'] = 'PettyCashReibursePrintMulti';

@@ -181,6 +181,10 @@
 	}
 	
 	function tr_batch_num($prefix, $branch){
+		if(empty($prefix)||empty($branch)){
+			return '';
+		}
+		
 		$CI = get_instance();
 		//start the transaction
 		$CI->db->trans_begin();
@@ -277,6 +281,7 @@
 	function pay_prefix($companyid, $branchid){
 		$CI = get_instance();
 		$CI->db->where('tbl_master.status', 1);
+		$CI->db->where('tbl_master.period_status', 1);
 		$CI->db->where('tbl_master.tbl_company_idtbl_company', $companyid);
 		$CI->db->where('tbl_master.tbl_company_branch_idtbl_company_branch', $branchid);
 		$CI->db->select('tbl_finacial_year.year, tbl_finacial_month.month');
@@ -293,6 +298,7 @@
 	function rece_prefix($companyid, $branchid){
 		$CI = get_instance();
 		$CI->db->where('tbl_master.status', 1);
+		$CI->db->where('tbl_master.period_status', 1);
 		$CI->db->where('tbl_master.tbl_company_idtbl_company', $companyid);
 		$CI->db->where('tbl_master.tbl_company_branch_idtbl_company_branch', $branchid);
 		$CI->db->select('tbl_finacial_year.year, tbl_finacial_month.month');
@@ -309,6 +315,7 @@
 	function trans_prefix($companyid, $branchid){
 		$CI = get_instance();
 		$CI->db->where('tbl_master.status', 1);
+		$CI->db->where('tbl_master.period_status', 1);
 		$CI->db->where('tbl_master.tbl_company_idtbl_company', $companyid);
 		$CI->db->where('tbl_master.tbl_company_branch_idtbl_company_branch', $branchid);
 		$CI->db->select('tbl_finacial_year.year, tbl_finacial_month.month');
@@ -325,6 +332,7 @@
 	function petty_prefix($companyid, $branchid){
 		$CI = get_instance();
 		$CI->db->where('tbl_master.status', 1);
+		$CI->db->where('tbl_master.period_status', 1);
 		$CI->db->where('tbl_master.tbl_company_idtbl_company', $companyid);
 		$CI->db->where('tbl_master.tbl_company_branch_idtbl_company_branch', $branchid);
 		$CI->db->select('tbl_finacial_year.year, tbl_finacial_month.month');
@@ -341,6 +349,7 @@
 	function reimburse_prefix($companyid, $branchid){
 		$CI = get_instance();
 		$CI->db->where('tbl_master.status', 1);
+		$CI->db->where('tbl_master.period_status', 1);
 		$CI->db->where('tbl_master.tbl_company_idtbl_company', $companyid);
 		$CI->db->where('tbl_master.tbl_company_branch_idtbl_company_branch', $branchid);
 		$CI->db->select('tbl_finacial_year.year, tbl_finacial_month.month');
@@ -437,6 +446,7 @@
 	function receiv_prefix($companyid, $branchid){
 		$CI = get_instance();
 		$CI->db->where('tbl_master.status', 1);
+		$CI->db->where('tbl_master.period_status', 1);
 		$CI->db->where('tbl_master.tbl_company_idtbl_company', $companyid);
 		$CI->db->where('tbl_master.tbl_company_branch_idtbl_company_branch', $branchid);
 		$CI->db->select('tbl_finacial_year.year, tbl_finacial_month.month');
@@ -453,6 +463,7 @@
 	function bankrec_prefix($acc_year, $acc_month){
 		$CI = get_instance();
 		$CI->db->where('tbl_master.status', 1);
+		$CI->db->where_in('tbl_master.period_status', array(1, 3));
 		$CI->db->where('tbl_master.tbl_finacial_year_idtbl_finacial_year', $acc_year);
 		$CI->db->where('tbl_master.tbl_finacial_month_idtbl_finacial_month', $acc_month);
 		$CI->db->from('tbl_master');
@@ -483,6 +494,7 @@
 	function journal_prefix($companyid, $branchid){
 		$CI = get_instance();
 		$CI->db->where('tbl_master.status', 1);
+		$CI->db->where('tbl_master.period_status', 1);
 		$CI->db->where('tbl_master.tbl_company_idtbl_company', $companyid);
 		$CI->db->where('tbl_master.tbl_company_branch_idtbl_company_branch', $branchid);
 		$CI->db->select('tbl_finacial_year.year, tbl_finacial_month.month');
@@ -550,9 +562,11 @@
 	}
 
 	function get_account_periods($company='', $company_branch=''){
+		$periodstatus = array(3, 1, 2); 
+
 		$CI = get_instance();
-		$CI->db->where('tbl_finacial_year.actstatus', 1);
-		$CI->db->where('tbl_finacial_month.activestatus', 1);
+		$CI->db->where_in('tbl_finacial_year.actstatus', $periodstatus);
+		$CI->db->where_in('tbl_finacial_month.activestatus', $periodstatus);
 		
 		if($company!=''){
 			$CI->db->where('tbl_master.tbl_company_idtbl_company', $company);
@@ -683,6 +697,7 @@
 	function btrans_prefix($companyid, $branchid){
 		$CI = get_instance();
 		$CI->db->where('tbl_master.status', 1);
+		$CI->db->where('tbl_master.period_status', 1);
 		$CI->db->where('tbl_master.tbl_company_idtbl_company', $companyid);
 		$CI->db->where('tbl_master.tbl_company_branch_idtbl_company_branch', $branchid);
 		$CI->db->select('tbl_finacial_year.year, tbl_finacial_month.month');
@@ -779,6 +794,7 @@
 	function payset_prefix($companyid, $branchid){
 		$CI = get_instance();
 		$CI->db->where('tbl_master.status', 1);
+		$CI->db->where('tbl_master.period_status', 1);
 		$CI->db->where('tbl_master.tbl_company_idtbl_company', $companyid);
 		$CI->db->where('tbl_master.tbl_company_branch_idtbl_company_branch', $branchid);
 		$CI->db->select('tbl_finacial_year.year, tbl_finacial_month.month');
@@ -884,5 +900,71 @@
 		$CI->db->from('tbl_account_config');
 		
 		return $CI->db->get();
+	}
+
+	function get_account_period_acco_date($company, $company_branch, $invoice_date){
+		$invoicemonth = date('n', strtotime($invoice_date));
+		$periodstatus = array(3, 1); 
+
+		$CI = get_instance();
+		$CI->db->where_in('tbl_finacial_month.activestatus', $periodstatus);
+		$CI->db->where_in('tbl_master.period_status', $periodstatus);
+		$CI->db->where("'$invoice_date' BETWEEN tbl_finacial_year.startdate AND tbl_finacial_year.enddate");
+		$CI->db->where('tbl_finacial_month.month', $invoicemonth);
+		$CI->db->where('tbl_master.tbl_company_idtbl_company', $company);
+		$CI->db->where('tbl_master.tbl_company_branch_idtbl_company_branch', $company_branch);
+		$CI->db->select('tbl_master.idtbl_master, tbl_master.tbl_finacial_year_idtbl_finacial_year, tbl_master.tbl_finacial_month_idtbl_finacial_month');
+		$CI->db->select('tbl_finacial_year.year, tbl_finacial_year.desc');
+		$CI->db->select('tbl_finacial_month.month, tbl_finacial_month.monthname');
+		$CI->db->join('tbl_finacial_year', 'tbl_master.tbl_finacial_year_idtbl_finacial_year=tbl_finacial_year.idtbl_finacial_year', 'left');
+		$CI->db->join('tbl_finacial_month', 'tbl_master.tbl_finacial_month_idtbl_finacial_month=tbl_finacial_month.idtbl_finacial_month', 'left');
+		$CI->db->from('tbl_master');
+		$CI->db->order_by('tbl_master.idtbl_master', 'DESC');
+		$CI->db->limit(1);
+		 
+		return $CI->db->get()->row(0);
+	}
+
+	function generate_prefix($companyid, $branchid, $invoice_date, $prefix){
+		$invoicemonth = date('n', strtotime($invoice_date));
+		$periodstatus = array(3, 1);
+
+		$CI = get_instance();
+		$CI->db->where('tbl_master.status', 1);
+		$CI->db->where_in('tbl_finacial_month.activestatus', $periodstatus);
+		$CI->db->where_in('tbl_master.period_status', $periodstatus);
+		$CI->db->where("'$invoice_date' BETWEEN tbl_finacial_year.startdate AND tbl_finacial_year.enddate");
+		$CI->db->where('tbl_finacial_month.month', $invoicemonth);
+		$CI->db->where('tbl_master.tbl_company_idtbl_company', $companyid);
+		$CI->db->where('tbl_master.tbl_company_branch_idtbl_company_branch', $branchid);
+		$CI->db->select('tbl_finacial_year.year, tbl_finacial_month.month');
+		$CI->db->from('tbl_master');
+		$CI->db->join('tbl_finacial_year', 'tbl_finacial_year.idtbl_finacial_year = tbl_master.tbl_finacial_year_idtbl_finacial_year', 'left');
+		$CI->db->join('tbl_finacial_month', 'tbl_finacial_month.idtbl_finacial_month = tbl_master.tbl_finacial_month_idtbl_finacial_month', 'left');
+
+		$respond = $CI->db->get();
+
+		// ── FIX: validate before using row(0) ────────────────────────────────
+		if(!$respond || $respond->num_rows() == 0){
+			// Return empty string — caller checks if(empty($prefix)) → throw Exception
+			return '';
+		}
+
+		$row = $respond->row(0);
+
+		// Validate year and month values
+		if(empty($row->year) || empty($row->month)){
+			return '';
+		}
+
+		$date = DateTime::createFromFormat('!m', $row->month);
+
+		// FIX: createFromFormat returns false if format fails
+		if($date === false){
+			return '';
+		}
+
+		$monthName = $date->format('M');
+		return $prefix . $row->year . strtoupper($monthName);
 	}
 ?>

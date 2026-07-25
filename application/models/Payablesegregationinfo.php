@@ -1,417 +1,360 @@
 <?php
 class Payablesegregationinfo extends CI_Model{
     public function Payablesegregationinsertupdate(){
-        $userID=$_SESSION['userid'];
+        $userID = $_SESSION['userid'];
 
-        $company=$this->input->post('company');
-        $branch=$this->input->post('branch');
-        if(!empty($this->input->post('supplier'))){$supplier=$this->input->post('supplier');}
-        if(!empty($this->input->post('invoice'))){$invoice=$this->input->post('invoice');}
-        $invoiceamount=$this->input->post('invoiceamount');
-        $segregationdata=$this->input->post('tableData');
+        $company          = $this->input->post('company');
+        $branch           = $this->input->post('branch');
+        $supplier         = !empty($this->input->post('supplier')) ? $this->input->post('supplier') : '';
+        $invoice          = !empty($this->input->post('invoice'))  ? $this->input->post('invoice')  : '';
+        $invoiceamount    = $this->input->post('invoiceamount');
+        $invoicedate      = $this->input->post('invoicedate');
+        $payremark        = $this->input->post('payremark');
+        $segregationdata  = $this->input->post('tableData');
+        $recordOption     = $this->input->post('recordOption');
+        $recordID         = !empty($this->input->post('recordID')) ? $this->input->post('recordID') : '';
+        $expencesrecordID = !empty($this->input->post('expencesrecordID')) ? $this->input->post('expencesrecordID') : '';
 
-        $recordOption=$this->input->post('recordOption');
-        if(!empty($this->input->post('recordID'))){$recordID=$this->input->post('recordID');}
-        
-        if($recordOption==1){
-            $prefix=pay_prefix($company, $branch);
-            $masterdata=get_account_period($company, $branch);
-            $batchno=tr_batch_num($prefix, $branch);
-            $masterID=$masterdata->idtbl_master;
-        }
+        $updatedatetime = date('Y-m-d H:i:s');
+        $today          = date('Y-m-d');
 
+        if ($recordOption == 1) {
 
-        $updatedatetime=date('Y-m-d H:i:s');
-        $today=date('Y-m-d');
-    
-        if($recordOption==1){
-            if(!empty($batchno)){
+            // ── INSERT ────────────────────────────────────────────────────────────
+            try {
+                $masterdata = get_account_period_acco_date($company, $branch, $invoicedate);
+
+                if (empty($masterdata) || empty($masterdata->idtbl_master)) {
+                    throw new Exception('Record Error, Account period not found for the given date');
+                }
+
+                $prefix     = generate_prefix($company, $branch, $invoicedate, 'AP');
+                $batchno    = tr_batch_num($prefix, $branch);
+                $masterID   = $masterdata->idtbl_master ? $masterdata->idtbl_master : '';
+
                 $this->db->trans_begin();
 
+                $this->db->select('grnno');
+                $this->db->from('tbl_expence_info');
+                $this->db->where('status', 1);
+                $this->db->where('grnno', $invoice);
+                $respondexpence = $this->db->get();
+
+                if(!empty($respondexpence->result())){
+                    throw new Exception('Record Error, Your invoice no already inserted please check and insert again.');
+                }
+
                 $data = array(
-                    'tradate'=> $today, 
-                    'batchno'=> $batchno, 
-                    'supplier'=> $supplier, 
-                    'invoiceno'=> $invoice, 
-                    'amount'=> $invoiceamount, 
-                    'poststatus'=> '0', 
-                    'status'=> '1', 
-                    'insertdatetime'=> $updatedatetime, 
-                    'tbl_user_idtbl_user'=> $userID,
-                    'tbl_company_idtbl_company'=> $company,
-                    'tbl_company_branch_idtbl_company_branch'=> $branch,
-                    'tbl_master_idtbl_master'=> $masterID
+                    'exptype'=>'4', 
+                    'expcode'=>'OTH', 
+                    'grnno'=>$invoice, 
+                    'grndate'=>$invoicedate, 
+                    'amount'=>$invoiceamount, 
+                    'invamount'=>$invoiceamount, 
+                    'paystatus'=>'0', 
+                    'poststatus'=>'0', 
+                    'remark'=>$payremark, 
+                    'status'=>'1', 
+                    'insertdatetime'=>$updatedatetime, 
+                    'tbl_user_idtbl_user'=>$userID, 
+                    'tbl_supplier_idtbl_supplier'=>$supplier,
+                    'tbl_company_idtbl_company'=>$company,
+                    'tbl_company_branch_idtbl_company_branch'=>$branch
+                );
+
+                $this->db->insert('tbl_expence_info', $data);
+
+                $data = array(
+                    'tradate'                                 => $today,
+                    'batchno'                                 => $batchno,
+                    'supplier'                                => $supplier,
+                    'invoiceno'                               => $invoice,
+                    'amount'                                  => $invoiceamount,
+                    'poststatus'                              => '0',
+                    'status'                                  => '1',
+                    'insertdatetime'                          => $updatedatetime,
+                    'tbl_user_idtbl_user'                     => $userID,
+                    'tbl_company_idtbl_company'               => $company,
+                    'tbl_company_branch_idtbl_company_branch' => $branch,
+                    'tbl_master_idtbl_master'                 => $masterID
                 );
 
                 $this->db->insert('tbl_account_payable_main', $data);
+                $payablemainID = $this->db->insert_id();
 
-                $payablemainID=$this->db->insert_id();
+                if (!$payablemainID) {
+                    throw new Exception('Failed to insert main payable record');
+                }
 
-                foreach($segregationdata as $rowsegregationdata){
-                    $chartofaccount='';
-                    $chartofdetailaccount='';
-                    if($rowsegregationdata['col_7']==1){$chartofaccount=$rowsegregationdata['col_1'];}
-                    else if($rowsegregationdata['col_7']==2){$chartofdetailaccount=$rowsegregationdata['col_1'];}
+                foreach ($segregationdata as $rowsegregationdata) {
+                    $chartofaccount       = '';
+                    $chartofdetailaccount = '';
 
-                    if($rowsegregationdata['col_4']=='D'){$amount=$rowsegregationdata['col_5'];}
-                    else if($rowsegregationdata['col_4']=='C'){$amount=$rowsegregationdata['col_6'];}
+                    if ($rowsegregationdata['col_7'] == 1)      { $chartofaccount       = $rowsegregationdata['col_1']; }
+                    else if ($rowsegregationdata['col_7'] == 2) { $chartofdetailaccount = $rowsegregationdata['col_1']; }
+
+                    if ($rowsegregationdata['col_4'] == 'D')      { $amount = $rowsegregationdata['col_5']; }
+                    else if ($rowsegregationdata['col_4'] == 'C') { $amount = $rowsegregationdata['col_6']; }
 
                     $datasub = array(
-                        'tradate'=> $today, 
-                        'batchno'=> $batchno, 
-                        'tratype'=> $rowsegregationdata['col_4'], 
-                        'amount'=> $amount, 
-                        'narration'=> $rowsegregationdata['col_3'], 
-                        'status'=> '1', 
-                        'insertdatetime'=> $updatedatetime, 
-                        'tbl_user_idtbl_user'=> $userID,
-                        'tbl_master_idtbl_master'=> $masterID,
-                        'tbl_company_idtbl_company'=> $company,
-                        'tbl_company_branch_idtbl_company_branch'=> $branch,
-                        'tbl_account_payable_main_idtbl_account_payable_main'=> $payablemainID,
-                        'tbl_account_idtbl_account'=> $chartofaccount,
-                        'tbl_account_detail_idtbl_account_detail'=> $chartofdetailaccount
+                        'tradate'                                               => $today,
+                        'batchno'                                               => $batchno,
+                        'tratype'                                               => $rowsegregationdata['col_4'],
+                        'amount'                                                => $amount,
+                        'narration'                                             => $rowsegregationdata['col_3'],
+                        'status'                                                => '1',
+                        'insertdatetime'                                        => $updatedatetime,
+                        'tbl_user_idtbl_user'                                   => $userID,
+                        'tbl_master_idtbl_master'                               => $masterID,
+                        'tbl_company_idtbl_company'                             => $company,
+                        'tbl_company_branch_idtbl_company_branch'               => $branch,
+                        'tbl_account_payable_main_idtbl_account_payable_main'   => $payablemainID,
+                        'tbl_account_idtbl_account'                             => $chartofaccount,
+                        'tbl_account_detail_idtbl_account_detail'               => $chartofdetailaccount
                     );
 
                     $this->db->insert('tbl_account_payable', $datasub);
                 }
 
                 $this->db->trans_complete();
+
                 if ($this->db->trans_status() === TRUE) {
                     $this->db->trans_commit();
-                    
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-save';
-                    $actionObj->title='';
-                    $actionObj->message='Record Added Successfully';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='success';
-
-                    $actionJSON=json_encode($actionObj);
-                    
-                    $obj=new stdClass();
-                    $obj->status=1;
-                    $obj->action=$actionJSON;
-
-                    echo json_encode($obj);
+                    $this->_jsonResponse(1, 'fas fa-save', 'Record Added Successfully', 'success');
                 } else {
                     $this->db->trans_rollback();
-
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-warning';
-                    $actionObj->title='';
-                    $actionObj->message='Record Error';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='danger';
-
-                    $actionJSON=json_encode($actionObj);
-                    
-                    $obj=new stdClass();
-                    $obj->status=0;
-                    $obj->action=$actionJSON;
-
-                    echo json_encode($obj);
+                    throw new Exception('Record Error');
                 }
+
+            } catch (Exception $e) {
+                if ($this->db->trans_enabled) {
+                    $this->db->trans_rollback();
+                }
+                $this->_jsonResponse(0, 'fas fa-warning', $e->getMessage(), 'danger');
             }
-            else{
-                $actionObj=new stdClass();
-                $actionObj->icon='fas fa-warning';
-                $actionObj->title='';
-                $actionObj->message='Record Error, Batch no defind by system';
-                $actionObj->url='';
-                $actionObj->target='_blank';
-                $actionObj->type='danger';
 
-                $actionJSON=json_encode($actionObj);
-                
-                $obj=new stdClass();
-                $obj->status=0;
-                $obj->action=$actionJSON;
+        } else {
 
-                echo json_encode($obj);
-            }
-        }
-        else{
-            $this->db->trans_begin();
+            // ── UPDATE ────────────────────────────────────────────────────────────
+            try {
+                if (empty($recordID)) {
+                    throw new Exception('Record ID is required for update');
+                }
 
-            $this->db->select('batchno, tbl_company_idtbl_company, tbl_company_branch_idtbl_company_branch, tbl_master_idtbl_master, poststatus');
-            $this->db->from('tbl_account_payable_main');
-            $this->db->where('idtbl_account_payable_main', $recordID);
-            $this->db->where('status', 1);
+                $this->db->trans_begin();
 
-            $respond=$this->db->get();
-            
-            $this->db->where('tbl_account_payable_main_idtbl_account_payable_main', $recordID);
-            $this->db->delete('tbl_account_payable');
+                $this->db->select('poststatus');
+                $this->db->from('tbl_expence_info');
+                $this->db->where('idtbl_expence_info', $expencesrecordID);
+                $this->db->where('status', 1);
 
-            $data = array(
-                'editstatus' => '0',
-                'updateuser'=> $userID, 
-                'updatedatetime'=> $updatedatetime
-            );
-    
-            $this->db->where('idtbl_account_payable_main', $recordID);
-            $this->db->update('tbl_account_payable_main', $data);
+                $respondexpences=$this->db->get();  
 
-            if($respond->row(0)->poststatus==0){
-                foreach($segregationdata as $rowsegregationdata){
-                    $chartofaccount='';
-                    $chartofdetailaccount='';
-                    if($rowsegregationdata['col_7']==1){$chartofaccount=$rowsegregationdata['col_1'];}
-                    else if($rowsegregationdata['col_7']==2){$chartofdetailaccount=$rowsegregationdata['col_1'];}
+                if ($respondexpences->row(0)->poststatus != 0) {
+                    $this->db->trans_commit();
+                    throw new Exception('Record Error. This record already posted.');
+                }
 
-                    if($rowsegregationdata['col_4']=='D'){$amount=$rowsegregationdata['col_5'];}
-                    else if($rowsegregationdata['col_4']=='C'){$amount=$rowsegregationdata['col_6'];}
+                $dataexpences = array(
+                    'grnno'=>$invoice, 
+                    'amount'=>$invoiceamount, 
+                    'invamount'=>$invoiceamount,
+                    'remark'=>$payremark, 
+                    'editstatus' => '0',
+                    'status'=>'1', 
+                    'updateuser'=> $userID, 
+                    'updatedatetime'=> $updatedatetime,
+                );
+
+                $this->db->where('idtbl_expence_info', $expencesrecordID);
+                $this->db->update('tbl_expence_info', $dataexpences);
+
+                $this->db->select('batchno, tbl_company_idtbl_company, tbl_company_branch_idtbl_company_branch, tbl_master_idtbl_master, poststatus');
+                $this->db->from('tbl_account_payable_main');
+                $this->db->where('idtbl_account_payable_main', $recordID);
+                $this->db->where('status', 1);
+                $respond = $this->db->get();
+
+                if (!$respond || $respond->num_rows() == 0) {
+                    throw new Exception('Record not found');
+                }
+
+                $existingRecord = $respond->row(0);
+
+                if ($existingRecord->poststatus != 0) {
+                    $this->db->trans_commit();
+                    throw new Exception('Record Error. This record already posted.');
+                }
+
+                $this->db->where('tbl_account_payable_main_idtbl_account_payable_main', $recordID);
+                $this->db->delete('tbl_account_payable');
+
+                $data = array(
+                    'editstatus'     => '0',
+                    'updateuser'     => $userID,
+                    'updatedatetime' => $updatedatetime
+                );
+
+                $this->db->where('idtbl_account_payable_main', $recordID);
+                $this->db->update('tbl_account_payable_main', $data);
+
+                foreach ($segregationdata as $rowsegregationdata) {
+                    $chartofaccount       = '';
+                    $chartofdetailaccount = '';
+
+                    if ($rowsegregationdata['col_7'] == 1)      { $chartofaccount       = $rowsegregationdata['col_1']; }
+                    else if ($rowsegregationdata['col_7'] == 2) { $chartofdetailaccount = $rowsegregationdata['col_1']; }
+
+                    if ($rowsegregationdata['col_4'] == 'D')      { $amount = $rowsegregationdata['col_5']; }
+                    else if ($rowsegregationdata['col_4'] == 'C') { $amount = $rowsegregationdata['col_6']; }
 
                     $datasub = array(
-                        'tradate'=> $today, 
-                        'batchno'=> $respond->row(0)->batchno, 
-                        'tratype'=> $rowsegregationdata['col_4'],  
-                        'amount'=> $amount, 
-                        'narration'=> $rowsegregationdata['col_3'], 
-                        'editstatus'=> '0', 
-                        'status'=> '1', 
-                        'insertdatetime'=> $updatedatetime, 
-                        'tbl_user_idtbl_user'=> $userID,
-                        'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
-                        'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
-                        'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch,
-                        'tbl_account_payable_main_idtbl_account_payable_main'=> $recordID,
-                        'tbl_account_idtbl_account'=> $chartofaccount,
-                        'tbl_account_detail_idtbl_account_detail'=> $chartofdetailaccount
+                        'tradate'                                               => $today,
+                        'batchno'                                               => $existingRecord->batchno,
+                        'tratype'                                               => $rowsegregationdata['col_4'],
+                        'amount'                                                => $amount,
+                        'narration'                                             => $rowsegregationdata['col_3'],
+                        'editstatus'                                            => '0',
+                        'status'                                                => '1',
+                        'insertdatetime'                                        => $updatedatetime,
+                        'tbl_user_idtbl_user'                                   => $userID,
+                        'tbl_master_idtbl_master'                               => $existingRecord->tbl_master_idtbl_master,
+                        'tbl_company_idtbl_company'                             => $existingRecord->tbl_company_idtbl_company,
+                        'tbl_company_branch_idtbl_company_branch'               => $existingRecord->tbl_company_branch_idtbl_company_branch,
+                        'tbl_account_payable_main_idtbl_account_payable_main'   => $recordID,
+                        'tbl_account_idtbl_account'                             => $chartofaccount,
+                        'tbl_account_detail_idtbl_account_detail'               => $chartofdetailaccount
                     );
 
                     $this->db->insert('tbl_account_payable', $datasub);
                 }
 
                 $this->db->trans_complete();
+
                 if ($this->db->trans_status() === TRUE) {
                     $this->db->trans_commit();
-                    
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-save';
-                    $actionObj->title='';
-                    $actionObj->message='Record Added Successfully';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='success';
-
-                    $actionJSON=json_encode($actionObj);
-                    
-                    $obj=new stdClass();
-                    $obj->status=1;
-                    $obj->action=$actionJSON;
-
-                    echo json_encode($obj);
+                    $this->_jsonResponse(1, 'fas fa-save', 'Record Updated Successfully', 'success');
                 } else {
                     $this->db->trans_rollback();
-
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-warning';
-                    $actionObj->title='';
-                    $actionObj->message='Record Error';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='danger';
-
-                    $actionJSON=json_encode($actionObj);
-                    
-                    $obj=new stdClass();
-                    $obj->status=0;
-                    $obj->action=$actionJSON;
-
-                    echo json_encode($obj);
+                    throw new Exception('Record Error');
                 }
-            }
-            else{
-                $this->db->trans_commit();
 
-                $actionObj=new stdClass();
-                $actionObj->icon='fas fa-warning';
-                $actionObj->title='';
-                $actionObj->message='Record Error. This record already posted.';
-                $actionObj->url='';
-                $actionObj->target='_blank';
-                $actionObj->type='danger';
-
-                $actionJSON=json_encode($actionObj);
-                
-                $obj=new stdClass();
-                $obj->status=0;
-                $obj->action=$actionJSON;
-
-                echo json_encode($obj);
+            } catch (Exception $e) {
+                if ($this->db->trans_enabled) {
+                    $this->db->trans_rollback();
+                }
+                $this->_jsonResponse(0, 'fas fa-warning', $e->getMessage(), 'danger');
             }
         }
     }
     public function Payablesegregationstatus($x, $y){
-        $this->db->trans_begin();
+        $userID         = $_SESSION['userid'];
+        $recordID       = $x;
+        $type           = $y;
+        $updatedatetime = date('Y-m-d H:i:s');
 
-        $userID=$_SESSION['userid'];
-        $recordID=$x;
-        $type=$y;
-        $updatedatetime=date('Y-m-d H:i:s');
+        // ── Type config map ───────────────────────────────────────────────────────
+        $typeConfig = array(
+            1 => array(
+                'status'  => '1',
+                'icon'    => 'fas fa-check',
+                'message' => 'Record Activate Successfully',
+                'type'    => 'success'
+            ),
+            2 => array(
+                'status'  => '2',
+                'icon'    => 'fas fa-times',
+                'message' => 'Record Deactivate Successfully',
+                'type'    => 'warning'
+            ),
+            3 => array(
+                'status'  => '3',
+                'icon'    => 'fas fa-trash-alt',
+                'message' => 'Record Remove Successfully',
+                'type'    => 'danger'
+            ),
+        );
 
-        if($type==1){
+        try {
+            if (empty($recordID)) {
+                throw new Exception('Record ID is required');
+            }
+
+            if (!array_key_exists($type, $typeConfig)) {
+                throw new Exception('Invalid status type provided');
+            }
+
+            $config = $typeConfig[$type];
+
+            $this->db->trans_begin();
+
             $data = array(
-                'status' => '1',
-                'updateuser'=> $userID, 
-                'updatedatetime'=> $updatedatetime
+                'status'         => $config['status'],
+                'updateuser'     => $userID,
+                'updatedatetime' => $updatedatetime
             );
 
             $this->db->where('idtbl_account_payable_main', $recordID);
             $this->db->update('tbl_account_payable_main', $data);
 
             $datapay = array(
-                'status' => '1',
-                'updateuser'=> $userID, 
-                'updatedatetime'=> $updatedatetime
+                'status'         => $config['status'],
+                'updateuser'     => $userID,
+                'updatedatetime' => $updatedatetime
             );
 
             $this->db->where('tbl_account_payable_main_idtbl_account_payable_main', $recordID);
             $this->db->update('tbl_account_payable', $datapay);
 
-            $this->db->trans_complete();
-
-            if ($this->db->trans_status() === TRUE) {
-                $this->db->trans_commit();
-                
-                $actionObj=new stdClass();
-                $actionObj->icon='fas fa-check';
-                $actionObj->title='';
-                $actionObj->message='Record Activate Successfully';
-                $actionObj->url='';
-                $actionObj->target='_blank';
-                $actionObj->type='success';
-
-                $actionJSON=json_encode($actionObj);
-                
-                $this->session->set_flashdata('msg', $actionJSON);
-                redirect('Payablesegregation');                
-            } else {
-                $this->db->trans_rollback();
-
-                $actionObj=new stdClass();
-                $actionObj->icon='fas fa-warning';
-                $actionObj->title='';
-                $actionObj->message='Record Error';
-                $actionObj->url='';
-                $actionObj->target='_blank';
-                $actionObj->type='danger';
-
-                $actionJSON=json_encode($actionObj);
-                
-                $this->session->set_flashdata('msg', $actionJSON);
-                redirect('Payablesegregation');
-            }
-        }
-        else if($type==2){
-            $data = array(
-                'status' => '2',
-                'updateuser'=> $userID, 
-                'updatedatetime'=> $updatedatetime
-            );
-
+            $this->db->select('invoiceno');
+            $this->db->from('tbl_account_payable_main');
             $this->db->where('idtbl_account_payable_main', $recordID);
-            $this->db->update('tbl_account_payable_main', $data);
+            $respondpaymain = $this->db->get();
 
-            $datapay = array(
-                'status' => '2',
+            $dataexpences = array(
+                'status' => $config['status'],
                 'updateuser'=> $userID, 
                 'updatedatetime'=> $updatedatetime
             );
 
-            $this->db->where('tbl_account_payable_main_idtbl_account_payable_main', $recordID);
-            $this->db->update('tbl_account_payable', $datapay);
+            $this->db->where('grnno', $respondpaymain->row(0)->invoiceno);
+            $this->db->update('tbl_expence_info', $dataexpences);
 
             $this->db->trans_complete();
 
             if ($this->db->trans_status() === TRUE) {
                 $this->db->trans_commit();
-                
-                $actionObj=new stdClass();
-                $actionObj->icon='fas fa-times';
-                $actionObj->title='';
-                $actionObj->message='Record Deactivate Successfully';
-                $actionObj->url='';
-                $actionObj->target='_blank';
-                $actionObj->type='warning';
 
-                $actionJSON=json_encode($actionObj);
-                
-                $this->session->set_flashdata('msg', $actionJSON);
-                redirect('Payablesegregation');                
+                $actionObj          = new stdClass();
+                $actionObj->icon    = $config['icon'];
+                $actionObj->title   = '';
+                $actionObj->message = $config['message'];
+                $actionObj->url     = '';
+                $actionObj->target  = '_blank';
+                $actionObj->type    = $config['type'];
+
+                $this->session->set_flashdata('msg', json_encode($actionObj));
+                redirect('Payablesegregation');
             } else {
                 $this->db->trans_rollback();
-
-                $actionObj=new stdClass();
-                $actionObj->icon='fas fa-warning';
-                $actionObj->title='';
-                $actionObj->message='Record Error';
-                $actionObj->url='';
-                $actionObj->target='_blank';
-                $actionObj->type='danger';
-
-                $actionJSON=json_encode($actionObj);
-                
-                $this->session->set_flashdata('msg', $actionJSON);
-                redirect('Payablesegregation');
+                throw new Exception('Record Error');
             }
-        }
-        else if($type==3){
-            $data = array(
-                'status' => '3',
-                'updateuser'=> $userID, 
-                'updatedatetime'=> $updatedatetime
-            );
 
-            $this->db->where('idtbl_account_payable_main', $recordID);
-            $this->db->update('tbl_account_payable_main', $data);
-
-            $datapay = array(
-                'status' => '3',
-                'updateuser'=> $userID, 
-                'updatedatetime'=> $updatedatetime
-            );
-
-            $this->db->where('tbl_account_payable_main_idtbl_account_payable_main', $recordID);
-            $this->db->update('tbl_account_payable', $datapay);
-
-            $this->db->trans_complete();
-
-            if ($this->db->trans_status() === TRUE) {
-                $this->db->trans_commit();
-                
-                $actionObj=new stdClass();
-                $actionObj->icon='fas fa-trash-alt';
-                $actionObj->title='';
-                $actionObj->message='Record Remove Successfully';
-                $actionObj->url='';
-                $actionObj->target='_blank';
-                $actionObj->type='danger';
-
-                $actionJSON=json_encode($actionObj);
-                
-                $this->session->set_flashdata('msg', $actionJSON);
-                redirect('Payablesegregation');                
-            } else {
+        } catch (Exception $e) {
+            if ($this->db->trans_enabled) {
                 $this->db->trans_rollback();
-
-                $actionObj=new stdClass();
-                $actionObj->icon='fas fa-warning';
-                $actionObj->title='';
-                $actionObj->message='Record Error';
-                $actionObj->url='';
-                $actionObj->target='_blank';
-                $actionObj->type='danger';
-
-                $actionJSON=json_encode($actionObj);
-                
-                $this->session->set_flashdata('msg', $actionJSON);
-                redirect('Payablesegregation');
             }
+
+            $actionObj          = new stdClass();
+            $actionObj->icon    = 'fas fa-warning';
+            $actionObj->title   = '';
+            $actionObj->message = $e->getMessage();
+            $actionObj->url     = '';
+            $actionObj->target  = '_blank';
+            $actionObj->type    = 'danger';
+
+            $this->session->set_flashdata('msg', json_encode($actionObj));
+            redirect('Payablesegregation');
         }
     }
     public function Payablesegregationedit(){
@@ -466,6 +409,32 @@ class Payablesegregationinfo extends CI_Model{
 
         $respondinfo=$this->db->get();
 
+        $this->db->select('idtbl_expence_info');
+        $this->db->from('tbl_expence_info');
+        $this->db->where('status', 1);
+        $this->db->where('grnno', $respond->row(0)->invoiceno);
+        $respondexpence = $this->db->get();
+
+        $dataexpences = array(
+            'editstatus' => '1',
+            'updateuser'=> $userID, 
+            'updatedatetime'=> $updatedatetime
+        );
+
+        $this->db->where('idtbl_expence_info', $respondexpence->row(0)->idtbl_expence_info);
+        $this->db->update('tbl_expence_info', $dataexpences);
+
+        $this->db->select("tbl_expence_info.*, tbl_company.company, tbl_company_branch.branch, IF($has_table = 0, '', $tablename.$column2) AS suppliername");
+        $this->db->from('tbl_expence_info');
+        $this->db->join('tbl_company', 'tbl_company.idtbl_company = tbl_expence_info.tbl_company_idtbl_company', 'left');
+        $this->db->join('tbl_company_branch', 'tbl_company_branch.idtbl_company_branch = tbl_expence_info.tbl_company_branch_idtbl_company_branch', 'left');
+        if(!empty($tablename)):
+            $this->db->join("$tablename", "$tablename.$column1 = tbl_expence_info.tbl_supplier_idtbl_supplier", 'left');
+        endif;
+        $this->db->where('tbl_expence_info.idtbl_expence_info', $respondexpence->row(0)->idtbl_expence_info);
+        $this->db->where('tbl_expence_info.status', 1);
+        $respondexpences=$this->db->get();
+
         $html='';
         foreach($respondinfo->result() as $rowdatalist){
             if($rowdatalist->tratype=='D'){$debitamount=$rowdatalist->amount;$creditamount='';}
@@ -506,6 +475,11 @@ class Payablesegregationinfo extends CI_Model{
         $obj->suppliername=$respond->row(0)->suppliername;
         $obj->invoiceno=$respond->row(0)->invoiceno;
         $obj->amount=number_format($respond->row(0)->amount, 2, '.', '');
+
+        $obj->invoicedate=$respondexpences->row(0)->grndate;
+        $obj->remark=$respondexpences->row(0)->remark;
+        $obj->expencesID=$respondexpences->row(0)->idtbl_expence_info;
+
         $obj->company=$respond->row(0)->company;
         $obj->companyid=$respond->row(0)->tbl_company_idtbl_company;
         $obj->branch=$respond->row(0)->branch;
@@ -609,7 +583,12 @@ class Payablesegregationinfo extends CI_Model{
                         </tr>
                     </thead>
                     <tbody>';
+                    $credittotal=0;
+                    $debittotal=0;
                     foreach($respondpayinfo->result() as $rowdatainfo){
+                        $credittotal += ($rowdatainfo->tratype == 'C' ? $rowdatainfo->amount : 0);
+                        $debittotal += ($rowdatainfo->tratype == 'D' ? $rowdatainfo->amount : 0);
+
                         if($rowdatainfo->tratype=='D'){
                             $debitamount=$rowdatainfo->amount;
                             $creditamount=0;
@@ -636,6 +615,13 @@ class Payablesegregationinfo extends CI_Model{
                         ';
                     }
                     $html.='</tbody>
+                    <tfoot>
+                        <tr>
+                            <th colspan="3" class="text-right">Total</th>
+                            <th class="text-right">'.number_format($credittotal, 2).'</th>
+                            <th class="text-right">'.number_format($debittotal, 2).'</th>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>';
@@ -653,295 +639,194 @@ class Payablesegregationinfo extends CI_Model{
         echo json_encode($obj);
     }
     public function Payablesegregationposting(){
-        $recordID=$this->input->post('recordID');
-        $updatedatetime=date('Y-m-d H:i:s');
-        $userID=$_SESSION['userid'];
+        try {
+            $recordID       = $this->input->post('recordID');
+            $updatedatetime = date('Y-m-d H:i:s');
+            $userID         = $_SESSION['userid'];
+            $i              = 0;
 
-        $i=0;
+            if (empty($recordID)) {
+                throw new Exception('Record ID is required');
+            }
 
-        $this->db->select('tradate, batchno, invoiceno, amount, poststatus, status, editstatus, postviewtime, updatedatetime, tbl_company_idtbl_company, tbl_company_branch_idtbl_company_branch, tbl_master_idtbl_master, supplier');
-        $this->db->from('tbl_account_payable_main');
-        $this->db->where('idtbl_account_payable_main', $recordID);
-        $this->db->where('status', 1);
+            $this->db->select('tbl_account_payable_main.tradate, tbl_account_payable_main.batchno, tbl_account_payable_main.invoiceno, tbl_account_payable_main.amount, tbl_account_payable_main.poststatus, tbl_account_payable_main.status, tbl_account_payable_main.editstatus, tbl_account_payable_main.postviewtime, tbl_account_payable_main.updatedatetime, tbl_account_payable_main.tbl_company_idtbl_company, tbl_account_payable_main.tbl_company_branch_idtbl_company_branch, tbl_account_payable_main.tbl_master_idtbl_master, tbl_account_payable_main.supplier, tbl_expence_info.grndate');
+            $this->db->from('tbl_account_payable_main');
+            $this->db->join('tbl_expence_info', 'tbl_expence_info.grnno = tbl_account_payable_main.invoiceno', 'left');
+            $this->db->where('tbl_account_payable_main.idtbl_account_payable_main', $recordID);
+            $this->db->where('tbl_account_payable_main.status', 1);
 
-        $respond=$this->db->get();
+            $respond = $this->db->get();
 
-        if($respond->row(0)->poststatus==0 && $respond->row(0)->status==1 && $respond->row(0)->editstatus==0){
-            if($respond->row(0)->postviewtime>$respond->row(0)->updatedatetime){
-                $this->db->trans_begin();
-                
-                $data = array(
-                    'poststatus'=> '1',
-                    'postuser'=> $userID,
-                    'postviewtime'=> NULL
-                );
-        
-                $this->db->where('idtbl_account_payable_main', $recordID);
-                $this->db->update('tbl_account_payable_main', $data);
+            if (!$respond || $respond->num_rows() == 0) {
+                throw new Exception('Record not found');
+            }
 
-                //Expences info update
-                $dataexpences = array(
-                    'poststatus'=> '1',
-                    'updateuser'=> $userID,
-                    'updatedatetime'=> $updatedatetime
-                );
-        
-                $this->db->where('grnno', $respond->row(0)->invoiceno);
-                // $this->db->where('tbl_supplier_idtbl_supplier', $respond->row(0)->supplier);
-                $this->db->update('tbl_expence_info', $dataexpences);
+            $record = $respond->row(0);
 
-                $i=1;
-                //Creditor account Transaction
-                $prefix=trans_prefix($respond->row(0)->tbl_company_idtbl_company, $respond->row(0)->tbl_company_branch_idtbl_company_branch);
-                $batchno=tr_batch_num($prefix, $respond->row(0)->tbl_company_branch_idtbl_company_branch);
+            // ── Status validation checks ──────────────────────────────────────────
+            if ($record->status == 2) {
+                throw new Exception('Record Error, Record Deactivated. Kindly review the status of the record.');
+            }
 
-                // //Get Creditor Account
-                // $this->db->where('tbl_account_allocation.companybank', $respond->row(0)->tbl_company_idtbl_company);
-                // $this->db->where('tbl_account_allocation.branchcompanybank', $respond->row(0)->tbl_company_branch_idtbl_company_branch);
-                // // $this->db->where('tbl_account.tbl_account_type_idtbl_account_type', 2);
-                // $this->db->where('tbl_account.specialcate', 34);
-                // $this->db->where('tbl_account.status', 1);
-                // $this->db->where('tbl_account_allocation.status', 1);
-                // $this->db->where('tbl_account_allocation.tbl_account_idtbl_account is NOT NULL', NULL, FALSE);
-                // $this->db->select('`tbl_account`.`idtbl_account`, `tbl_account`.`accountno`, `tbl_account`.`accountname`');
-                // $this->db->from('tbl_account');
-                // $this->db->join('tbl_account_allocation', 'tbl_account_allocation.tbl_account_idtbl_account = tbl_account.idtbl_account', 'left');
+            if ($record->editstatus == 1) {
+                throw new Exception('Record Error, Record in editable mode. You cannot change anything about the record.');
+            }
 
-                // $respondcreditor=$this->db->get();
+            if ($record->poststatus == 1) {
+                throw new Exception('Record Error, Record already posted.');
+            }
 
-                // $datacredit = array(
-                //     'tradate'=> $respond->row(0)->tradate, 
-                //     'batchno'=> $batchno, 
-                //     'trabatchotherno'=> $respond->row(0)->batchno, 
-                //     'tratype'=> 'P', 
-                //     'seqno'=> $i, 
-                //     'crdr'=> 'C', 
-                //     'accamount'=> $respond->row(0)->amount, 
-                //     'narration'=> $respond->row(0)->invoiceno, 
-                //     'totamount'=> $respond->row(0)->amount, 
-                //     'status'=> '1', 
-                //     'insertdatetime'=> $updatedatetime, 
-                //     'tbl_user_idtbl_user'=> $userID,
-                //     'tbl_account_idtbl_account'=> $respondcreditor->row(0)->idtbl_account,
-                //     'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
-                //     'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
-                //     'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
-                // );
-                // $this->db->insert('tbl_account_transaction', $datacredit);
-        
-                // $datacreditfull = array(
-                //     'tradate'=> $respond->row(0)->tradate, 
-                //     'batchno'=> $batchno, 
-                //     'tratype'=> 'P', 
-                //     'crdr'=> 'C', 
-                //     'accamount'=> $respond->row(0)->amount, 
-                //     'narration'=> $respond->row(0)->invoiceno, 
-                //     'totamount'=> $respond->row(0)->amount, 
-                //     'status'=> '1', 
-                //     'insertdatetime'=> $updatedatetime, 
-                //     'tbl_user_idtbl_user'=> $userID,
-                //     'tbl_account_idtbl_account'=> $respondcreditor->row(0)->idtbl_account,
-                //     'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
-                //     'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
-                //     'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
-                // );
-                // $this->db->insert('tbl_account_transaction_full', $datacreditfull);
+            if (!($record->poststatus == 0 && $record->status == 1 && $record->editstatus == 0)) {
+                throw new Exception('Record Error, Invalid record state for posting.');
+            }
 
-                //Account Transaction
-                $this->db->select('`idtbl_account_payable`, `tradate`, `batchno`, `tratype`, `amount`, `narration`, `tbl_master_idtbl_master`, `tbl_company_idtbl_company`, `tbl_company_branch_idtbl_company_branch`, `tbl_account_idtbl_account`, `tbl_account_detail_idtbl_account_detail`');
-                $this->db->from('tbl_account_payable');
-                $this->db->where('tbl_account_payable_main_idtbl_account_payable_main', $recordID);
-                $this->db->where('status', 1);
+            if ($record->postviewtime <= $record->updatedatetime) {
+                throw new Exception('Record Error, Please check this record for information. Because this record was edited before you posted.');
+            }
 
-                $responddetail=$this->db->get();
+            // ── Begin Transaction ─────────────────────────────────────────────────
+            $this->db->trans_begin();
 
-                foreach($responddetail->result() AS $rowdetail){
-                    $i++;
+            // Update main payable post status
+            $data = array(
+                'poststatus'  => '1',
+                'postuser'    => $userID,
+                'postviewtime' => NULL
+            );
 
-                    $paydetailID=$rowdetail->idtbl_account_payable;
-                    $tradate=$rowdetail->tradate;
-                    $segbatchno=$rowdetail->batchno;
-                    $detailaccount=$rowdetail->tbl_account_detail_idtbl_account_detail;
-                    $chartaccount=$rowdetail->tbl_account_idtbl_account;
-                    $company=$rowdetail->tbl_company_idtbl_company;
-                    $branch=$rowdetail->tbl_company_branch_idtbl_company_branch;
-                    $masterID=$rowdetail->tbl_master_idtbl_master;
-                    $amount=$rowdetail->amount;
-                    $narration=$rowdetail->narration;
-                    $tratype=$rowdetail->tratype;
+            $this->db->where('idtbl_account_payable_main', $recordID);
+            $this->db->update('tbl_account_payable_main', $data);
 
-                    if(!empty($detailaccount)){
-                        $chartofaccountinfo=get_chart_account_acco_child_account($company, $branch, $detailaccount);
-                        $chartofaccountID=$chartofaccountinfo->row(0)->idtbl_account;
+            // Update expenses info
+            $dataexpences = array(
+                'poststatus'    => '1',
+                'updateuser'    => $userID,
+                'updatedatetime' => $updatedatetime
+            );
+
+            $this->db->where('grnno', $record->invoiceno);
+            $this->db->update('tbl_expence_info', $dataexpences);
+
+            $i = 1;
+
+            // Generate batch number for account transaction
+            $prefix  = generate_prefix($record->tbl_company_idtbl_company, $record->tbl_company_branch_idtbl_company_branch, $record->grndate, 'AT');
+            $batchno = tr_batch_num($prefix, $record->tbl_company_branch_idtbl_company_branch);
+
+            if (empty($batchno)) {
+                throw new Exception('Record Error, Batch no could not be defined by system');
+            }
+
+            // Fetch payable detail lines
+            $this->db->select('`idtbl_account_payable`, `tradate`, `batchno`, `tratype`, `amount`, `narration`, `tbl_master_idtbl_master`, `tbl_company_idtbl_company`, `tbl_company_branch_idtbl_company_branch`, `tbl_account_idtbl_account`, `tbl_account_detail_idtbl_account_detail`');
+            $this->db->from('tbl_account_payable');
+            $this->db->where('tbl_account_payable_main_idtbl_account_payable_main', $recordID);
+            $this->db->where('status', 1);
+
+            $responddetail = $this->db->get();
+
+            if (!$responddetail || $responddetail->num_rows() == 0) {
+                throw new Exception('No payable detail lines found for this record');
+            }
+
+            foreach ($responddetail->result() as $rowdetail) {
+                $i++;
+
+                $paydetailID   = $rowdetail->idtbl_account_payable;
+                $tradate       = $rowdetail->tradate;
+                $segbatchno    = $rowdetail->batchno;
+                $detailaccount = $rowdetail->tbl_account_detail_idtbl_account_detail;
+                $chartaccount  = $rowdetail->tbl_account_idtbl_account;
+                $company       = $rowdetail->tbl_company_idtbl_company;
+                $branch        = $rowdetail->tbl_company_branch_idtbl_company_branch;
+                $masterID      = $rowdetail->tbl_master_idtbl_master;
+                $amount        = $rowdetail->amount;
+                $narration     = $rowdetail->narration;
+                $tratype       = $rowdetail->tratype;
+
+                if (!empty($detailaccount)) {
+                    $chartofaccountinfo = get_chart_account_acco_child_account($company, $branch, $detailaccount);
+                    if (!$chartofaccountinfo || $chartofaccountinfo->num_rows() == 0) {
+                        throw new Exception('Chart of account not found for detail account: ' . $detailaccount);
                     }
-                    else{
-                        $chartofaccountID=$chartaccount;
-                    }
-
-                    $data = array(
-                        'tradate'=> $tradate, 
-                        'batchno'=> $batchno, 
-                        'trabatchotherno'=> $segbatchno, 
-                        'tratype'=> 'P', 
-                        'seqno'=> $i, 
-                        'crdr'=> $tratype, 
-                        'accamount'=> $amount, 
-                        'narration'=> $narration, 
-                        'totamount'=> $amount, 
-                        'status'=> '1', 
-                        'insertdatetime'=> $updatedatetime, 
-                        'tbl_user_idtbl_user'=> $userID,
-                        'tbl_account_idtbl_account'=> $chartofaccountID,
-                        'tbl_master_idtbl_master'=> $masterID,
-                        'tbl_company_idtbl_company'=> $company,
-                        'tbl_company_branch_idtbl_company_branch'=> $branch
-                    );
-    
-                    $this->db->insert('tbl_account_transaction', $data);
-
-                    $datafull = array(
-                        'tradate'=> $tradate, 
-                        'batchno'=> $batchno, 
-                        'tratype'=> 'P', 
-                        'crdr'=> $tratype, 
-                        'accamount'=> $amount, 
-                        'narration'=> $narration, 
-                        'totamount'=> $amount, 
-                        'status'=> '1', 
-                        'insertdatetime'=> $updatedatetime, 
-                        'tbl_user_idtbl_user'=> $userID,
-                        'tbl_account_idtbl_account'=> $chartofaccountID,
-                        'tbl_master_idtbl_master'=> $masterID,
-                        'tbl_company_idtbl_company'=> $company,
-                        'tbl_company_branch_idtbl_company_branch'=> $branch
-                    );
-    
-                    $this->db->insert('tbl_account_transaction_full', $datafull);
-
-                    //Update POST Status Detail
-                    $datadetail = array(
-                        'poststatus'=> '1',
-                        'postuser'=> $userID
-                    );
-            
-                    $this->db->where('idtbl_account_payable', $paydetailID);
-                    $this->db->update('tbl_account_payable', $datadetail);
-                }
-
-                $this->db->trans_complete();
-
-                if ($this->db->trans_status() === TRUE) {
-                    $this->db->trans_commit();
-                    
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-save';
-                    $actionObj->title='';
-                    $actionObj->message='Record Added Successfully';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='success';
-
-                    $actionJSON=json_encode($actionObj);
-                    
-                    $obj=new stdClass();
-                    $obj->status=1;
-                    $obj->action=$actionJSON;
-
-                    echo json_encode($obj);
+                    $chartofaccountID = $chartofaccountinfo->row(0)->idtbl_account;
                 } else {
-                    $this->db->trans_rollback();
-
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-warning';
-                    $actionObj->title='';
-                    $actionObj->message='Record Error';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='danger';
-
-                    $actionJSON=json_encode($actionObj);
-                    
-                    $obj=new stdClass();
-                    $obj->status=0;
-                    $obj->action=$actionJSON;
-
-                    echo json_encode($obj);
+                    $chartofaccountID = $chartaccount;
                 }
+
+                // Insert into tbl_account_transaction
+                $data = array(
+                    'tradate'                                 => $tradate,
+                    'batchno'                                 => $batchno,
+                    'trabatchotherno'                         => $segbatchno,
+                    'tratype'                                 => 'P',
+                    'seqno'                                   => $i,
+                    'crdr'                                    => $tratype,
+                    'accamount'                               => $amount,
+                    'narration'                               => $narration,
+                    'totamount'                               => $amount,
+                    'status'                                  => '1',
+                    'insertdatetime'                          => $updatedatetime,
+                    'tbl_user_idtbl_user'                     => $userID,
+                    'tbl_account_idtbl_account'               => $chartofaccountID,
+                    'tbl_master_idtbl_master'                 => $masterID,
+                    'tbl_company_idtbl_company'               => $company,
+                    'tbl_company_branch_idtbl_company_branch' => $branch
+                );
+
+                $this->db->insert('tbl_account_transaction', $data);
+
+                // Insert into tbl_account_transaction_full
+                $datafull = array(
+                    'tradate'                                 => $tradate,
+                    'batchno'                                 => $batchno,
+                    'tratype'                                 => 'P',
+                    'crdr'                                    => $tratype,
+                    'accamount'                               => $amount,
+                    'narration'                               => $narration,
+                    'totamount'                               => $amount,
+                    'status'                                  => '1',
+                    'insertdatetime'                          => $updatedatetime,
+                    'tbl_user_idtbl_user'                     => $userID,
+                    'tbl_account_idtbl_account'               => $chartofaccountID,
+                    'tbl_master_idtbl_master'                 => $masterID,
+                    'tbl_company_idtbl_company'               => $company,
+                    'tbl_company_branch_idtbl_company_branch' => $branch
+                );
+
+                $this->db->insert('tbl_account_transaction_full', $datafull);
+
+                // Update post status on detail line
+                $datadetail = array(
+                    'poststatus' => '1',
+                    'postuser'   => $userID
+                );
+
+                $this->db->where('idtbl_account_payable', $paydetailID);
+                $this->db->update('tbl_account_payable', $datadetail);
             }
-            else{
-                $actionObj=new stdClass();
-                $actionObj->icon='fas fa-warning';
-                $actionObj->title='';
-                $actionObj->message='Record Error, Please check this record for information. Because this record was edited before you posted.';
-                $actionObj->url='';
-                $actionObj->target='_blank';
-                $actionObj->type='danger';
 
-                $actionJSON=json_encode($actionObj);
-                
-                $obj=new stdClass();
-                $obj->status=0;
-                $obj->action=$actionJSON;
+            $this->db->trans_complete();
 
-                echo json_encode($obj);
+            if ($this->db->trans_status() === TRUE) {
+                $this->db->trans_commit();
+                $this->_jsonResponse(1, 'fas fa-save', 'Record Posted Successfully', 'success');
+            } else {
+                $this->db->trans_rollback();
+                throw new Exception('Record Error, Transaction failed');
             }
-        }
-        else if($respond->row(0)->status==2){
-            $actionObj=new stdClass();
-            $actionObj->icon='fas fa-warning';
-            $actionObj->title='';
-            $actionObj->message='Record Error, Record Deactivated. Kindly review the status of the record.';
-            $actionObj->url='';
-            $actionObj->target='_blank';
-            $actionObj->type='warning';
 
-            $actionJSON=json_encode($actionObj);
-            
-            $obj=new stdClass();
-            $obj->status=0;
-            $obj->action=$actionJSON;
-
-            echo json_encode($obj);
-        }
-        else if($respond->row(0)->editstatus==1){
-            $actionObj=new stdClass();
-            $actionObj->icon='fas fa-warning';
-            $actionObj->title='';
-            $actionObj->message='Record Error, Record in editable mode. You cannot change anything about the record.';
-            $actionObj->url='';
-            $actionObj->target='_blank';
-            $actionObj->type='danger';
-
-            $actionJSON=json_encode($actionObj);
-            
-            $obj=new stdClass();
-            $obj->status=0;
-            $obj->action=$actionJSON;
-
-            echo json_encode($obj);
-        }
-        else if($respond->row(0)->poststatus==1){
-            $actionObj=new stdClass();
-            $actionObj->icon='fas fa-warning';
-            $actionObj->title='';
-            $actionObj->message='Record Error, Record already posted.';
-            $actionObj->url='';
-            $actionObj->target='_blank';
-            $actionObj->type='danger';
-
-            $actionJSON=json_encode($actionObj);
-            
-            $obj=new stdClass();
-            $obj->status=0;
-            $obj->action=$actionJSON;
-
-            echo json_encode($obj);
+        } catch (Exception $e) {
+            if ($this->db->trans_enabled) {
+                $this->db->trans_rollback();
+            }
+            $this->_jsonResponse(0, 'fas fa-warning', $e->getMessage(), 'danger');
         }
     }
     public function Getinvoiceaccosupplier(){
         $recordID=$this->input->post('recordID');
 
-        $this->db->select('idtbl_expence_info, grnno, amount');
+        $this->db->select('idtbl_expence_info, grnno, amount, grndate');
         $this->db->from('tbl_expence_info');
         $this->db->where('status', 1);
         $this->db->where('paystatus', 0);
@@ -951,5 +836,22 @@ class Payablesegregationinfo extends CI_Model{
         $respond=$this->db->get();
 
         echo json_encode($respond->result());
+    }
+
+    // ── Private helper ────────────────────────────────────────────────────────────
+    private function _jsonResponse($status, $icon, $message, $type) {
+        $actionObj          = new stdClass();
+        $actionObj->icon    = $icon;
+        $actionObj->title   = '';
+        $actionObj->message = $message;
+        $actionObj->url     = '';
+        $actionObj->target  = '_blank';
+        $actionObj->type    = $type;
+
+        $obj         = new stdClass();
+        $obj->status = $status;
+        $obj->action = json_encode($actionObj);
+
+        echo json_encode($obj);
     }
 }

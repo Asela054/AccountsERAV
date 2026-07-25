@@ -12,6 +12,7 @@ class Pettycashreimburse extends CI_Controller {
     public function index(){
 		$result['menuaccess']=$this->Commeninfo->Getmenuprivilege();
 		$result['companylist']=get_company_list();
+        $result['payabletype']=$this->Pettycashreimburseinfo->Getreceivabletype();
 		$this->load->view('pettycashreimburse', $result);
 	}
     public function Pettycashreimburseinsertupdate(){

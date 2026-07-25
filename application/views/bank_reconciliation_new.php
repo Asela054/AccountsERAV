@@ -537,6 +537,7 @@ include "include/topnavbar.php";
                                                         <th>Period</th>
                                                         <th>Date</th>
                                                         <th>Narration</th>
+                                                        <th>Cheque No</th>
                                                         <th class="text-right">CR</th>
                                                         <th class="text-right">DR</th>
                                                         <th class="text-center" width="90">Status</th>
@@ -544,14 +545,14 @@ include "include/topnavbar.php";
                                                     </tr>
                                                 </thead>
                                                 <tbody id="tbl_rec_body">
-                                                    <tr><td colspan="8" class="empty-state">
+                                                    <tr><td colspan="9" class="empty-state">
                                                         <i class="fas fa-search"></i>
                                                         <p>Select a bank account to load transactions</p>
                                                     </td></tr>
                                                 </tbody>
                                                 <tfoot>
                                                     <tr style="background:var(--surface2);font-weight:600;">
-                                                        <td colspan="4" style="padding:10px 14px;font-size:12px;color:var(--text-2);">
+                                                        <td colspan="5" style="padding:10px 14px;font-size:12px;color:var(--text-2);">
                                                             TOTAL MATCHED
                                                         </td>
                                                         <td class="text-right" style="padding:10px 14px;">
@@ -779,7 +780,7 @@ $(document).ready(function(){
         var $tbody = $('#tbl_rec_body').empty();
 
         if(visible.length == 0){
-            $tbody.append('<tr><td colspan="8" class="empty-state"><i class="fas fa-check-circle" style="color:var(--success);"></i><p>No transactions in this filter.</p></td></tr>');
+            $tbody.append('<tr><td colspan="9" class="empty-state"><i class="fas fa-check-circle" style="color:var(--success);"></i><p>No transactions in this filter.</p></td></tr>');
             return;
         }
 
@@ -819,6 +820,7 @@ $(document).ready(function(){
                 '<td><span class="period-badge">' + (r.acc_period_txt || '—') + '</span></td>' +
                 '<td style="white-space:nowrap;">' + (r.transaction_date || '—') + '</td>' +
                 '<td>' + (r.narration_txt || '') + '</td>' +
+                '<td style="white-space:nowrap;">' + (r.cheque_no && r.cheque_no != '-' ? r.cheque_no : '<span style="color:var(--text-3);">—</span>') + '</td>' +
                 '<td class="text-right">' + crDisplay + '</td>' +
                 '<td class="text-right">' + drDisplay + '</td>' +
                 '<td class="text-center">' + statusChip + '</td>' +
@@ -882,7 +884,7 @@ $(document).ready(function(){
     // ═══════════════════════════════════════════════════════════════════
     function loadReconciliation(bankaccId, mainId, yearId, monthId){
         showToast('Loading...', 'info');
-        $('#tbl_rec_body').html('<tr><td colspan="8" class="text-center" style="padding:30px;color:var(--text-3);"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Loading transactions...</td></tr>');
+        $('#tbl_rec_body').html('<tr><td colspan="9" class="text-center" style="padding:30px;color:var(--text-3);"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Loading transactions...</td></tr>');
 
         $.ajax({
             method  : 'POST',
@@ -1215,7 +1217,8 @@ $(document).ready(function(){
                         rec_revise_status: 0,
                         opt_render       : 'btn',
                         opt_origin       : 'origin_blank',
-                        opt_dtprefix     : 'rec_accd'
+                        opt_dtprefix     : 'rec_accd',
+                        cheque_no        : '-'
                     });
 
                     renderTable();
@@ -1330,9 +1333,12 @@ $(document).ready(function(){
                     exp_rows            : 0,
                     statement_open_bal  : $('#txt_statement_open_bal').val(),
                     statement_cr        : $('#txt_statement_tot_cr').val(),
-                    acc_cr              : fnum(STATE.cr_running),
+                    // NOTE: Bank statement CR = money IN, but system ledger CR = money OUT
+                    // (asset account: Debit=in, Credit=out). Cross-map so we compare
+                    // like-for-like (money-in vs money-in, money-out vs money-out).
+                    acc_cr              : fnum(STATE.dr_running),
                     statement_dr        : $('#txt_statement_tot_dr').val(),
-                    acc_dr              : fnum(STATE.dr_running),
+                    acc_dr              : fnum(STATE.cr_running),
                     rec_period_year     : STATE.rec_year,
                     rec_period_month    : STATE.rec_month,
                     statement_close     : $('#txt_statement_closed_bal').val(),
@@ -1460,7 +1466,7 @@ $(document).ready(function(){
         $('#drp_rec_month').empty().append('<option value="">— Select Month —</option>');
         $('#txt_bank_rec_date').val('');
         $('#txt_statement_open_bal, #txt_statement_tot_cr, #txt_statement_tot_dr, #txt_statement_closed_bal').val('0.00');
-        $('#tbl_rec_body').html('<tr><td colspan="8" class="empty-state"><i class="fas fa-search"></i><p>Select a bank account to load transactions</p></td></tr>');
+        $('#tbl_rec_body').html('<tr><td colspan="9" class="empty-state"><i class="fas fa-search"></i><p>Select a bank account to load transactions</p></td></tr>');
         $('#panel_statement, #panel_adjustments, #panel_transactions, #panel_approve, #diff_banner').hide();
         $('#panel_balance').css('display','none');
         $('#lbl_rec_batchno, #lbl_approved_badge').hide();

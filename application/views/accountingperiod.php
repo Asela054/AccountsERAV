@@ -117,8 +117,14 @@ include "include/topnavbar.php";
                                 button+='<button type="button" data-url="Accountingperiod/Accountingperiodstatus/'+full['idtbl_finacial_year']+'/3" data-actiontype="3" class="btn btn-danger btn-sm text-light btntableaction"><i class="fas fa-trash-alt"></i></button>';
                             }
                         }
+                        else if(full['actstatus']==2){
+                            button+='<span class="badge badge-pill badge-danger px-3">This financial year is currently close.</span>';
+                        }
+                        else if(full['actstatus']==3){
+                            button+='<span class="badge badge-pill badge-warning px-3">This financial year is currently open.</span>';
+                        }
                         else{
-                            button+='<span class="text-danger">This financial year is currently active.</span>';
+                            button+='<span class="badge badge-pill badge-success px-3">This financial year is currently active.</span>';
                         }
                         
                         return button;

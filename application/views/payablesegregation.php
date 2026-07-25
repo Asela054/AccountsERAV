@@ -13,7 +13,7 @@ include "include/topnavbar.php";
                     <div class="page-header-content py-3">
                         <h1 class="page-header-title font-weight-light">
                             <div class="page-header-icon"><i class="fas fa-wallet"></i></div>
-                            <span>Payment Segregation</span>
+                            <span>Payment Create</span>
                         </h1>
                     </div>
                 </div>
@@ -24,7 +24,7 @@ include "include/topnavbar.php";
                         <div class="row">
                             <div class="col-12 text-right">
                                 <!-- <button class="btn btn-primary btn-sm px-4" id="btncreatesegregation" <?php // if($addcheck==0){echo 'disabled';} ?> data-toggle="modal" data-target="#modalcompanychoose"><i class="fas fa-plus mr-2"></i>Create Segregation</button> -->
-                                <button class="btn btn-primary btn-sm px-4" id="btncreatesegregation" <?php if($addcheck==0){echo 'disabled';} ?>><i class="fas fa-plus mr-2"></i>Create Segregation</button>
+                                <button class="btn btn-primary btn-sm px-4" id="btncreatesegregation" <?php if($addcheck==0){echo 'disabled';} ?>><i class="fas fa-plus mr-2"></i>Create Payment</button>
                                 <hr>
                             </div>
                             <div class="col-12">
@@ -61,7 +61,7 @@ include "include/topnavbar.php";
 	<div class="modal-dialog modal-lg modal-dialog-centered">
 		<div class="modal-content">
 			<div class="modal-header">
-				<h6 class="modal-title" id="modalsegregationLabel">Create Segregation</h6>
+				<h6 class="modal-title" id="modalsegregationLabel">Create Payment</h6>
 				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
 					<span aria-hidden="true">&times;</span>
 				</button>
@@ -72,30 +72,42 @@ include "include/topnavbar.php";
                         <form id="segregationform">
                             <div class="form-row">
                                 <div class="col">
-                                    <label class="small font-weight-bold">Supplier*</label><br>
-                                    <select name="supplier" id="supplier" class="form-control form-control-sm" style="width: 100%" required>
-                                        <option value="">Select</option>
-                                    </select>
-                                </div>
-                                <div class="col">
-                                    <label class="small font-weight-bold">Invoice*</label>
-                                    <select name="invoice" id="invoice" class="form-control form-control-sm" required>
-                                        <option value="">Select</option>
-                                    </select>
-                                </div>
-                                <div class="col">
-                                    <label class="small font-weight-bold">Invoice Amount*</label>
-                                    <input type="text" name="invoiceamount" id="invoiceamount" class="form-control form-control-sm text-right" readonly>
-                                </div>
-                            </div>
-                            <div class="form-row">
-                                <div class="col">
                                     <label class="small font-weight-bold">Company*</label>
                                     <input type="text" name="showcompany" id="showcompany" class="form-control form-control-sm" readonly>
                                 </div>
                                 <div class="col">
                                     <label class="small font-weight-bold">Branch*</label>
                                     <input type="text" name="showbranch" id="showbranch" class="form-control form-control-sm" readonly>
+                                </div>
+                                <div class="col">
+                                    <label class="small font-weight-bold">Supplier*</label><br>
+                                    <select name="supplier" id="supplier" class="form-control form-control-sm" style="width: 100%" required>
+                                        <option value="">Select</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="col-4">
+                                    <label class="small font-weight-bold">Invoice Date*</label>
+                                    <input type="date" name="invoicedate" id="invoicedate" class="form-control form-control-sm" max="<?php echo date('Y-m-d') ?>">
+                                </div>
+                                <div class="col">
+                                    <!-- <label class="small font-weight-bold">Invoice*</label>
+                                    <select name="invoice" id="invoice" class="form-control form-control-sm" required>
+                                        <option value="">Select</option>
+                                    </select> -->
+                                    <label class="small font-weight-bold">Invoice/Bill no*</label>
+                                    <input type="text" name="invoice" id="invoice" class="form-control form-control-sm">
+                                </div>
+                                <div class="col">
+                                    <label class="small font-weight-bold">Invoice Amount*</label>
+                                    <input type="text" name="invoiceamount" id="invoiceamount" class="form-control form-control-sm text-right">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="col">
+                                    <label class="small font-weight-bold">Remark</label>
+                                    <textarea name="payremark" id="payremark" class="form-control form-control-sm"></textarea>
                                 </div>
                             </div>
                             <div class="row mt-3">
@@ -134,6 +146,7 @@ include "include/topnavbar.php";
                                     <?php } ?>
                                     <input type="hidden" name="recordOption" id="recordOption" value="1">
                                     <input type="hidden" name="recordID" id="recordID" value="">
+                                    <input type="hidden" name="expencesrecordID" id="expencesrecordID" value="">
 
                                     <input type="submit" id="hidesegsubmit" class="d-none">
                                     <input type="reset" id="hidesegreset" class="d-none">
@@ -214,7 +227,7 @@ include "include/topnavbar.php";
 </div>
 <!-- Modal Payment Segregation -->
 <div class="modal fade" id="modalviewpost" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="modalviewpostLabel" aria-hidden="true">
-	<div class="modal-dialog modal-lg modal-dialog-centered">
+	<div class="modal-dialog modal-xl modal-dialog-centered">
 		<div class="modal-content">
 			<div class="modal-header">
 				<h6 class="modal-title" id="modalviewpostLabel">View & Post Information</h6>
@@ -323,6 +336,7 @@ include "include/topnavbar.php";
                     "data": null,
                     "render": function(data, type, full) {
                         var button='';
+                        button+='<button class="btn btn-primary btn-sm btnprint mr-1" id="'+full['idtbl_expence_info']+'"><i class="fas fa-print"></i></button>';
                         button+='<button class="btn btn-dark btn-sm btnview mr-1" id="'+full['idtbl_account_payable_main']+'" data-toggle="tooltip" data-placement="bottom" title="View and post" data-poststatus="'+full['poststatus']+'" data-recordstatus="'+full['status']+'">';
                         if(full['poststatus']==0){
                             button+='<i class="fas fa-exchange-alt"></i>';
@@ -372,6 +386,7 @@ include "include/topnavbar.php";
                         // console.log(result);
                         var obj = JSON.parse(result);
                         $('#recordID').val(obj.id);
+                        $('#expencesrecordID').val(obj.expencesID);
                         $('#company').val(obj.companyid); 
                         getbranchlist(obj.companyid, obj.branchid);  
                         getaccountlist(obj.companyid, obj.branchid); 
@@ -382,8 +397,11 @@ include "include/topnavbar.php";
                         html += '</option>';
 
                         $('#supplier').empty().append(html).prop('disabled', true);    
-                        getinvoicelist(obj.supplier, obj.invoiceno);                     
+                        
+                        $('#invoice').val(obj.invoiceno);                       
+                        $('#invoicedate').val(obj.invoicedate).prop('readonly', true);                       
                         $('#invoiceamount').val(obj.amount);                       
+                        $('#payremark').val(obj.remark);                       
                         $('#showcompany').val(obj.company);                       
                         $('#showbranch').val(obj.branch);   
                         $('#tablesegregate > tbody').append(obj.tabledata);                    
@@ -423,16 +441,31 @@ include "include/topnavbar.php";
                 }
             });
         });
+        $('#dataTable tbody').on('click', '.btnprint', function() {
+            var id = $(this).attr('id');
+            window.open("<?php echo base_url() ?>Reportprint/Paymentreceipt/"+id, "_blank");
+            // $('#modalviewpost').modal('show');
+            // $.ajax({
+            //     type: "POST",
+            //     data: {
+            //         recordID: id
+            //     },
+            //     url: '<?php echo base_url() ?>Paymentcreate/Getviewprintinfo',
+            //     success: function(result) { //alert(result);
+            //         $('#viewdiv').html(result);
+            //     }
+            // });
+        });
 
-        $('#supplier').change(function(){
-            var id = $(this).val();
-            getinvoicelist(id, '');
-        });
-        $('#invoice').change(function(){
-            var invoiceamount = $(this).find(':selected').attr("data-amount");
-            $('#invoiceamount').val(parseFloat(invoiceamount).toFixed(2));
-            $('#seperateamount').attr('max', invoiceamount);
-        });
+        // $('#supplier').change(function(){
+        //     var id = $(this).val();
+        //     getinvoicelist(id, '');
+        // });
+        // $('#invoice').change(function(){
+        //     var invoiceamount = $(this).find(':selected').attr("data-amount");
+        //     $('#invoiceamount').val(parseFloat(invoiceamount).toFixed(2));
+        //     $('#seperateamount').attr('max', invoiceamount);
+        // });
         // $('#company').change(function(){
         //     var id = $(this).val();
         //     getbranchlist(id, '');
@@ -523,12 +556,15 @@ include "include/topnavbar.php";
                 console.log(jsonObj);
                 
                 var recordID = $('#recordID').val();
+                var expencesrecordID = $('#expencesrecordID').val();
                 var recordOption = $('#recordOption').val();
                 var company = $('#company').val();
                 var branch = $('#branch').val();
                 var supplier = $('#supplier').val();
                 var invoice = $('#invoice').val();
+                var invoicedate = $('#invoicedate').val();
                 var invoiceamount = $('#invoiceamount').val();
+                var payremark = $('#payremark').val();
 
                 Swal.fire({
                     title: '',
@@ -552,9 +588,12 @@ include "include/topnavbar.php";
                                 branch: branch,
                                 supplier: supplier,
                                 invoice: invoice,
+                                invoicedate: invoicedate,
                                 invoiceamount: invoiceamount,
+                                payremark: payremark,
                                 recordOption: recordOption,
-                                recordID: recordID
+                                recordID: recordID,
+                                expencesrecordID: expencesrecordID
                             },
                             url: 'Payablesegregation/Payablesegregationinsertupdate',
                             success: function (result) { //alert(result);
@@ -568,6 +607,8 @@ include "include/topnavbar.php";
                                     $('#supplier').val('');
                                     $('#invoice').val('');
                                     $('#invoiceamount').val('');
+                                    $('#invoicedate').val('');
+                                    $('#payremark').val('');
                                     $('#btnfullsegregation').prop('disabled', false).html('<i class="fas fa-save mr-2"></i> Complete');
 
                                     if(recordOption==2){
@@ -734,30 +775,30 @@ include "include/topnavbar.php";
         });
     }
 
-    function getinvoicelist(id, value){
-        $.ajax({
-            type: "POST",
-            data: {
-                recordID: id
-            },
-            url: '<?php echo base_url() ?>Payablesegregation/Getinvoiceaccosupplier',
-            success: function(result) { // alert(result);
-                var obj = JSON.parse(result);
-                var html = '';
-                html += '<option value="">Select</option>';
-                $.each(obj, function (i, item) {
-                    html += '<option value="' + obj[i].grnno + '" data-amount="' + obj[i].amount + '">';
-                    html += obj[i].grnno ;
-                    html += '</option>';
-                });
-                $('#invoice').empty().append(html);   
+    // function getinvoicelist(id, value){
+    //     $.ajax({
+    //         type: "POST",
+    //         data: {
+    //             recordID: id
+    //         },
+    //         url: '<?php echo base_url() ?>Payablesegregation/Getinvoiceaccosupplier',
+    //         success: function(result) { // alert(result);
+    //             var obj = JSON.parse(result);
+    //             var html = '';
+    //             html += '<option value="">Select</option>';
+    //             $.each(obj, function (i, item) {
+    //                 html += '<option value="' + obj[i].grnno + '" data-amount="' + obj[i].amount + '" data-invoicedate="' + obj[i].grndate + '">';
+    //                 html += obj[i].grnno ;
+    //                 html += '</option>';
+    //             });
+    //             $('#invoice').empty().append(html);   
 
-                if(value!=''){
-                    $('#invoice').val(value).prop('disabled', true);
-                }
-            }
-        });
-    }
+    //             if(value!=''){
+    //                 $('#invoice').val(value).prop('disabled', true);
+    //             }
+    //         }
+    //     });
+    // }
     
     function checksegregationcomplete(){
         var debitsum = 0;

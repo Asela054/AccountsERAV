@@ -10,21 +10,27 @@ class Reportprint extends CI_Controller {
         $this->load->model("Reportprintinfo");
     }
     public function Receivereceipt($x, $y){
-        $result['printinfo']=$this->Reportprintinfo->Receivereceipt($x, $y);
+        $functionname = $this->config->item('receivable_settle_receipt_print');
+        $result['printinfo']=$this->Reportprintinfo->$functionname($x, $y);
     }
     public function Paymentsettlereceipt($x, $y){
-        $result['printinfo']=$this->Reportprintinfo->Paymentsettlereceipt($x, $y);
+        $functionname = $this->config->item('payment_settle_receipt_print');
+        $result['printinfo']=$this->Reportprintinfo->$functionname($x, $y);
     }
     public function Paymentreceipt($x){
-        $result['printinfo']=$this->Reportprintinfo->Paymentreceipt($x);
+        $functionname = $this->config->item('payment_receipt_print');
+        $result['printinfo']=$this->Reportprintinfo->$functionname($x);
     }
     public function PettyCashReibursePrint($x){
-        $result['printinfo']=$this->Reportprintinfo->PettyCashReibursePrint($x);
+        $functionname = $this->config->item('pettycash_reimburse_print');
+        $result['printinfo']=$this->Reportprintinfo->$functionname($x);
     }
     public function Receivablereceipt($x){
-        $result['printinfo']=$this->Reportprintinfo->Receivablereceipt($x);
+        $functionname = $this->config->item('receivable_receipt_print');
+        $result['printinfo']=$this->Reportprintinfo->$functionname($x);
     }
     public function PettycashVoucher($x){
-        $result['printinfo']=$this->Reportprintinfo->PettycashVoucher($x);
+        $functionname = $this->config->item('pettycash_receipt_print');
+        $result['printinfo']=$this->Reportprintinfo->$functionname($x);
     }
 }

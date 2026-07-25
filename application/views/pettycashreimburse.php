@@ -109,7 +109,7 @@ include "include/topnavbar.php";
 </div>
 <!-- Modal Reimbursement -->
 <div class="modal fade" id="modalpettycash" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-labelledby="modalpettycashLabel" aria-hidden="true">
-	<div class="modal-dialog modal-lg modal-dialog-centered">
+	<div class="modal-dialog modal-lg modal-dialog-centered modal-xl">
 		<div class="modal-content">
 			<div class="modal-header">
 				<h6 class="modal-title" id="modalpettycashLabel">Create Petty Cash Reimbursement</h6>
@@ -121,7 +121,7 @@ include "include/topnavbar.php";
                 <div class="row">
                     <div class="col-12">
                         <form id="segregationform">
-                            <div class="row">
+                            <div class="form-row">
                                 <div class="col">
                                     <label class="small font-weight-bold">Company*</label>
                                     <input type="text" name="showcompany" id="showcompany" class="form-control form-control-sm" readonly>
@@ -135,7 +135,20 @@ include "include/topnavbar.php";
                                     <input type="text" name="showaccount" id="showaccount" class="form-control form-control-sm" readonly>
                                 </div>
                             </div>
-                            <div class="row">
+                            <div class="form-row">
+                                <div class="col-2">
+                                    <label class="small font-weight-bold">Reimbursement Date</label>
+                                    <input type="date" name="reimbursedate" id="reimbursedate" class="form-control form-control-sm">
+                                </div>
+                                <div class="col-2">
+                                    <label class="small font-weight-bold">Transaction Type</label>
+                                    <select name="transactiontype" id="transactiontype" class="form-control form-control-sm" required>
+                                        <option value="">Select</option>
+                                        <?php foreach($payabletype->result() as $rowpayabletype){ ?>
+                                        <option value="<?php echo $rowpayabletype->idtbl_receivable_type ?>"><?php echo $rowpayabletype->receivabletype ?></option>
+                                        <?php } ?>
+                                    </select>
+                                </div>
                                 <div class="col">
                                     <label class="small font-weight-bold">Narration</label>
                                     <input type="text" name="narration" id="narration" class="form-control form-control-sm">
@@ -224,7 +237,7 @@ include "include/topnavbar.php";
 			<div class="modal-body">
                 <form id="formchequeissue" method="post">
                     <div class="form-group mb-1">
-                        <label class="small font-weight-bold">Cheque Date*</label>
+                        <label class="small font-weight-bold">Cheq. | Dep. | Trans. Date*</label>
                         <input type="date" name="chequedate" id="chequedate" class="form-control form-control-sm" required>
                     </div>
                     <div class="form-group mb-1">
@@ -474,6 +487,8 @@ include "include/topnavbar.php";
                 var branchid = $('#branch').val();
                 var bankaccount = $('#bankaccount').val();
                 var reimbursebal = $('#reimbursebal').val();
+                var reimbursedate = $('#reimbursedate').val();
+                var transactiontype = $('#transactiontype').val();
 
                 Swal.fire({
                     title: '',
@@ -496,6 +511,8 @@ include "include/topnavbar.php";
                                 branchid: branchid,
                                 bankaccount: bankaccount,
                                 reimbursebal: reimbursebal,
+                                reimbursedate: reimbursedate,
+                                transactiontype: transactiontype,
                                 tabledata: myJSON
                             },
                             url: '<?php echo base_url() ?>Pettycashreimburse/Pettycashreimburseinsertupdate',

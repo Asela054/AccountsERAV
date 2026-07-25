@@ -47,7 +47,8 @@ $columns = array(
 	array( 'db' => '`ud`.`desc`', 'dt' => 'desc', 'field' => 'desc' ),
 	array( 'db' => '`ue`.`monthname`', 'dt' => 'monthname', 'field' => 'monthname' ),
 	array( 'db' => '`uf`.`invno`', 'dt' => 'invno', 'field' => 'invno' ),
-	array( 'db' => "`ug`.$column2", 'dt' => 'customer', 'field' => 'customer' ),
+	array( 'db' => '`uf`.`idtbl_sales_info`', 'dt' => 'idtbl_sales_info', 'field' => 'idtbl_sales_info' ),
+	array( 'db' => "`ug`.`$column2` AS `customer`", 'dt' => 'customer', 'field' => 'customer' ),
 	array( 'db' => '`u`.`status`', 'dt' => 'status', 'field' => 'status' )
 );
 

@@ -88,251 +88,516 @@ class BatchTransactioninfo extends CI_Model{
             echo json_encode([$obj]);
         endif;
     }
-    public function BatchTransactioninsertupdate(){
-        $userID=$_SESSION['userid'];
-        $batchcategory = $this->input->post('batchcategory');
-        $batchtranstype = $this->input->post('batchtranstype');
-        if(!empty($this->input->post('batchTransID'))):$batchTransID = $this->input->post('batchTransID');endif;
-        if(!empty($this->input->post('batchTransBatchNo'))):$batchTransBatchNo = $this->input->post('batchTransBatchNo');endif;
-        if(!empty($this->input->post('batchTransMaster'))):$batchTransMaster = $this->input->post('batchTransMaster');endif;
+    // public function BatchTransactioninsertupdate(){
+    //     $userID=$_SESSION['userid'];
+    //     $batchcategory = $this->input->post('batchcategory');
+    //     $batchtranstype = $this->input->post('batchtranstype');
+    //     if(!empty($this->input->post('batchTransID'))):$batchTransID = $this->input->post('batchTransID');endif;
+    //     if(!empty($this->input->post('batchTransBatchNo'))):$batchTransBatchNo = $this->input->post('batchTransBatchNo');endif;
+    //     if(!empty($this->input->post('batchTransMaster'))):$batchTransMaster = $this->input->post('batchTransMaster');endif;
 
-        if($batchcategory==1):
-            $inventoryDate = $this->input->post('inventoryDate');
-            $inventoryTransCode = $this->input->post('inventoryTransCode');
-            $inventoryMaterial = $this->input->post('inventoryMaterial');
-            $inventoryMaterialText = $this->input->post('inventoryMaterialText');
-            $inventoryUOMID = $this->input->post('inventoryUOMID');
-            $inventoryUOM = $this->input->post('inventoryUOM');
-            $inventoryReference = $this->input->post('inventoryReference');
-            $inventoryDescription = $this->input->post('inventoryDescription');
-            $inventoryQtyOnHand = $this->input->post('inventoryQtyOnHand');
-            $inventoryQtyIn = $this->input->post('inventoryQtyIn');
-            $inventoryQtyOut = $this->input->post('inventoryQtyOut');
-            $inventoryUnitCost = $this->input->post('inventoryUnitCost');
-            $inventoryNewUnitCost = $this->input->post('inventoryNewUnitCost');
-            $inventoryBatchNo = $this->input->post('inventoryBatchNo');
-        elseif($batchcategory==2):
-            $receiptcustomerID = $this->input->post('receiptcustomerID');
-            $receiptcustomer = $this->input->post('receiptcustomer');
-            $receiptinvoicedate = $this->input->post('receiptinvoicedate');
-            $receiptinvoice = $this->input->post('receiptinvoice');
-            $receiptcreditdebit = $this->input->post('receiptcreditdebit');
-            $creditamount = str_replace([',', ' '], '', $this->input->post('creditamount'));
-            $debitamount = str_replace([',', ' '], '', $this->input->post('debitamount'));
-            $receiptnarration = $this->input->post('receiptnarration');
-            $crdr = $this->input->post('crdr');
-        elseif($batchcategory==3):
-            $paymentsupplierID = $this->input->post('paymentsupplierID');
-            $paymentsupplier = $this->input->post('paymentsupplier');
-            $paymentinvoicedate = $this->input->post('paymentinvoicedate');
-            $paymentinvoice = $this->input->post('paymentinvoice');
-            $paymentcreditdebit = $this->input->post('paymentcreditdebit');
-            $creditamount = str_replace([',', ' '], '', $this->input->post('creditamount'));
-            $debitamount = str_replace([',', ' '], '', $this->input->post('debitamount'));
-            $paymentnarration = $this->input->post('paymentnarration');
-            $crdr = $this->input->post('crdr');
-        endif;
-        $completestatus = 0;
+    //     if($batchcategory==1):
+    //         $inventoryDate = $this->input->post('inventoryDate');
+    //         $inventoryTransCode = $this->input->post('inventoryTransCode');
+    //         $inventoryMaterial = $this->input->post('inventoryMaterial');
+    //         $inventoryMaterialText = $this->input->post('inventoryMaterialText');
+    //         $inventoryUOMID = $this->input->post('inventoryUOMID');
+    //         $inventoryUOM = $this->input->post('inventoryUOM');
+    //         $inventoryReference = $this->input->post('inventoryReference');
+    //         $inventoryDescription = $this->input->post('inventoryDescription');
+    //         $inventoryQtyOnHand = $this->input->post('inventoryQtyOnHand');
+    //         $inventoryQtyIn = $this->input->post('inventoryQtyIn');
+    //         $inventoryQtyOut = $this->input->post('inventoryQtyOut');
+    //         $inventoryUnitCost = $this->input->post('inventoryUnitCost');
+    //         $inventoryNewUnitCost = $this->input->post('inventoryNewUnitCost');
+    //         $inventoryBatchNo = $this->input->post('inventoryBatchNo');
+    //         $batchtrasdate = $inventoryDate;
+    //     elseif($batchcategory==2):
+    //         $receiptcustomerID = $this->input->post('receiptcustomerID');
+    //         $receiptcustomer = $this->input->post('receiptcustomer');
+    //         $receiptinvoicedate = $this->input->post('receiptinvoicedate');
+    //         $receiptinvoice = $this->input->post('receiptinvoice');
+    //         $receiptcreditdebit = $this->input->post('receiptcreditdebit');
+    //         $creditamount = str_replace([',', ' '], '', $this->input->post('creditamount'));
+    //         $debitamount = str_replace([',', ' '], '', $this->input->post('debitamount'));
+    //         $receiptnarration = $this->input->post('receiptnarration');
+    //         $crdr = $this->input->post('crdr');
+    //         $batchtrasdate = $receiptinvoicedate;
+    //     elseif($batchcategory==3):
+    //         $paymentsupplierID = $this->input->post('paymentsupplierID');
+    //         $paymentsupplier = $this->input->post('paymentsupplier');
+    //         $paymentinvoicedate = $this->input->post('paymentinvoicedate');
+    //         $paymentinvoice = $this->input->post('paymentinvoice');
+    //         $paymentcreditdebit = $this->input->post('paymentcreditdebit');
+    //         $creditamount = str_replace([',', ' '], '', $this->input->post('creditamount'));
+    //         $debitamount = str_replace([',', ' '], '', $this->input->post('debitamount'));
+    //         $paymentnarration = $this->input->post('paymentnarration');
+    //         $crdr = $this->input->post('crdr');
+    //         $batchtrasdate = $paymentinvoicedate;
+    //     endif;
+    //     $completestatus = 0;
         
-        $company = $_SESSION['companyid'];
-        $branch = $_SESSION['branchid'];
-        $today=date('Y-m-d');
-        $updatedatetime=date('Y-m-d H:i:s');
+    //     $company = $_SESSION['companyid'];
+    //     $branch = $_SESSION['branchid'];
+    //     $today=date('Y-m-d');
+    //     $updatedatetime=date('Y-m-d H:i:s');
 
-        if(empty($batchTransID)):
-            $prefix=btrans_prefix($company, $branch);
-            $masterdata=get_account_period($company, $branch);
-            $batchno=tr_batch_num($prefix, $branch);
-            $masterID=$masterdata->idtbl_master;
-        else:
-            $batchno=$batchTransBatchNo;
-            $masterID=$batchTransMaster;
+    //     if(empty($batchTransID)):
+    //         $masterdata = get_account_period_acco_date($company, $branch, $batchtrasdate);
+    //         $prefix     = generate_prefix($company, $branch, $batchtrasdate, 'BT');
+    //         $batchno=tr_batch_num($prefix, $branch);
+    //         $masterID=$masterdata->idtbl_master;
+    //     else:
+    //         $batchno=$batchTransBatchNo;
+    //         $masterID=$batchTransMaster;
 
-            $this->db->select('`completestatus`');
-            $this->db->from('tbl_batch_transaction_main');
-            $this->db->where('idtbl_batch_transaction_main', $batchTransID);
+    //         $this->db->select('`completestatus`');
+    //         $this->db->from('tbl_batch_transaction_main');
+    //         $this->db->where('idtbl_batch_transaction_main', $batchTransID);
     
-            $respondcheck = $this->db->get();
-            $completestatus = $respondcheck->row(0)->completestatus;
-        endif;
+    //         $respondcheck = $this->db->get();
+    //         $completestatus = $respondcheck->row(0)->completestatus;
+    //     endif;
 
-        if($completestatus==0){
-            if(!empty($batchno)){
-                $this->db->trans_begin();
+    //     if($completestatus==0){
+    //         if(!empty($batchno)){
+    //             $this->db->trans_begin();
 
-                if(empty($batchTransID)):
-                    $data = array(
-                        'transdate'=> $today, 
-                        'batchno'=> $batchno, 
-                        'status'=> '1', 
-                        'insertdatetime'=> $updatedatetime, 
-                        'tbl_user_idtbl_user'=> $userID,
-                        'tbl_company_idtbl_company'=> $company,
-                        'tbl_company_branch_idtbl_company_branch'=> $branch,
-                        'tbl_batch_category_idtbl_batch_category'=> $batchcategory,
-                        'tbl_batch_trans_type_idtbl_batch_trans_type'=> $batchtranstype,
-                        'tbl_master_idtbl_master'=> $masterID
-                    );
+    //             if(empty($batchTransID)):
+    //                 $data = array(
+    //                     'transdate'=> $today, 
+    //                     'batchno'=> $batchno, 
+    //                     'status'=> '1', 
+    //                     'insertdatetime'=> $updatedatetime, 
+    //                     'tbl_user_idtbl_user'=> $userID,
+    //                     'tbl_company_idtbl_company'=> $company,
+    //                     'tbl_company_branch_idtbl_company_branch'=> $branch,
+    //                     'tbl_batch_category_idtbl_batch_category'=> $batchcategory,
+    //                     'tbl_batch_trans_type_idtbl_batch_trans_type'=> $batchtranstype,
+    //                     'tbl_master_idtbl_master'=> $masterID
+    //                 );
 
-                    $this->db->insert('tbl_batch_transaction_main', $data);
-                    $batchtransmainID=$this->db->insert_id();
-                else:
-                    $batchtransmainID=$batchTransID;
-                endif;
+    //                 $this->db->insert('tbl_batch_transaction_main', $data);
+    //                 $batchtransmainID=$this->db->insert_id();
+    //             else:
+    //                 $batchtransmainID=$batchTransID;
+    //             endif;
 
-                if($batchcategory==1):
-                    $databatchtransdata = array(
-                        'transdate'=> $inventoryDate, 
-                        'batchno'=> $batchno, 
-                        'narration'=> $inventoryReference, 
-                        'desc'=> $inventoryDescription, 
-                        'qtyhand'=> $inventoryQtyOnHand, 
-                        'qtyin'=> $inventoryQtyIn, 
-                        'qtyout'=> $inventoryQtyOut, 
-                        'unitcost'=> $inventoryUnitCost, 
-                        'newunitcost'=> $inventoryNewUnitCost, 
-                        'uom_id'=> $inventoryUOMID, 
-                        'materialbatch'=> $inventoryBatchNo, 
-                        'status'=> 1,
-                        'insertdatetime'=> $updatedatetime,
-                        'tbl_user_idtbl_user'=> $userID,
-                        'tbl_company_idtbl_company'=> $company,
-                        'tbl_company_branch_idtbl_company_branch'=> $branch,
-                        'tbl_batch_trans_type_idtbl_batch_trans_type'=> $batchtranstype, 
-                        'tbl_master_idtbl_master'=> $masterID, 
-                        'tbl_print_material_info_idtbl_print_material_info'=> $inventoryMaterial,
-                        'tbl_batch_transaction_main_idtbl_batch_transaction_main'=> $batchtransmainID
-                    );
-                elseif($batchcategory==2):
-                    $databatchtransdata = array(
-                        'transdate'=> $receiptinvoicedate, 
-                        'batchno'=> $batchno, 
-                        'narration'=> $receiptnarration, 
-                        'desc'=> $receiptnarration, 
-                        'creditamount'=> $creditamount, 
-                        'debitamount'=> $debitamount, 
-                        'invoiceno'=> $receiptinvoice, 
-                        'crdr'=> $crdr, 
-                        'status'=> 1,
-                        'insertdatetime'=> $updatedatetime,
-                        'tbl_user_idtbl_user'=> $userID,
-                        'tbl_company_idtbl_company'=> $company,
-                        'tbl_company_branch_idtbl_company_branch'=> $branch,
-                        'tbl_batch_trans_type_idtbl_batch_trans_type'=> $batchtranstype, 
-                        'tbl_master_idtbl_master'=> $masterID, 
-                        'tbl_batch_transaction_main_idtbl_batch_transaction_main'=> $batchtransmainID,
-                        'tbl_customer_idtbl_customer'=> $receiptcustomerID
-                    );
-                elseif($batchcategory==3):
-                    $databatchtransdata = array(
-                        'transdate'=> $paymentinvoicedate, 
-                        'batchno'=> $batchno, 
-                        'narration'=> $paymentnarration, 
-                        'desc'=> $paymentnarration, 
-                        'creditamount'=> $creditamount, 
-                        'debitamount'=> $debitamount, 
-                        'invoiceno'=> $paymentinvoice, 
-                        'crdr'=> $crdr, 
-                        'status'=> 1,
-                        'insertdatetime'=> $updatedatetime,
-                        'tbl_user_idtbl_user'=> $userID,
-                        'tbl_company_idtbl_company'=> $company,
-                        'tbl_company_branch_idtbl_company_branch'=> $branch,
-                        'tbl_batch_trans_type_idtbl_batch_trans_type'=> $batchtranstype, 
-                        'tbl_master_idtbl_master'=> $masterID, 
-                        'tbl_batch_transaction_main_idtbl_batch_transaction_main'=> $batchtransmainID,
-                        'tbl_supplier_idtbl_supplier'=> $paymentsupplierID
-                    );
-                endif;
-                $this->db->insert('tbl_batch_transaction', $databatchtransdata);
-                $batchtransID=$this->db->insert_id();
+    //             if($batchcategory==1):
+    //                 $databatchtransdata = array(
+    //                     'transdate'=> $inventoryDate, 
+    //                     'batchno'=> $batchno, 
+    //                     'narration'=> $inventoryReference, 
+    //                     'desc'=> $inventoryDescription, 
+    //                     'qtyhand'=> $inventoryQtyOnHand, 
+    //                     'qtyin'=> $inventoryQtyIn, 
+    //                     'qtyout'=> $inventoryQtyOut, 
+    //                     'unitcost'=> $inventoryUnitCost, 
+    //                     'newunitcost'=> $inventoryNewUnitCost, 
+    //                     'uom_id'=> $inventoryUOMID, 
+    //                     'materialbatch'=> $inventoryBatchNo, 
+    //                     'status'=> 1,
+    //                     'insertdatetime'=> $updatedatetime,
+    //                     'tbl_user_idtbl_user'=> $userID,
+    //                     'tbl_company_idtbl_company'=> $company,
+    //                     'tbl_company_branch_idtbl_company_branch'=> $branch,
+    //                     'tbl_batch_trans_type_idtbl_batch_trans_type'=> $batchtranstype, 
+    //                     'tbl_master_idtbl_master'=> $masterID, 
+    //                     'tbl_print_material_info_idtbl_print_material_info'=> $inventoryMaterial,
+    //                     'tbl_batch_transaction_main_idtbl_batch_transaction_main'=> $batchtransmainID
+    //                 );
+    //             elseif($batchcategory==2):
+    //                 $databatchtransdata = array(
+    //                     'transdate'=> $receiptinvoicedate, 
+    //                     'batchno'=> $batchno, 
+    //                     'narration'=> $receiptnarration, 
+    //                     'desc'=> $receiptnarration, 
+    //                     'creditamount'=> $creditamount, 
+    //                     'debitamount'=> $debitamount, 
+    //                     'invoiceno'=> $receiptinvoice, 
+    //                     'crdr'=> $crdr, 
+    //                     'status'=> 1,
+    //                     'insertdatetime'=> $updatedatetime,
+    //                     'tbl_user_idtbl_user'=> $userID,
+    //                     'tbl_company_idtbl_company'=> $company,
+    //                     'tbl_company_branch_idtbl_company_branch'=> $branch,
+    //                     'tbl_batch_trans_type_idtbl_batch_trans_type'=> $batchtranstype, 
+    //                     'tbl_master_idtbl_master'=> $masterID, 
+    //                     'tbl_batch_transaction_main_idtbl_batch_transaction_main'=> $batchtransmainID,
+    //                     'tbl_customer_idtbl_customer'=> $receiptcustomerID
+    //                 );
+    //             elseif($batchcategory==3):
+    //                 $databatchtransdata = array(
+    //                     'transdate'=> $paymentinvoicedate, 
+    //                     'batchno'=> $batchno, 
+    //                     'narration'=> $paymentnarration, 
+    //                     'desc'=> $paymentnarration, 
+    //                     'creditamount'=> $creditamount, 
+    //                     'debitamount'=> $debitamount, 
+    //                     'invoiceno'=> $paymentinvoice, 
+    //                     'crdr'=> $crdr, 
+    //                     'status'=> 1,
+    //                     'insertdatetime'=> $updatedatetime,
+    //                     'tbl_user_idtbl_user'=> $userID,
+    //                     'tbl_company_idtbl_company'=> $company,
+    //                     'tbl_company_branch_idtbl_company_branch'=> $branch,
+    //                     'tbl_batch_trans_type_idtbl_batch_trans_type'=> $batchtranstype, 
+    //                     'tbl_master_idtbl_master'=> $masterID, 
+    //                     'tbl_batch_transaction_main_idtbl_batch_transaction_main'=> $batchtransmainID,
+    //                     'tbl_supplier_idtbl_supplier'=> $paymentsupplierID
+    //                 );
+    //             endif;
+    //             $this->db->insert('tbl_batch_transaction', $databatchtransdata);
+    //             $batchtransID=$this->db->insert_id();
 
-                $this->db->trans_complete();
-                if ($this->db->trans_status() === TRUE) {
-                    $this->db->trans_commit();
+    //             $this->db->trans_complete();
+    //             if ($this->db->trans_status() === TRUE) {
+    //                 $this->db->trans_commit();
                     
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-save';
-                    $actionObj->title='';
-                    $actionObj->message='Record Added Successfully';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='success';
+    //                 $actionObj=new stdClass();
+    //                 $actionObj->icon='fas fa-save';
+    //                 $actionObj->title='';
+    //                 $actionObj->message='Record Added Successfully';
+    //                 $actionObj->url='';
+    //                 $actionObj->target='_blank';
+    //                 $actionObj->type='success';
 
-                    $actionJSON=json_encode($actionObj);
+    //                 $actionJSON=json_encode($actionObj);
                     
-                    $obj=new stdClass();
-                    $obj->status=1;
-                    $obj->batchno=$batchno;
-                    $obj->batchtransmainID=$batchtransmainID;
-                    $obj->batchtransID=$batchtransID;
-                    $obj->masterID=$masterID;
-                    $obj->action=$actionJSON;
+    //                 $obj=new stdClass();
+    //                 $obj->status=1;
+    //                 $obj->batchno=$batchno;
+    //                 $obj->batchtransmainID=$batchtransmainID;
+    //                 $obj->batchtransID=$batchtransID;
+    //                 $obj->masterID=$masterID;
+    //                 $obj->action=$actionJSON;
 
-                    echo json_encode($obj);
-                } else {
-                    $this->db->trans_rollback();
+    //                 echo json_encode($obj);
+    //             } else {
+    //                 $this->db->trans_rollback();
 
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-warning';
-                    $actionObj->title='';
-                    $actionObj->message='Record Error';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='danger';
+    //                 $actionObj=new stdClass();
+    //                 $actionObj->icon='fas fa-warning';
+    //                 $actionObj->title='';
+    //                 $actionObj->message='Record Error';
+    //                 $actionObj->url='';
+    //                 $actionObj->target='_blank';
+    //                 $actionObj->type='danger';
 
-                    $actionJSON=json_encode($actionObj);
+    //                 $actionJSON=json_encode($actionObj);
                     
-                    $obj=new stdClass();
-                    $obj->status=0;
-                    $obj->batchno='';
-                    $obj->batchtransmainID='';
-                    $obj->batchtransID='';
-                    $obj->masterID='';
-                    $obj->action=$actionJSON;
+    //                 $obj=new stdClass();
+    //                 $obj->status=0;
+    //                 $obj->batchno='';
+    //                 $obj->batchtransmainID='';
+    //                 $obj->batchtransID='';
+    //                 $obj->masterID='';
+    //                 $obj->action=$actionJSON;
 
-                    echo json_encode($obj);
-                }
-            }
-            else{
-                $actionObj=new stdClass();
-                $actionObj->icon='fas fa-warning';
-                $actionObj->title='';
-                $actionObj->message='Record Error, Batch no defind by system';
-                $actionObj->url='';
-                $actionObj->target='_blank';
-                $actionObj->type='danger';
+    //                 echo json_encode($obj);
+    //             }
+    //         }
+    //         else{
+    //             $actionObj=new stdClass();
+    //             $actionObj->icon='fas fa-warning';
+    //             $actionObj->title='';
+    //             $actionObj->message='Record Error, Batch no defind by system';
+    //             $actionObj->url='';
+    //             $actionObj->target='_blank';
+    //             $actionObj->type='danger';
 
-                $actionJSON=json_encode($actionObj);
+    //             $actionJSON=json_encode($actionObj);
                 
-                $obj=new stdClass();
-                $obj->status=0;
-                $obj->batchno='';
-                $obj->batchtransmainID='';
-                $obj->masterID='';
-                $obj->action=$actionJSON;
+    //             $obj=new stdClass();
+    //             $obj->status=0;
+    //             $obj->batchno='';
+    //             $obj->batchtransmainID='';
+    //             $obj->masterID='';
+    //             $obj->action=$actionJSON;
 
-                echo json_encode($obj);
-            }
-        }
-        else{
-            $actionObj=new stdClass();
-            $actionObj->icon='fas fa-warning';
-            $actionObj->title='';
-            $actionObj->message='Record Error, Already completed this batch.';
-            $actionObj->url='';
-            $actionObj->target='_blank';
-            $actionObj->type='danger';
+    //             echo json_encode($obj);
+    //         }
+    //     }
+    //     else{
+    //         $actionObj=new stdClass();
+    //         $actionObj->icon='fas fa-warning';
+    //         $actionObj->title='';
+    //         $actionObj->message='Record Error, Already completed this batch.';
+    //         $actionObj->url='';
+    //         $actionObj->target='_blank';
+    //         $actionObj->type='danger';
 
-            $actionJSON=json_encode($actionObj);
+    //         $actionJSON=json_encode($actionObj);
             
-            $obj=new stdClass();
-            $obj->status=0;
-            $obj->batchno='';
-            $obj->batchtransmainID='';
-            $obj->batchtransID='';
-            $obj->action=$actionJSON;
+    //         $obj=new stdClass();
+    //         $obj->status=0;
+    //         $obj->batchno='';
+    //         $obj->batchtransmainID='';
+    //         $obj->batchtransID='';
+    //         $obj->action=$actionJSON;
 
+    //         echo json_encode($obj);
+    //     }
+    // }
+    public function BatchTransactioninsertupdate(){
+        try {
+            $userID         = $_SESSION['userid'];
+            $company        = $_SESSION['companyid'];
+            $branch         = $_SESSION['branchid'];
+            $updatedatetime = date('Y-m-d H:i:s');
+            $today          = date('Y-m-d');
+    
+            // ── Input ─────────────────────────────────────────────────────────
+            $batchcategory  = $this->input->post('batchcategory');
+            $batchtranstype = $this->input->post('batchtranstype');
+            $batchTransID   = $this->input->post('batchTransID');
+            $batchTransBatchNo = $this->input->post('batchTransBatchNo');
+            $batchTransMaster  = $this->input->post('batchTransMaster');
+    
+            // ── Validate category ─────────────────────────────────────────────
+            if(empty($batchcategory) || !in_array($batchcategory, [1, 2, 3])){
+                throw new Exception('Invalid batch category provided');
+            }
+    
+            // ── Category-based input resolve ──────────────────────────────────
+            $batchtrasdate      = '';
+            $databatchtransdata = [];
+    
+            if($batchcategory == 1){
+                // Inventory
+                $inventoryDate         = $this->input->post('inventoryDate');
+                $inventoryTransCode    = $this->input->post('inventoryTransCode');
+                $inventoryMaterial     = $this->input->post('inventoryMaterial');
+                $inventoryMaterialText = $this->input->post('inventoryMaterialText');
+                $inventoryUOMID        = $this->input->post('inventoryUOMID');
+                $inventoryUOM          = $this->input->post('inventoryUOM');
+                $inventoryReference    = $this->input->post('inventoryReference');
+                $inventoryDescription  = $this->input->post('inventoryDescription');
+                $inventoryQtyOnHand    = $this->input->post('inventoryQtyOnHand');
+                $inventoryQtyIn        = $this->input->post('inventoryQtyIn');
+                $inventoryQtyOut       = $this->input->post('inventoryQtyOut');
+                $inventoryUnitCost     = $this->input->post('inventoryUnitCost');
+                $inventoryNewUnitCost  = $this->input->post('inventoryNewUnitCost');
+                $inventoryBatchNo      = $this->input->post('inventoryBatchNo');    
+            } elseif($batchcategory == 2){
+                // Receipt
+                $receiptcustomerID  = $this->input->post('receiptcustomerID');
+                $receiptcustomer    = $this->input->post('receiptcustomer');
+                $receiptinvoicedate = $this->input->post('receiptinvoicedate');
+                $receiptinvoice     = $this->input->post('receiptinvoice');
+                $creditamount       = str_replace([',', ' '], '', $this->input->post('creditamount'));
+                $debitamount        = str_replace([',', ' '], '', $this->input->post('debitamount'));
+                $receiptnarration   = $this->input->post('receiptnarration');
+                $crdr               = $this->input->post('crdr');    
+            } elseif($batchcategory == 3){
+                // Payment
+                $paymentsupplierID  = $this->input->post('paymentsupplierID');
+                $paymentsupplier    = $this->input->post('paymentsupplier');
+                $paymentinvoicedate = $this->input->post('paymentinvoicedate');
+                $paymentinvoice     = $this->input->post('paymentinvoice');
+                $creditamount       = str_replace([',', ' '], '', $this->input->post('creditamount'));
+                $debitamount        = str_replace([',', ' '], '', $this->input->post('debitamount'));
+                $paymentnarration   = $this->input->post('paymentnarration');
+                $crdr               = $this->input->post('crdr');
+            }
+    
+            // ── Resolve batch & master ID ─────────────────────────────────────
+            $completestatus = 0;
+            $batchno        = '';
+            $masterID       = '';
+    
+            if(empty($batchTransID)){
+                // New batch
+                $masterdata = get_account_period_acco_date($company, $branch, $today);
+    
+                if(empty($masterdata) || empty($masterdata->idtbl_master)){
+                    throw new Exception('Record Error, Active account period not found for selected date');
+                }
+    
+                $prefix   = generate_prefix($company, $branch, $today, 'BT');
+                $batchno  = tr_batch_num($prefix, $branch);
+                $masterID = $masterdata->idtbl_master;
+    
+            } else {
+                // Existing batch
+                $batchno  = $batchTransBatchNo;
+                $masterID = $batchTransMaster;
+    
+                $this->db->select('completestatus');
+                $this->db->from('tbl_batch_transaction_main');
+                $this->db->where('idtbl_batch_transaction_main', $batchTransID);
+    
+                $respondcheck = $this->db->get();
+    
+                if(!$respondcheck || $respondcheck->num_rows() == 0){
+                    throw new Exception('Batch main record not found');
+                }
+    
+                $completestatus = $respondcheck->row(0)->completestatus;
+            }
+    
+            // ── Validate batch state ──────────────────────────────────────────
+            if($completestatus == 1){
+                throw new Exception('Record Error, Already completed this batch.');
+            }
+    
+            if(empty($batchno)){
+                throw new Exception('Record Error, Batch no could not be defined by system');
+            }
+    
+            // ── Begin Transaction ─────────────────────────────────────────────
+            $this->db->trans_begin();
+    
+            // Insert new batch main header if new batch
+            if(empty($batchTransID)){
+                $data = array(
+                    'transdate'                                      => $today,
+                    'batchno'                                        => $batchno,
+                    'status'                                         => '1',
+                    'insertdatetime'                                 => $updatedatetime,
+                    'tbl_user_idtbl_user'                            => $userID,
+                    'tbl_company_idtbl_company'                      => $company,
+                    'tbl_company_branch_idtbl_company_branch'        => $branch,
+                    'tbl_batch_category_idtbl_batch_category'        => $batchcategory,
+                    'tbl_batch_trans_type_idtbl_batch_trans_type'    => $batchtranstype,
+                    'tbl_master_idtbl_master'                        => $masterID
+                );
+    
+                $this->db->insert('tbl_batch_transaction_main', $data);
+                $batchtransmainID = $this->db->insert_id();
+    
+                if(empty($batchtransmainID)){
+                    throw new Exception('Record Error, Failed to insert batch main record');
+                }
+            } else {
+                $batchtransmainID = $batchTransID;
+            }
+    
+            // ── Build category-specific transaction data ───────────────────────
+            if($batchcategory == 1){
+                $databatchtransdata = array(
+                    'transdate'                                      => $inventoryDate,
+                    'batchno'                                        => $batchno,
+                    'narration'                                      => $inventoryReference,
+                    'desc'                                           => $inventoryDescription,
+                    'qtyhand'                                        => $inventoryQtyOnHand,
+                    'qtyin'                                          => $inventoryQtyIn,
+                    'qtyout'                                         => $inventoryQtyOut,
+                    'unitcost'                                       => $inventoryUnitCost,
+                    'newunitcost'                                    => $inventoryNewUnitCost,
+                    'uom_id'                                         => $inventoryUOMID,
+                    'materialbatch'                                  => $inventoryBatchNo,
+                    'status'                                         => 1,
+                    'insertdatetime'                                 => $updatedatetime,
+                    'tbl_user_idtbl_user'                            => $userID,
+                    'tbl_company_idtbl_company'                      => $company,
+                    'tbl_company_branch_idtbl_company_branch'        => $branch,
+                    'tbl_batch_trans_type_idtbl_batch_trans_type'    => $batchtranstype,
+                    'tbl_master_idtbl_master'                        => $masterID,
+                    'tbl_print_material_info_idtbl_print_material_info' => $inventoryMaterial,
+                    'tbl_batch_transaction_main_idtbl_batch_transaction_main' => $batchtransmainID
+                );
+    
+            } elseif($batchcategory == 2){
+                $databatchtransdata = array(
+                    'transdate'                                      => $receiptinvoicedate,
+                    'batchno'                                        => $batchno,
+                    'narration'                                      => $receiptnarration,
+                    'desc'                                           => $receiptnarration,
+                    'creditamount'                                   => $creditamount,
+                    'debitamount'                                    => $debitamount,
+                    'invoiceno'                                      => $receiptinvoice,
+                    'crdr'                                           => $crdr,
+                    'status'                                         => 1,
+                    'insertdatetime'                                 => $updatedatetime,
+                    'tbl_user_idtbl_user'                            => $userID,
+                    'tbl_company_idtbl_company'                      => $company,
+                    'tbl_company_branch_idtbl_company_branch'        => $branch,
+                    'tbl_batch_trans_type_idtbl_batch_trans_type'    => $batchtranstype,
+                    'tbl_master_idtbl_master'                        => $masterID,
+                    'tbl_batch_transaction_main_idtbl_batch_transaction_main' => $batchtransmainID,
+                    'tbl_customer_idtbl_customer'                    => $receiptcustomerID
+                );
+    
+            } elseif($batchcategory == 3){
+                $databatchtransdata = array(
+                    'transdate'                                      => $paymentinvoicedate,
+                    'batchno'                                        => $batchno,
+                    'narration'                                      => $paymentnarration,
+                    'desc'                                           => $paymentnarration,
+                    'creditamount'                                   => $creditamount,
+                    'debitamount'                                    => $debitamount,
+                    'invoiceno'                                      => $paymentinvoice,
+                    'crdr'                                           => $crdr,
+                    'status'                                         => 1,
+                    'insertdatetime'                                 => $updatedatetime,
+                    'tbl_user_idtbl_user'                            => $userID,
+                    'tbl_company_idtbl_company'                      => $company,
+                    'tbl_company_branch_idtbl_company_branch'        => $branch,
+                    'tbl_batch_trans_type_idtbl_batch_trans_type'    => $batchtranstype,
+                    'tbl_master_idtbl_master'                        => $masterID,
+                    'tbl_batch_transaction_main_idtbl_batch_transaction_main' => $batchtransmainID,
+                    'tbl_supplier_idtbl_supplier'                    => $paymentsupplierID
+                );
+            }
+    
+            $this->db->insert('tbl_batch_transaction', $databatchtransdata);
+            $batchtransID = $this->db->insert_id();
+    
+            if(empty($batchtransID)){
+                throw new Exception('Record Error, Failed to insert batch transaction record');
+            }
+    
+            // ── Complete Transaction ──────────────────────────────────────────
+            $this->db->trans_complete();
+    
+            if($this->db->trans_status() === TRUE){
+                $this->db->trans_commit();
+    
+                $actionObj          = new stdClass();
+                $actionObj->icon    = 'fas fa-save';
+                $actionObj->title   = '';
+                $actionObj->message = 'Record Added Successfully';
+                $actionObj->url     = '';
+                $actionObj->target  = '_blank';
+                $actionObj->type    = 'success';
+    
+                $obj                  = new stdClass();
+                $obj->status          = 1;
+                $obj->batchno         = $batchno;
+                $obj->batchtransmainID= $batchtransmainID;
+                $obj->batchtransID    = $batchtransID;
+                $obj->masterID        = $masterID;
+                $obj->action          = json_encode($actionObj);
+    
+                echo json_encode($obj);
+    
+            } else {
+                $this->db->trans_rollback();
+                throw new Exception('Record Error, Transaction failed');
+            }
+    
+        } catch(Exception $e){
+            if($this->db->trans_enabled){
+                $this->db->trans_rollback();
+            }
+    
+            $actionObj          = new stdClass();
+            $actionObj->icon    = 'fas fa-warning';
+            $actionObj->title   = '';
+            $actionObj->message = $e->getMessage();
+            $actionObj->url     = '';
+            $actionObj->target  = '_blank';
+            $actionObj->type    = 'danger';
+    
+            $obj                  = new stdClass();
+            $obj->status          = 0;
+            $obj->batchno         = '';
+            $obj->batchtransmainID= '';
+            $obj->batchtransID    = '';
+            $obj->masterID        = '';
+            $obj->action          = json_encode($actionObj);
+    
             echo json_encode($obj);
         }
     }
@@ -674,499 +939,898 @@ class BatchTransactioninfo extends CI_Model{
             echo $html;
         }
     }
-    public function BatchTransactionapprove(){
-        $recordID = $this->input->post('recordID');
-        $confirmnot = $this->input->post('confirmnot');
-        $userID=$_SESSION['userid'];
-        $updatedatetime=date('Y-m-d H:i:s');
-        $companyID = $_SESSION['companyid'];
-        $branchID = $_SESSION['branchid']; 
-        $today = date('Y-m-d');   
-        $journalmainID = 0;
+    // public function BatchTransactionapprove(){
+    //     $recordID = $this->input->post('recordID');
+    //     $confirmnot = $this->input->post('confirmnot');
+    //     $userID=$_SESSION['userid'];
+    //     $updatedatetime=date('Y-m-d H:i:s');
+    //     $companyID = $_SESSION['companyid'];
+    //     $branchID = $_SESSION['branchid']; 
+    //     $today = date('Y-m-d');   
+    //     $journalmainID = 0;
 
-        $configdata = getconfigdata('measurement_search');
+    //     $configdata = getconfigdata('measurement_search');
         
-        $tablename = $configdata->row(0)->tbl_name;
-        $column1   = $configdata->row(0)->col_name;
-        $column2   = $configdata->row(1)->col_name;
+    //     $tablename = $configdata->row(0)->tbl_name;
+    //     $column1   = $configdata->row(0)->col_name;
+    //     $column2   = $configdata->row(1)->col_name;
 
-        $has_table = !empty($tablename) ? 1 : 0;
+    //     $has_table = !empty($tablename) ? 1 : 0;
 
-        $configdatabatch = getconfigdata('batch_transaction');
+    //     $configdatabatch = getconfigdata('batch_transaction');
         
-        $tablenamebatch = $configdatabatch->row(0)->tbl_name;
-        $column1batch   = $configdatabatch->row(0)->col_name;
-        $column2batch   = $configdatabatch->row(1)->col_name;
-        $column3batch   = $configdatabatch->row(2)->col_name;
+    //     $tablenamebatch = $configdatabatch->row(0)->tbl_name;
+    //     $column1batch   = $configdatabatch->row(0)->col_name;
+    //     $column2batch   = $configdatabatch->row(1)->col_name;
+    //     $column3batch   = $configdatabatch->row(2)->col_name;
 
-        $has_tablebatch = !empty($tablenamebatch) ? 1 : 0;
+    //     $has_tablebatch = !empty($tablenamebatch) ? 1 : 0;
 
-        $configdataweb = getconfigdata('batch_stock_webhook');
+    //     $configdataweb = getconfigdata('batch_stock_webhook');
         
-        $webhookUrl = $configdataweb->row(0)->col_name;
+    //     $webhookUrl = $configdataweb->row(0)->col_name;
 
-        $this->db->select("tbl_batch_transaction.*, tbl_batch_transaction_main.approvestatus, tbl_batch_transaction_main.completestatus, tbl_batch_category.batch_category, tbl_batch_category.idtbl_batch_category, tbl_batch_trans_type.batctranstype, tbl_batch_trans_type.idtbl_batch_trans_type, tbl_batch_trans_type.crdr as `batchtypecrdr`, tbl_batch_trans_type.plusminus, IF($has_tablebatch = 0, '', $tablenamebatch.$column2batch) AS materialname, IF($has_tablebatch = 0, '', $tablenamebatch.$column3batch) as `grnsupplierid`, IF($has_table = 0, '', $tablename.$column2) AS measure_type");
-        $this->db->from('tbl_batch_transaction');
-        $this->db->join('tbl_batch_transaction_main', 'tbl_batch_transaction_main.idtbl_batch_transaction_main = tbl_batch_transaction.tbl_batch_transaction_main_idtbl_batch_transaction_main', 'left');
-        $this->db->join('tbl_batch_category', 'tbl_batch_category.idtbl_batch_category = tbl_batch_transaction_main.tbl_batch_category_idtbl_batch_category', 'left');
-        $this->db->join('tbl_batch_trans_type', 'tbl_batch_trans_type.idtbl_batch_trans_type=tbl_batch_transaction.tbl_batch_trans_type_idtbl_batch_trans_type', 'left');
-        if(!empty($tablenamebatch)):
-            $this->db->join("$tablenamebatch", "$tablenamebatch.$column1batch=tbl_batch_transaction.tbl_print_material_info_idtbl_print_material_info", 'left');
-        endif;
-        if(!empty($tablename)):
-            $this->db->join("$tablename", "$tablename.$column1=tbl_batch_transaction.uom_id", 'left');
-        endif;
-        $this->db->where('tbl_batch_transaction.tbl_batch_transaction_main_idtbl_batch_transaction_main', $recordID);
-        $this->db->where('tbl_batch_transaction.status', 1);
+    //     $this->db->select("tbl_batch_transaction.*, tbl_batch_transaction_main.transdate AS transaction_date, tbl_batch_transaction_main.approvestatus, tbl_batch_transaction_main.completestatus, tbl_batch_category.batch_category, tbl_batch_category.idtbl_batch_category, tbl_batch_trans_type.batctranstype, tbl_batch_trans_type.idtbl_batch_trans_type, tbl_batch_trans_type.crdr as `batchtypecrdr`, tbl_batch_trans_type.plusminus, IF($has_tablebatch = 0, '', $tablenamebatch.$column2batch) AS materialname, IF($has_tablebatch = 0, '', $tablenamebatch.$column3batch) as `grnsupplierid`, IF($has_table = 0, '', $tablename.$column2) AS measure_type");
+    //     $this->db->from('tbl_batch_transaction');
+    //     $this->db->join('tbl_batch_transaction_main', 'tbl_batch_transaction_main.idtbl_batch_transaction_main = tbl_batch_transaction.tbl_batch_transaction_main_idtbl_batch_transaction_main', 'left');
+    //     $this->db->join('tbl_batch_category', 'tbl_batch_category.idtbl_batch_category = tbl_batch_transaction_main.tbl_batch_category_idtbl_batch_category', 'left');
+    //     $this->db->join('tbl_batch_trans_type', 'tbl_batch_trans_type.idtbl_batch_trans_type=tbl_batch_transaction.tbl_batch_trans_type_idtbl_batch_trans_type', 'left');
+    //     if(!empty($tablenamebatch)):
+    //         $this->db->join("$tablenamebatch", "$tablenamebatch.$column1batch=tbl_batch_transaction.tbl_print_material_info_idtbl_print_material_info", 'left');
+    //     endif;
+    //     if(!empty($tablename)):
+    //         $this->db->join("$tablename", "$tablename.$column1=tbl_batch_transaction.uom_id", 'left');
+    //     endif;
+    //     $this->db->where('tbl_batch_transaction.tbl_batch_transaction_main_idtbl_batch_transaction_main', $recordID);
+    //     $this->db->where('tbl_batch_transaction.status', 1);
 
-        $respond = $this->db->get();
+    //     $respond = $this->db->get();
 
-        if($respond->row(0)->approvestatus==1){
-            $actionObj=new stdClass();
-            $actionObj->icon='fas fa-exclamation-triangle';
-            $actionObj->title='';
-            $actionObj->message='Record already approved. Kindly review the status of the record.';
-            $actionObj->url='';
-            $actionObj->target='_blank';
-            $actionObj->type='warning';
+    //     if($respond->row(0)->approvestatus==1){
+    //         $actionObj=new stdClass();
+    //         $actionObj->icon='fas fa-exclamation-triangle';
+    //         $actionObj->title='';
+    //         $actionObj->message='Record already approved. Kindly review the status of the record.';
+    //         $actionObj->url='';
+    //         $actionObj->target='_blank';
+    //         $actionObj->type='warning';
 
-            $actionJSON=json_encode($actionObj);
-            $obj=new stdClass();
-            $obj->status=0;
-            $obj->action=$actionJSON;
-            echo json_encode($obj);
-        }
-        else if($respond->row(0)->completestatus==0){
-            $actionObj=new stdClass();
-            $actionObj->icon='fas fa-exclamation-triangle';
-            $actionObj->title='';
-            $actionObj->message='This batch transaction not complete yet. Firstly complete this batch transaction.';
-            $actionObj->url='';
-            $actionObj->target='_blank';
-            $actionObj->type='warning';
+    //         $actionJSON=json_encode($actionObj);
+    //         $obj=new stdClass();
+    //         $obj->status=0;
+    //         $obj->action=$actionJSON;
+    //         echo json_encode($obj);
+    //     }
+    //     else if($respond->row(0)->completestatus==0){
+    //         $actionObj=new stdClass();
+    //         $actionObj->icon='fas fa-exclamation-triangle';
+    //         $actionObj->title='';
+    //         $actionObj->message='This batch transaction not complete yet. Firstly complete this batch transaction.';
+    //         $actionObj->url='';
+    //         $actionObj->target='_blank';
+    //         $actionObj->type='warning';
 
-            $actionJSON=json_encode($actionObj);
-            $obj=new stdClass();
-            $obj->status=0;
-            $obj->action=$actionJSON;
-            echo json_encode($obj);
-        }
-        else{
-            try {
-                $this->db->trans_begin();
+    //         $actionJSON=json_encode($actionObj);
+    //         $obj=new stdClass();
+    //         $obj->status=0;
+    //         $obj->action=$actionJSON;
+    //         echo json_encode($obj);
+    //     }
+    //     else{
+    //         try {
+    //             $this->db->trans_begin();
         
-                if ($confirmnot == 1) {
-                    $totaltransactionamount = 0;
-                    // APPROVE PROCESS
-                    $data = array(
-                        'approvestatus' => $confirmnot,
-                        'approveuser' => $userID,
-                        'updatedatetime' => $updatedatetime
-                    );
+    //             if ($confirmnot == 1) {
+    //                 $totaltransactionamount = 0;
+    //                 // APPROVE PROCESS
+    //                 $data = array(
+    //                     'approvestatus' => $confirmnot,
+    //                     'approveuser' => $userID,
+    //                     'updatedatetime' => $updatedatetime
+    //                 );
         
-                    $this->db->where('idtbl_batch_transaction_main', $recordID);
-                    $this->db->update('tbl_batch_transaction_main', $data);
+    //                 $this->db->where('idtbl_batch_transaction_main', $recordID);
+    //                 $this->db->update('tbl_batch_transaction_main', $data);
                     
-                    if($respond->row(0)->idtbl_batch_category==1){
-                        $stockWebhookPayload = [];
+    //                 if($respond->row(0)->idtbl_batch_category==1){
+    //                     $stockWebhookPayload = [];
 
-                        foreach($respond->result() as $rowtransactiondata){
-                            if(!empty($rowtransactiondata->plusminus > 0)){
-                                $materialBatchno = $rowtransactiondata->materialbatch;
-                                if($rowtransactiondata->plusminus==1):
-                                    $stocktotal = $rowtransactiondata->qtyin * $rowtransactiondata->unitcost;
-                                elseif($rowtransactiondata->plusminus==2):
-                                    $stocktotal = $rowtransactiondata->qtyout * $rowtransactiondata->unitcost;
-                                endif;
-                                $totaltransactionamount += $stocktotal;
+    //                     foreach($respond->result() as $rowtransactiondata){
+    //                         if(!empty($rowtransactiondata->plusminus > 0)){
+    //                             $materialBatchno = $rowtransactiondata->materialbatch;
+    //                             if($rowtransactiondata->plusminus==1):
+    //                                 $stocktotal = $rowtransactiondata->qtyin * $rowtransactiondata->unitcost;
+    //                             elseif($rowtransactiondata->plusminus==2):
+    //                                 $stocktotal = $rowtransactiondata->qtyout * $rowtransactiondata->unitcost;
+    //                             endif;
+    //                             $totaltransactionamount += $stocktotal;
 
-                                // Collect for webhook
-                                $stockWebhookPayload[] = [
-                                    'type'          => 'update',
-                                    'batchno'       => $materialBatchno,
-                                    'materialid'    => $rowtransactiondata->tbl_print_material_info_idtbl_print_material_info,
-                                    'materialname'  => $rowtransactiondata->materialname,
-                                    'plusminus'     => $rowtransactiondata->plusminus,
-                                    'qtyin'         => $rowtransactiondata->qtyin,
-                                    'qtyout'        => $rowtransactiondata->qtyout,
-                                    'unitcost'      => $rowtransactiondata->unitcost,
-                                    'stocktotal'    => $stocktotal,
-                                    'supplier_id'   => $rowtransactiondata->grnsupplierid,
-                                    'uom_id'        => $rowtransactiondata->uom_id,
-                                    'grndate'       => $today,
-                                    'companyID'     => $companyID,
-                                    'branchID'      => $branchID,
-                                    'userid'        => $userID
-                                ];
-                            } else {
-                                $materialBatchno = generate_batch_no($rowtransactiondata->tbl_print_material_info_idtbl_print_material_info);
-                                $stocktotal = $rowtransactiondata->qtyin * $rowtransactiondata->unitcost;
-                                $totaltransactionamount += $stocktotal;
+    //                             // Collect for webhook
+    //                             $stockWebhookPayload[] = [
+    //                                 'type'          => 'update',
+    //                                 'batchno'       => $materialBatchno,
+    //                                 'materialid'    => $rowtransactiondata->tbl_print_material_info_idtbl_print_material_info,
+    //                                 'materialname'  => $rowtransactiondata->materialname,
+    //                                 'plusminus'     => $rowtransactiondata->plusminus,
+    //                                 'qtyin'         => $rowtransactiondata->qtyin,
+    //                                 'qtyout'        => $rowtransactiondata->qtyout,
+    //                                 'unitcost'      => $rowtransactiondata->unitcost,
+    //                                 'stocktotal'    => $stocktotal,
+    //                                 'supplier_id'   => $rowtransactiondata->grnsupplierid,
+    //                                 'uom_id'        => $rowtransactiondata->uom_id,
+    //                                 'grndate'       => $today,
+    //                                 'companyID'     => $companyID,
+    //                                 'branchID'      => $branchID,
+    //                                 'userid'        => $userID
+    //                             ];
+    //                         } else {
+    //                             $materialBatchno = generate_batch_no($rowtransactiondata->tbl_print_material_info_idtbl_print_material_info);
+    //                             $stocktotal = $rowtransactiondata->qtyin * $rowtransactiondata->unitcost;
+    //                             $totaltransactionamount += $stocktotal;
 
-                                // Collect for webhook
-                                $stockWebhookPayload[] = [
-                                    'type'          => 'insert',
-                                    'batchno'       => $materialBatchno,
-                                    'materialid'    => $rowtransactiondata->tbl_print_material_info_idtbl_print_material_info,
-                                    'materialname'  => $rowtransactiondata->materialname,
-                                    'plusminus'     => $rowtransactiondata->plusminus,
-                                    'qtyin'         => $rowtransactiondata->qtyin,
-                                    'qtyout'        => 0,
-                                    'unitcost'      => $rowtransactiondata->unitcost,
-                                    'stocktotal'    => $stocktotal,
-                                    'supplier_id'   => $rowtransactiondata->grnsupplierid,
-                                    'uom_id'        => $rowtransactiondata->uom_id,
-                                    'grndate'       => $today,
-                                    'companyID'     => $companyID,
-                                    'branchID'      => $branchID,
-                                    'userid'        => $userID
-                                ];
-                            }
-                        }
+    //                             // Collect for webhook
+    //                             $stockWebhookPayload[] = [
+    //                                 'type'          => 'insert',
+    //                                 'batchno'       => $materialBatchno,
+    //                                 'materialid'    => $rowtransactiondata->tbl_print_material_info_idtbl_print_material_info,
+    //                                 'materialname'  => $rowtransactiondata->materialname,
+    //                                 'plusminus'     => $rowtransactiondata->plusminus,
+    //                                 'qtyin'         => $rowtransactiondata->qtyin,
+    //                                 'qtyout'        => 0,
+    //                                 'unitcost'      => $rowtransactiondata->unitcost,
+    //                                 'stocktotal'    => $stocktotal,
+    //                                 'supplier_id'   => $rowtransactiondata->grnsupplierid,
+    //                                 'uom_id'        => $rowtransactiondata->uom_id,
+    //                                 'grndate'       => $today,
+    //                                 'companyID'     => $companyID,
+    //                                 'branchID'      => $branchID,
+    //                                 'userid'        => $userID
+    //                             ];
+    //                         }
+    //                     }
 
-                       if(!empty($stockWebhookPayload)){
-                            // $webhookUrl = 'http://localhost/multioffsetprint/Api/StockWebhook';
+    //                    if(!empty($stockWebhookPayload)){
+    //                         // $webhookUrl = 'http://localhost/multioffsetprint/Api/StockWebhook';
                             
-                            $ch = curl_init($webhookUrl);
-                            curl_setopt($ch, CURLOPT_POST, true);
-                            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
-                                'stocks' => $stockWebhookPayload,
-                            ]));
-                            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-                            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                            curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    //                         $ch = curl_init($webhookUrl);
+    //                         curl_setopt($ch, CURLOPT_POST, true);
+    //                         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+    //                             'stocks' => $stockWebhookPayload,
+    //                         ]));
+    //                         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    //                         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    //                         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
                             
-                            $webhookResponse = curl_exec($ch);
-                            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                            curl_close($ch);
-                        } 
+    //                         $webhookResponse = curl_exec($ch);
+    //                         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    //                         curl_close($ch);
+    //                     } 
                         
-                        // print_r($webhookResponse);
-                        // die();
-                        // Prepare the journal entry
-                        $batchtype = $respond->row(0)->idtbl_batch_trans_type;
-                        $narration = $respond->row(0)->batch_category.' - '.$respond->row(0)->batctranstype.' on '.$today;
+    //                     // print_r($webhookResponse);
+    //                     // die();
+    //                     // Prepare the journal entry
+    //                     $batchtype = $respond->row(0)->idtbl_batch_trans_type;
+    //                     $narration = $respond->row(0)->batch_category.' - '.$respond->row(0)->batctranstype.' on '.$today;
 
-                        $this->db->select('`crdr`, `tbl_account_idtbl_account`, `tbl_account_detail_idtbl_account_detail`');
-                        $this->db->from('tbl_batch_trans_type_info');
-                        $this->db->where('tbl_batch_trans_type_idtbl_batch_trans_type', $batchtype);
-                        $this->db->where('status', 1);
-                        $respondtranstypeinfo = $this->db->get();
+    //                     $this->db->select('`crdr`, `tbl_account_idtbl_account`, `tbl_account_detail_idtbl_account_detail`');
+    //                     $this->db->from('tbl_batch_trans_type_info');
+    //                     $this->db->where('tbl_batch_trans_type_idtbl_batch_trans_type', $batchtype);
+    //                     $this->db->where('status', 1);
+    //                     $respondtranstypeinfo = $this->db->get();
 
-                        if($respondtranstypeinfo->num_rows() > 0){
-                            $prefix=journal_prefix($companyID, $branchID);
-                            $masterdata=get_account_period($companyID, $branchID);
-                            $batchno=tr_batch_num($prefix, $branchID);
-                            $masterID=$masterdata->idtbl_master;
+    //                     if($respondtranstypeinfo->num_rows() > 0){
+    //                         $masterdata = get_account_period_acco_date($companyID, $branchID, $respond->row(0)->transaction_date);
+    //                         $prefix   = generate_prefix($companyID, $branchID, $respond->row(0)->transaction_date, 'JE');
+                            
+    //                         $batchno=tr_batch_num($prefix, $branchID);
+    //                         $masterID=$masterdata->idtbl_master;
 
-                            $data = array(
-                                'tradate'=> $today, 
-                                'batchno'=> $batchno, 
-                                'amount'=> $totaltransactionamount, 
-                                'narration'=> $narration, 
-                                'poststatus'=> '0', 
-                                'status'=> '1', 
-                                'insertdatetime'=> $updatedatetime, 
-                                'tbl_user_idtbl_user'=> $userID,
-                                'tbl_master_idtbl_master'=> $masterID,
-                                'tbl_company_idtbl_company'=> $companyID,
-                                'tbl_company_branch_idtbl_company_branch'=> $branchID
-                            );
+    //                         $data = array(
+    //                             'tradate'=> $today, 
+    //                             'batchno'=> $batchno, 
+    //                             'amount'=> $totaltransactionamount, 
+    //                             'narration'=> $narration, 
+    //                             'poststatus'=> '0', 
+    //                             'status'=> '1', 
+    //                             'insertdatetime'=> $updatedatetime, 
+    //                             'tbl_user_idtbl_user'=> $userID,
+    //                             'tbl_master_idtbl_master'=> $masterID,
+    //                             'tbl_company_idtbl_company'=> $companyID,
+    //                             'tbl_company_branch_idtbl_company_branch'=> $branchID
+    //                         );
 
-                            $this->db->insert('tbl_account_transaction_manual_main', $data);
+    //                         $this->db->insert('tbl_account_transaction_manual_main', $data);
 
-                            $journalmainID=$this->db->insert_id();
+    //                         $journalmainID=$this->db->insert_id();
 
-                            $i=1;
-                            foreach($respondtranstypeinfo->result() as $rowtranstypeinfo){
-                                $chartofaccountID = $rowtranstypeinfo->tbl_account_idtbl_account;
-                                $chartofdetailaccountID = $rowtranstypeinfo->tbl_account_detail_idtbl_account_detail;
-                                $crdr = $rowtranstypeinfo->crdr;    
-                                $transactionAmount = $totaltransactionamount;
+    //                         $i=1;
+    //                         foreach($respondtranstypeinfo->result() as $rowtranstypeinfo){
+    //                             $chartofaccountID = $rowtranstypeinfo->tbl_account_idtbl_account;
+    //                             $chartofdetailaccountID = $rowtranstypeinfo->tbl_account_detail_idtbl_account_detail;
+    //                             $crdr = $rowtranstypeinfo->crdr;    
+    //                             $transactionAmount = $totaltransactionamount;
 
-                                $datacrdr = array(
-                                    'tradate'=> $today, 
-                                    'batchno'=> $batchno, 
-                                    'tratype'=> 'J', 
-                                    'seqno'=> $i, 
-                                    'crdr'=> $crdr, 
-                                    'amount'=> $transactionAmount, 
-                                    'narration'=> $narration, 
-                                    'status'=> '1', 
-                                    'insertdatetime'=> $updatedatetime, 
-                                    'tbl_user_idtbl_user'=> $userID,
-                                    'tbl_account_idtbl_account'=> $chartofaccountID,
-                                    'tbl_account_detail_idtbl_account_detail'=> $chartofdetailaccountID,
-                                    'tbl_master_idtbl_master'=> $masterID,
-                                    'tbl_company_idtbl_company'=> $companyID,
-                                    'tbl_company_branch_idtbl_company_branch'=> $branchID,
-                                    'manualtrans_main_id'=> $journalmainID
-                                );
+    //                             $datacrdr = array(
+    //                                 'tradate'=> $today, 
+    //                                 'batchno'=> $batchno, 
+    //                                 'tratype'=> 'J', 
+    //                                 'seqno'=> $i, 
+    //                                 'crdr'=> $crdr, 
+    //                                 'amount'=> $transactionAmount, 
+    //                                 'narration'=> $narration, 
+    //                                 'status'=> '1', 
+    //                                 'insertdatetime'=> $updatedatetime, 
+    //                                 'tbl_user_idtbl_user'=> $userID,
+    //                                 'tbl_account_idtbl_account'=> $chartofaccountID,
+    //                                 'tbl_account_detail_idtbl_account_detail'=> $chartofdetailaccountID,
+    //                                 'tbl_master_idtbl_master'=> $masterID,
+    //                                 'tbl_company_idtbl_company'=> $companyID,
+    //                                 'tbl_company_branch_idtbl_company_branch'=> $branchID,
+    //                                 'manualtrans_main_id'=> $journalmainID
+    //                             );
 
-                                $this->db->insert('tbl_account_transaction_manual', $datacrdr);
-                                $i++;
-                            }
+    //                             $this->db->insert('tbl_account_transaction_manual', $datacrdr);
+    //                             $i++;
+    //                         }
 
-                            // Call Journalentryposting here
-                            $postingSuccess = $this->Journalentryposting($journalmainID);
-                            if (!$postingSuccess) {
-                                throw new Exception("Journal entry posting failed");
-                            }
-                        }
-                    } else if($respond->row(0)->idtbl_batch_category==2){
-                        // Prepare the journal entry
-                        $batchtype = $respond->row(0)->idtbl_batch_trans_type;
-                        $narration = $respond->row(0)->batch_category.' - '.$respond->row(0)->batctranstype.' on '.$today;
+    //                         // Call Journalentryposting here
+    //                         $postingSuccess = $this->Journalentryposting($journalmainID);
+    //                         if (!$postingSuccess) {
+    //                             throw new Exception("Journal entry posting failed");
+    //                         }
+    //                     }
+    //                 } else if($respond->row(0)->idtbl_batch_category==2){
+    //                     // Prepare the journal entry
+    //                     $batchtype = $respond->row(0)->idtbl_batch_trans_type;
+    //                     $narration = $respond->row(0)->batch_category.' - '.$respond->row(0)->batctranstype.' on '.$today;
 
-                        $this->db->select('`crdr`, `tbl_account_idtbl_account`, `tbl_account_detail_idtbl_account_detail`');
-                        $this->db->from('tbl_batch_trans_type_info');
-                        $this->db->where('tbl_batch_trans_type_idtbl_batch_trans_type', $batchtype);
-                        $this->db->where('status', 1);
-                        $respondtranstypeinfo = $this->db->get();
+    //                     $this->db->select('`crdr`, `tbl_account_idtbl_account`, `tbl_account_detail_idtbl_account_detail`');
+    //                     $this->db->from('tbl_batch_trans_type_info');
+    //                     $this->db->where('tbl_batch_trans_type_idtbl_batch_trans_type', $batchtype);
+    //                     $this->db->where('status', 1);
+    //                     $respondtranstypeinfo = $this->db->get();
 
-                        if($respondtranstypeinfo->num_rows() > 0){
-                            foreach($respond->result() as $rowtransactiondata){
-                                if(!empty($rowtransactiondata->creditamount)):
-                                    $incoiceamount = $rowtransactiondata->creditamount;
-                                elseif(!empty($rowtransactiondata->debitamount)):
-                                    $incoiceamount = $rowtransactiondata->debitamount;
-                                endif;
+    //                     if($respondtranstypeinfo->num_rows() > 0){
+    //                         foreach($respond->result() as $rowtransactiondata){
+    //                             if(!empty($rowtransactiondata->creditamount)):
+    //                                 $incoiceamount = $rowtransactiondata->creditamount;
+    //                             elseif(!empty($rowtransactiondata->debitamount)):
+    //                                 $incoiceamount = $rowtransactiondata->debitamount;
+    //                             endif;
 
-                                $datasale = array(
-                                    'saletype'=>'2', 
-                                    'salecode'=>'OTH', 
-                                    'invno'=>$rowtransactiondata->invoiceno, 
-                                    'invdate'=>$rowtransactiondata->transdate, 
-                                    'amount'=>$incoiceamount, 
-                                    'invamount'=>$incoiceamount, 
-                                    'paystatus'=>'0', 
-                                    'poststatus'=>'1', 
-                                    'remark'=>$rowtransactiondata->narration, 
-                                    'status'=>'1', 
-                                    'insertdatetime'=>$updatedatetime, 
-                                    'tbl_user_idtbl_user'=>$userID, 
-                                    'tbl_customer_idtbl_customer'=>$rowtransactiondata->tbl_customer_idtbl_customer,
-                                    'tbl_company_idtbl_company'=>$companyID,
-                                    'tbl_company_branch_idtbl_company_branch'=>$branchID
-                                );
+    //                             $datasale = array(
+    //                                 'saletype'=>'2', 
+    //                                 'salecode'=>'OTH', 
+    //                                 'invno'=>$rowtransactiondata->invoiceno, 
+    //                                 'invdate'=>$rowtransactiondata->transdate, 
+    //                                 'amount'=>$incoiceamount, 
+    //                                 'invamount'=>$incoiceamount, 
+    //                                 'paystatus'=>'0', 
+    //                                 'poststatus'=>'1', 
+    //                                 'remark'=>$rowtransactiondata->narration, 
+    //                                 'status'=>'1', 
+    //                                 'insertdatetime'=>$updatedatetime, 
+    //                                 'tbl_user_idtbl_user'=>$userID, 
+    //                                 'tbl_customer_idtbl_customer'=>$rowtransactiondata->tbl_customer_idtbl_customer,
+    //                                 'tbl_company_idtbl_company'=>$companyID,
+    //                                 'tbl_company_branch_idtbl_company_branch'=>$branchID
+    //                             );
 
-                                $this->db->insert('tbl_sales_info', $datasale);
+    //                             $this->db->insert('tbl_sales_info', $datasale);
 
-                                $prefix=journal_prefix($companyID, $branchID);
-                                $masterdata=get_account_period($companyID, $branchID);
-                                $batchno=tr_batch_num($prefix, $branchID);
-                                $masterID=$masterdata->idtbl_master;
+    //                             $masterdata = get_account_period_acco_date($companyID, $branchID, $respond->row(0)->transaction_date);
+    //                             $prefix   = generate_prefix($companyID, $branchID, $respond->row(0)->transaction_date, 'JE');
+
+    //                             $batchno=tr_batch_num($prefix, $branchID);
+    //                             $masterID=$masterdata->idtbl_master;
                                 
-                                $data = array(
-                                    'tradate'=> $today, 
-                                    'batchno'=> $batchno, 
-                                    'amount'=> $incoiceamount, 
-                                    'narration'=> $narration, 
-                                    'poststatus'=> '0', 
-                                    'status'=> '1', 
-                                    'insertdatetime'=> $updatedatetime, 
-                                    'tbl_user_idtbl_user'=> $userID,
-                                    'tbl_master_idtbl_master'=> $masterID,
-                                    'tbl_company_idtbl_company'=> $companyID,
-                                    'tbl_company_branch_idtbl_company_branch'=> $branchID
-                                );
+    //                             $data = array(
+    //                                 'tradate'=> $today, 
+    //                                 'batchno'=> $batchno, 
+    //                                 'amount'=> $incoiceamount, 
+    //                                 'narration'=> $narration, 
+    //                                 'poststatus'=> '0', 
+    //                                 'status'=> '1', 
+    //                                 'insertdatetime'=> $updatedatetime, 
+    //                                 'tbl_user_idtbl_user'=> $userID,
+    //                                 'tbl_master_idtbl_master'=> $masterID,
+    //                                 'tbl_company_idtbl_company'=> $companyID,
+    //                                 'tbl_company_branch_idtbl_company_branch'=> $branchID
+    //                             );
 
-                                $this->db->insert('tbl_account_transaction_manual_main', $data);
+    //                             $this->db->insert('tbl_account_transaction_manual_main', $data);
 
-                                $journalmainID=$this->db->insert_id();
+    //                             $journalmainID=$this->db->insert_id();
                                 
-                                $i=1;
-                                foreach($respondtranstypeinfo->result() as $rowtranstypeinfo){
-                                    $chartofaccountID = $rowtranstypeinfo->tbl_account_idtbl_account;
-                                    $chartofdetailaccountID = $rowtranstypeinfo->tbl_account_detail_idtbl_account_detail;
-                                    $transactionAmount = $incoiceamount;
+    //                             $i=1;
+    //                             foreach($respondtranstypeinfo->result() as $rowtranstypeinfo){
+    //                                 $chartofaccountID = $rowtranstypeinfo->tbl_account_idtbl_account;
+    //                                 $chartofdetailaccountID = $rowtranstypeinfo->tbl_account_detail_idtbl_account_detail;
+    //                                 $transactionAmount = $incoiceamount;
 
-                                    if($rowtransactiondata->crdr==$rowtransactiondata->batchtypecrdr):
-                                        $crdr = $rowtranstypeinfo->crdr;    
-                                    else:
-                                        if($rowtranstypeinfo->crdr=='C'):$crdr = 'D';else: $crdr = 'C';endif;
-                                    endif;
+    //                                 if($rowtransactiondata->crdr==$rowtransactiondata->batchtypecrdr):
+    //                                     $crdr = $rowtranstypeinfo->crdr;    
+    //                                 else:
+    //                                     if($rowtranstypeinfo->crdr=='C'):$crdr = 'D';else: $crdr = 'C';endif;
+    //                                 endif;
 
-                                    $datacrdr = array(
-                                        'tradate'=> $today, 
-                                        'batchno'=> $batchno, 
-                                        'tratype'=> 'J', 
-                                        'seqno'=> $i, 
-                                        'crdr'=> $crdr, 
-                                        'amount'=> $transactionAmount, 
-                                        'narration'=> $narration, 
-                                        'status'=> '1', 
-                                        'insertdatetime'=> $updatedatetime, 
-                                        'tbl_user_idtbl_user'=> $userID,
-                                        'tbl_account_idtbl_account'=> $chartofaccountID,
-                                        'tbl_account_detail_idtbl_account_detail'=> $chartofdetailaccountID,
-                                        'tbl_master_idtbl_master'=> $masterID,
-                                        'tbl_company_idtbl_company'=> $companyID,
-                                        'tbl_company_branch_idtbl_company_branch'=> $branchID,
-                                        'manualtrans_main_id'=> $journalmainID
-                                    );
+    //                                 $datacrdr = array(
+    //                                     'tradate'=> $today, 
+    //                                     'batchno'=> $batchno, 
+    //                                     'tratype'=> 'J', 
+    //                                     'seqno'=> $i, 
+    //                                     'crdr'=> $crdr, 
+    //                                     'amount'=> $transactionAmount, 
+    //                                     'narration'=> $narration, 
+    //                                     'status'=> '1', 
+    //                                     'insertdatetime'=> $updatedatetime, 
+    //                                     'tbl_user_idtbl_user'=> $userID,
+    //                                     'tbl_account_idtbl_account'=> $chartofaccountID,
+    //                                     'tbl_account_detail_idtbl_account_detail'=> $chartofdetailaccountID,
+    //                                     'tbl_master_idtbl_master'=> $masterID,
+    //                                     'tbl_company_idtbl_company'=> $companyID,
+    //                                     'tbl_company_branch_idtbl_company_branch'=> $branchID,
+    //                                     'manualtrans_main_id'=> $journalmainID
+    //                                 );
 
-                                    $this->db->insert('tbl_account_transaction_manual', $datacrdr);
-                                    $i++;
-                                }
+    //                                 $this->db->insert('tbl_account_transaction_manual', $datacrdr);
+    //                                 $i++;
+    //                             }
 
-                                // Call Journalentryposting here
-                                $postingSuccess = $this->Journalentryposting($journalmainID);
-                                if (!$postingSuccess) {
-                                    throw new Exception("Journal entry posting failed");
-                                }
+    //                             // Call Journalentryposting here
+    //                             $postingSuccess = $this->Journalentryposting($journalmainID);
+    //                             if (!$postingSuccess) {
+    //                                 throw new Exception("Journal entry posting failed");
+    //                             }
+    //                         }
+    //                     }
+    //                 } else if($respond->row(0)->idtbl_batch_category==3){
+    //                     // Prepare the journal entry
+    //                     $batchtype = $respond->row(0)->idtbl_batch_trans_type;
+    //                     $narration = $respond->row(0)->batch_category.' - '.$respond->row(0)->batctranstype.' on '.$today;
+
+    //                     $this->db->select('`crdr`, `tbl_account_idtbl_account`, `tbl_account_detail_idtbl_account_detail`');
+    //                     $this->db->from('tbl_batch_trans_type_info');
+    //                     $this->db->where('tbl_batch_trans_type_idtbl_batch_trans_type', $batchtype);
+    //                     $this->db->where('status', 1);
+    //                     $respondtranstypeinfo = $this->db->get();
+
+    //                     if($respondtranstypeinfo->num_rows() > 0){
+    //                         foreach($respond->result() as $rowtransactiondata){
+    //                             if(!empty($rowtransactiondata->creditamount)):
+    //                                 $incoiceamount = $rowtransactiondata->creditamount;
+    //                             elseif(!empty($rowtransactiondata->debitamount)):
+    //                                 $incoiceamount = $rowtransactiondata->debitamount;
+    //                             endif;
+
+    //                             $datapayment = array(
+    //                                 'exptype'=>'4', 
+    //                                 'expcode'=>'OTH', 
+    //                                 'grnno'=>$rowtransactiondata->invoiceno, 
+    //                                 'grndate'=>$rowtransactiondata->transdate, 
+    //                                 'amount'=>$incoiceamount, 
+    //                                 'invamount'=>$incoiceamount, 
+    //                                 'paystatus'=>'0', 
+    //                                 'poststatus'=>'1', 
+    //                                 'remark'=>$rowtransactiondata->narration, 
+    //                                 'status'=>'1', 
+    //                                 'insertdatetime'=>$updatedatetime, 
+    //                                 'tbl_user_idtbl_user'=>$userID, 
+    //                                 'tbl_supplier_idtbl_supplier'=>$rowtransactiondata->tbl_supplier_idtbl_supplier,
+    //                                 'tbl_company_idtbl_company'=>$companyID,
+    //                                 'tbl_company_branch_idtbl_company_branch'=>$branchID
+    //                             );
+
+    //                             $this->db->insert('tbl_expence_info', $datapayment);
+
+    //                             $masterdata = get_account_period_acco_date($companyID, $branchID, $respond->row(0)->transaction_date);
+    //                             $prefix   = generate_prefix($companyID, $branchID, $respond->row(0)->transaction_date, 'JE');
+
+    //                             $batchno=tr_batch_num($prefix, $branchID);
+    //                             $masterID=$masterdata->idtbl_master;
+                                
+    //                             $data = array(
+    //                                 'tradate'=> $today, 
+    //                                 'batchno'=> $batchno, 
+    //                                 'amount'=> $incoiceamount, 
+    //                                 'narration'=> $narration, 
+    //                                 'poststatus'=> '0', 
+    //                                 'status'=> '1', 
+    //                                 'insertdatetime'=> $updatedatetime, 
+    //                                 'tbl_user_idtbl_user'=> $userID,
+    //                                 'tbl_master_idtbl_master'=> $masterID,
+    //                                 'tbl_company_idtbl_company'=> $companyID,
+    //                                 'tbl_company_branch_idtbl_company_branch'=> $branchID
+    //                             );
+
+    //                             $this->db->insert('tbl_account_transaction_manual_main', $data);
+
+    //                             $journalmainID=$this->db->insert_id();
+                                
+    //                             $i=1;
+    //                             foreach($respondtranstypeinfo->result() as $rowtranstypeinfo){
+    //                                 $chartofaccountID = $rowtranstypeinfo->tbl_account_idtbl_account;
+    //                                 $chartofdetailaccountID = $rowtranstypeinfo->tbl_account_detail_idtbl_account_detail;
+    //                                 $transactionAmount = $incoiceamount;
+
+    //                                 if($rowtransactiondata->crdr==$rowtransactiondata->batchtypecrdr):
+    //                                     $crdr = $rowtranstypeinfo->crdr;    
+    //                                 else:
+    //                                     if($rowtranstypeinfo->crdr=='C'):$crdr = 'D';else: $crdr = 'C';endif;
+    //                                 endif;
+
+    //                                 $datacrdr = array(
+    //                                     'tradate'=> $today, 
+    //                                     'batchno'=> $batchno, 
+    //                                     'tratype'=> 'J', 
+    //                                     'seqno'=> $i, 
+    //                                     'crdr'=> $crdr, 
+    //                                     'amount'=> $transactionAmount, 
+    //                                     'narration'=> $narration, 
+    //                                     'status'=> '1', 
+    //                                     'insertdatetime'=> $updatedatetime, 
+    //                                     'tbl_user_idtbl_user'=> $userID,
+    //                                     'tbl_account_idtbl_account'=> $chartofaccountID,
+    //                                     'tbl_account_detail_idtbl_account_detail'=> $chartofdetailaccountID,
+    //                                     'tbl_master_idtbl_master'=> $masterID,
+    //                                     'tbl_company_idtbl_company'=> $companyID,
+    //                                     'tbl_company_branch_idtbl_company_branch'=> $branchID,
+    //                                     'manualtrans_main_id'=> $journalmainID
+    //                                 );
+
+    //                                 $this->db->insert('tbl_account_transaction_manual', $datacrdr);
+    //                                 $i++;
+    //                             }
+
+    //                             // Call Journalentryposting here
+    //                             $postingSuccess = $this->Journalentryposting($journalmainID);
+    //                             if (!$postingSuccess) {
+    //                                 throw new Exception("Journal entry posting failed");
+    //                             }
+    //                         }
+    //                     }
+    //                 }
+    //             } else {
+    //                 // REJECT PROCESS
+    //                 $data = array(
+    //                     'approvestatus' => $confirmnot,
+    //                     'approveuser' => $userID,
+    //                     'updatedatetime' => $updatedatetime
+    //                 );
+        
+    //                 $this->db->where('idtbl_batch_transaction_main', $recordID);
+    //                 $this->db->update('tbl_batch_transaction_main', $data);
+    //             }
+        
+    //             $this->db->trans_commit();
+        
+    //             $actionObj=new stdClass();
+    //             $actionObj->icon = 'fas fa-check-circle';
+    //             $actionObj->title = '';
+    //             $actionObj->message = ($confirmnot == 1) ? 'Transaction Approved Successfully' : 'Record Rejected Successfully';
+    //             $actionObj->url = '';
+    //             $actionObj->target = '_blank';
+    //             $actionObj->type = 'success';
+        
+    //             $obj=new stdClass();
+    //             $obj->status = 1;
+    //             $obj->action = json_encode($actionObj);
+        
+    //         } catch (Exception $e) {
+    //             $this->db->trans_rollback();
+                
+    //             error_log("Transactionapprove Error: " . $e->getMessage());
+                
+    //             $actionObj=new stdClass();
+    //             $actionObj->icon = 'fas fa-exclamation-triangle';
+    //             $actionObj->title = '';
+    //             $actionObj->message = 'Operation Failed: ' . $e->getMessage();
+    //             $actionObj->url = '';
+    //             $actionObj->target = '_blank';
+    //             $actionObj->type = 'danger';
+        
+    //             $obj=new stdClass();
+    //             $obj->status = 0;
+    //             $obj->action = json_encode($actionObj);
+    //         }   
+
+    //         echo json_encode($obj);
+    //     }
+    // }
+    public function BatchTransactionapprove(){
+        try {
+            $recordID       = $this->input->post('recordID');
+            $confirmnot     = $this->input->post('confirmnot');
+            $userID         = $_SESSION['userid'];
+            $companyID      = $_SESSION['companyid'];
+            $branchID       = $_SESSION['branchid'];
+            $updatedatetime = date('Y-m-d H:i:s');
+            $today          = date('Y-m-d');
+            $journalmainID  = 0;
+    
+            if(empty($recordID)){
+                throw new Exception('Record ID is required');
+            }
+    
+            // ── Load config data ──────────────────────────────────────────────
+            $configdata = getconfigdata('measurement_search');
+            $tablename  = $configdata->row(0)->tbl_name;
+            $column1    = $configdata->row(0)->col_name;
+            $column2    = $configdata->row(1)->col_name;
+            $has_table  = !empty($tablename) ? 1 : 0;
+    
+            $configdatabatch  = getconfigdata('batch_transaction');
+            $tablenamebatch   = $configdatabatch->row(0)->tbl_name;
+            $column1batch     = $configdatabatch->row(0)->col_name;
+            $column2batch     = $configdatabatch->row(1)->col_name;
+            $column3batch     = $configdatabatch->row(2)->col_name;
+            $has_tablebatch   = !empty($tablenamebatch) ? 1 : 0;
+    
+            $configdataweb = getconfigdata('batch_stock_webhook');
+            $webhookUrl    = $configdataweb->row(0)->col_name;
+    
+            // ── Fetch batch transaction data ──────────────────────────────────
+            $this->db->select("tbl_batch_transaction.*, tbl_batch_transaction_main.transdate AS transaction_date, tbl_batch_transaction_main.approvestatus, tbl_batch_transaction_main.completestatus, tbl_batch_category.batch_category, tbl_batch_category.idtbl_batch_category, tbl_batch_trans_type.batctranstype, tbl_batch_trans_type.idtbl_batch_trans_type, tbl_batch_trans_type.crdr as `batchtypecrdr`, tbl_batch_trans_type.plusminus, IF($has_tablebatch = 0, '', $tablenamebatch.$column2batch) AS materialname, IF($has_tablebatch = 0, '', $tablenamebatch.$column3batch) as `grnsupplierid`, IF($has_table = 0, '', $tablename.$column2) AS measure_type");
+            $this->db->from('tbl_batch_transaction');
+            $this->db->join('tbl_batch_transaction_main', 'tbl_batch_transaction_main.idtbl_batch_transaction_main = tbl_batch_transaction.tbl_batch_transaction_main_idtbl_batch_transaction_main', 'left');
+            $this->db->join('tbl_batch_category', 'tbl_batch_category.idtbl_batch_category = tbl_batch_transaction_main.tbl_batch_category_idtbl_batch_category', 'left');
+            $this->db->join('tbl_batch_trans_type', 'tbl_batch_trans_type.idtbl_batch_trans_type = tbl_batch_transaction.tbl_batch_trans_type_idtbl_batch_trans_type', 'left');
+    
+            if(!empty($tablenamebatch)){
+                $this->db->join("$tablenamebatch", "$tablenamebatch.$column1batch = tbl_batch_transaction.tbl_print_material_info_idtbl_print_material_info", 'left');
+            }
+            if(!empty($tablename)){
+                $this->db->join("$tablename", "$tablename.$column1 = tbl_batch_transaction.uom_id", 'left');
+            }
+    
+            $this->db->where('tbl_batch_transaction.tbl_batch_transaction_main_idtbl_batch_transaction_main', $recordID);
+            $this->db->where('tbl_batch_transaction.status', 1);
+    
+            $respond = $this->db->get();
+    
+            if(!$respond || $respond->num_rows() == 0){
+                throw new Exception('Batch transaction record not found');
+            }
+    
+            $mainRecord = $respond->row(0);
+    
+            // ── Status validation checks ──────────────────────────────────────
+            if($mainRecord->approvestatus == 1){
+                throw new Exception('Record already approved. Kindly review the status of the record.');
+            }
+    
+            if($mainRecord->completestatus == 0){
+                throw new Exception('This batch transaction not complete yet. Firstly complete this batch transaction.');
+            }
+    
+            // ── Begin Transaction ─────────────────────────────────────────────
+            $this->db->trans_begin();
+    
+            if($confirmnot == 1){
+    
+                // ── APPROVE PROCESS ───────────────────────────────────────────
+                $this->db->where('idtbl_batch_transaction_main', $recordID);
+                $this->db->update('tbl_batch_transaction_main', [
+                    'approvestatus'  => $confirmnot,
+                    'approveuser'    => $userID,
+                    'updatedatetime' => $updatedatetime
+                ]);
+    
+                $totaltransactionamount = 0;
+    
+                // ── Category 1: Inventory ─────────────────────────────────────
+                if($mainRecord->idtbl_batch_category == 1){
+    
+                    $stockWebhookPayload = [];
+    
+                    foreach($respond->result() as $rowtransactiondata){
+                        if(!empty($rowtransactiondata->plusminus > 0)){
+                            $materialBatchno = $rowtransactiondata->materialbatch;
+                            if($rowtransactiondata->plusminus == 1){
+                                $stocktotal = $rowtransactiondata->qtyin * $rowtransactiondata->unitcost;
+                            } elseif($rowtransactiondata->plusminus == 2){
+                                $stocktotal = $rowtransactiondata->qtyout * $rowtransactiondata->unitcost;
                             }
-                        }
-                    } else if($respond->row(0)->idtbl_batch_category==3){
-                        // Prepare the journal entry
-                        $batchtype = $respond->row(0)->idtbl_batch_trans_type;
-                        $narration = $respond->row(0)->batch_category.' - '.$respond->row(0)->batctranstype.' on '.$today;
-
-                        $this->db->select('`crdr`, `tbl_account_idtbl_account`, `tbl_account_detail_idtbl_account_detail`');
-                        $this->db->from('tbl_batch_trans_type_info');
-                        $this->db->where('tbl_batch_trans_type_idtbl_batch_trans_type', $batchtype);
-                        $this->db->where('status', 1);
-                        $respondtranstypeinfo = $this->db->get();
-
-                        if($respondtranstypeinfo->num_rows() > 0){
-                            foreach($respond->result() as $rowtransactiondata){
-                                if(!empty($rowtransactiondata->creditamount)):
-                                    $incoiceamount = $rowtransactiondata->creditamount;
-                                elseif(!empty($rowtransactiondata->debitamount)):
-                                    $incoiceamount = $rowtransactiondata->debitamount;
-                                endif;
-
-                                $datapayment = array(
-                                    'exptype'=>'4', 
-                                    'expcode'=>'OTH', 
-                                    'grnno'=>$rowtransactiondata->invoiceno, 
-                                    'grndate'=>$rowtransactiondata->transdate, 
-                                    'amount'=>$incoiceamount, 
-                                    'invamount'=>$incoiceamount, 
-                                    'paystatus'=>'0', 
-                                    'poststatus'=>'1', 
-                                    'remark'=>$rowtransactiondata->narration, 
-                                    'status'=>'1', 
-                                    'insertdatetime'=>$updatedatetime, 
-                                    'tbl_user_idtbl_user'=>$userID, 
-                                    'tbl_supplier_idtbl_supplier'=>$rowtransactiondata->tbl_supplier_idtbl_supplier,
-                                    'tbl_company_idtbl_company'=>$companyID,
-                                    'tbl_company_branch_idtbl_company_branch'=>$branchID
-                                );
-
-                                $this->db->insert('tbl_expence_info', $datapayment);
-
-                                $prefix=journal_prefix($companyID, $branchID);
-                                $masterdata=get_account_period($companyID, $branchID);
-                                $batchno=tr_batch_num($prefix, $branchID);
-                                $masterID=$masterdata->idtbl_master;
-                                
-                                $data = array(
-                                    'tradate'=> $today, 
-                                    'batchno'=> $batchno, 
-                                    'amount'=> $incoiceamount, 
-                                    'narration'=> $narration, 
-                                    'poststatus'=> '0', 
-                                    'status'=> '1', 
-                                    'insertdatetime'=> $updatedatetime, 
-                                    'tbl_user_idtbl_user'=> $userID,
-                                    'tbl_master_idtbl_master'=> $masterID,
-                                    'tbl_company_idtbl_company'=> $companyID,
-                                    'tbl_company_branch_idtbl_company_branch'=> $branchID
-                                );
-
-                                $this->db->insert('tbl_account_transaction_manual_main', $data);
-
-                                $journalmainID=$this->db->insert_id();
-                                
-                                $i=1;
-                                foreach($respondtranstypeinfo->result() as $rowtranstypeinfo){
-                                    $chartofaccountID = $rowtranstypeinfo->tbl_account_idtbl_account;
-                                    $chartofdetailaccountID = $rowtranstypeinfo->tbl_account_detail_idtbl_account_detail;
-                                    $transactionAmount = $incoiceamount;
-
-                                    if($rowtransactiondata->crdr==$rowtransactiondata->batchtypecrdr):
-                                        $crdr = $rowtranstypeinfo->crdr;    
-                                    else:
-                                        if($rowtranstypeinfo->crdr=='C'):$crdr = 'D';else: $crdr = 'C';endif;
-                                    endif;
-
-                                    $datacrdr = array(
-                                        'tradate'=> $today, 
-                                        'batchno'=> $batchno, 
-                                        'tratype'=> 'J', 
-                                        'seqno'=> $i, 
-                                        'crdr'=> $crdr, 
-                                        'amount'=> $transactionAmount, 
-                                        'narration'=> $narration, 
-                                        'status'=> '1', 
-                                        'insertdatetime'=> $updatedatetime, 
-                                        'tbl_user_idtbl_user'=> $userID,
-                                        'tbl_account_idtbl_account'=> $chartofaccountID,
-                                        'tbl_account_detail_idtbl_account_detail'=> $chartofdetailaccountID,
-                                        'tbl_master_idtbl_master'=> $masterID,
-                                        'tbl_company_idtbl_company'=> $companyID,
-                                        'tbl_company_branch_idtbl_company_branch'=> $branchID,
-                                        'manualtrans_main_id'=> $journalmainID
-                                    );
-
-                                    $this->db->insert('tbl_account_transaction_manual', $datacrdr);
-                                    $i++;
-                                }
-
-                                // Call Journalentryposting here
-                                $postingSuccess = $this->Journalentryposting($journalmainID);
-                                if (!$postingSuccess) {
-                                    throw new Exception("Journal entry posting failed");
-                                }
-                            }
+                            $totaltransactionamount += $stocktotal;
+    
+                            $stockWebhookPayload[] = [
+                                'type'        => 'update',
+                                'batchno'     => $materialBatchno,
+                                'materialid'  => $rowtransactiondata->tbl_print_material_info_idtbl_print_material_info,
+                                'materialname'=> $rowtransactiondata->materialname,
+                                'plusminus'   => $rowtransactiondata->plusminus,
+                                'qtyin'       => $rowtransactiondata->qtyin,
+                                'qtyout'      => $rowtransactiondata->qtyout,
+                                'unitcost'    => $rowtransactiondata->unitcost,
+                                'stocktotal'  => $stocktotal,
+                                'supplier_id' => $rowtransactiondata->grnsupplierid,
+                                'uom_id'      => $rowtransactiondata->uom_id,
+                                'grndate'     => $today,
+                                'companyID'   => $companyID,
+                                'branchID'    => $branchID,
+                                'userid'      => $userID
+                            ];
+                        } else {
+                            $materialBatchno = generate_batch_no($rowtransactiondata->tbl_print_material_info_idtbl_print_material_info);
+                            $stocktotal = $rowtransactiondata->qtyin * $rowtransactiondata->unitcost;
+                            $totaltransactionamount += $stocktotal;
+    
+                            $stockWebhookPayload[] = [
+                                'type'        => 'insert',
+                                'batchno'     => $materialBatchno,
+                                'materialid'  => $rowtransactiondata->tbl_print_material_info_idtbl_print_material_info,
+                                'materialname'=> $rowtransactiondata->materialname,
+                                'plusminus'   => $rowtransactiondata->plusminus,
+                                'qtyin'       => $rowtransactiondata->qtyin,
+                                'qtyout'      => 0,
+                                'unitcost'    => $rowtransactiondata->unitcost,
+                                'stocktotal'  => $stocktotal,
+                                'supplier_id' => $rowtransactiondata->grnsupplierid,
+                                'uom_id'      => $rowtransactiondata->uom_id,
+                                'grndate'     => $today,
+                                'companyID'   => $companyID,
+                                'branchID'    => $branchID,
+                                'userid'      => $userID
+                            ];
                         }
                     }
-                } else {
-                    // REJECT PROCESS
-                    $data = array(
-                        'approvestatus' => $confirmnot,
-                        'approveuser' => $userID,
-                        'updatedatetime' => $updatedatetime
+    
+                    // Webhook call
+                    if(!empty($stockWebhookPayload)){
+                        $ch = curl_init($webhookUrl);
+                        curl_setopt($ch, CURLOPT_POST, true);
+                        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(['stocks' => $stockWebhookPayload]));
+                        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+                        $webhookResponse = curl_exec($ch);
+                        $httpCode        = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                        curl_close($ch);
+                    }
+    
+                    // Journal entry for inventory
+                    $this->_processBatchJournalEntry(
+                        $mainRecord, $totaltransactionamount,
+                        $companyID, $branchID, $userID,
+                        $updatedatetime, $today, null
                     );
-        
-                    $this->db->where('idtbl_batch_transaction_main', $recordID);
-                    $this->db->update('tbl_batch_transaction_main', $data);
+    
                 }
-        
+                // ── Category 2: Receipt ───────────────────────────────────────
+                elseif($mainRecord->idtbl_batch_category == 2){
+    
+                    $this->db->select('`crdr`, `tbl_account_idtbl_account`, `tbl_account_detail_idtbl_account_detail`');
+                    $this->db->from('tbl_batch_trans_type_info');
+                    $this->db->where('tbl_batch_trans_type_idtbl_batch_trans_type', $mainRecord->idtbl_batch_trans_type);
+                    $this->db->where('status', 1);
+                    $respondtranstypeinfo = $this->db->get();
+    
+                    if($respondtranstypeinfo->num_rows() > 0){
+                        foreach($respond->result() as $rowtransactiondata){
+                            $incoiceamount = !empty($rowtransactiondata->creditamount)
+                                ? $rowtransactiondata->creditamount
+                                : $rowtransactiondata->debitamount;
+    
+                            // Insert sales record
+                            $this->db->insert('tbl_sales_info', [
+                                'saletype'                               => '2',
+                                'salecode'                               => 'OTH',
+                                'invno'                                  => $rowtransactiondata->invoiceno,
+                                'invdate'                                => $rowtransactiondata->transdate,
+                                'amount'                                 => $incoiceamount,
+                                'invamount'                              => $incoiceamount,
+                                'paystatus'                              => '0',
+                                'poststatus'                             => '1',
+                                'remark'                                 => $rowtransactiondata->narration,
+                                'status'                                 => '1',
+                                'insertdatetime'                         => $updatedatetime,
+                                'tbl_user_idtbl_user'                    => $userID,
+                                'tbl_customer_idtbl_customer'            => $rowtransactiondata->tbl_customer_idtbl_customer,
+                                'tbl_company_idtbl_company'              => $companyID,
+                                'tbl_company_branch_idtbl_company_branch'=> $branchID
+                            ]);
+    
+                            $this->_processBatchJournalEntry(
+                                $mainRecord, $incoiceamount,
+                                $companyID, $branchID, $userID,
+                                $updatedatetime, $today,
+                                $respondtranstypeinfo,
+                                $rowtransactiondata
+                            );
+                        }
+                    }
+    
+                }
+                // ── Category 3: Payment ───────────────────────────────────────
+                elseif($mainRecord->idtbl_batch_category == 3){
+    
+                    $this->db->select('`crdr`, `tbl_account_idtbl_account`, `tbl_account_detail_idtbl_account_detail`');
+                    $this->db->from('tbl_batch_trans_type_info');
+                    $this->db->where('tbl_batch_trans_type_idtbl_batch_trans_type', $mainRecord->idtbl_batch_trans_type);
+                    $this->db->where('status', 1);
+                    $respondtranstypeinfo = $this->db->get();
+    
+                    if($respondtranstypeinfo->num_rows() > 0){
+                        foreach($respond->result() as $rowtransactiondata){
+                            $incoiceamount = !empty($rowtransactiondata->creditamount)
+                                ? $rowtransactiondata->creditamount
+                                : $rowtransactiondata->debitamount;
+    
+                            // Insert expense record
+                            $this->db->insert('tbl_expence_info', [
+                                'exptype'                                => '4',
+                                'expcode'                                => 'OTH',
+                                'grnno'                                  => $rowtransactiondata->invoiceno,
+                                'grndate'                                => $rowtransactiondata->transdate,
+                                'amount'                                 => $incoiceamount,
+                                'invamount'                              => $incoiceamount,
+                                'paystatus'                              => '0',
+                                'poststatus'                             => '1',
+                                'remark'                                 => $rowtransactiondata->narration,
+                                'status'                                 => '1',
+                                'insertdatetime'                         => $updatedatetime,
+                                'tbl_user_idtbl_user'                    => $userID,
+                                'tbl_supplier_idtbl_supplier'            => $rowtransactiondata->tbl_supplier_idtbl_supplier,
+                                'tbl_company_idtbl_company'              => $companyID,
+                                'tbl_company_branch_idtbl_company_branch'=> $branchID
+                            ]);
+    
+                            $this->_processBatchJournalEntry(
+                                $mainRecord, $incoiceamount,
+                                $companyID, $branchID, $userID,
+                                $updatedatetime, $today,
+                                $respondtranstypeinfo,
+                                $rowtransactiondata
+                            );
+                        }
+                    }
+                }
+    
+            } else {
+                // ── REJECT PROCESS ────────────────────────────────────────────
+                $this->db->where('idtbl_batch_transaction_main', $recordID);
+                $this->db->update('tbl_batch_transaction_main', [
+                    'approvestatus'  => $confirmnot,
+                    'approveuser'    => $userID,
+                    'updatedatetime' => $updatedatetime
+                ]);
+            }
+    
+            // ── Complete Transaction ──────────────────────────────────────────
+            $this->db->trans_complete();
+    
+            if($this->db->trans_status() === TRUE){
                 $this->db->trans_commit();
-        
-                $actionObj=new stdClass();
-                $actionObj->icon = 'fas fa-check-circle';
-                $actionObj->title = '';
-                $actionObj->message = ($confirmnot == 1) ? 'Transaction Approved Successfully' : 'Record Rejected Successfully';
-                $actionObj->url = '';
-                $actionObj->target = '_blank';
-                $actionObj->type = 'success';
-        
-                $obj=new stdClass();
-                $obj->status = 1;
-                $obj->action = json_encode($actionObj);
-        
-            } catch (Exception $e) {
+                $this->_jsonResponse(
+                    1, 'fas fa-check-circle',
+                    ($confirmnot == 1) ? 'Transaction Approved Successfully' : 'Record Rejected Successfully',
+                    'success'
+                );
+            } else {
                 $this->db->trans_rollback();
-                
-                error_log("Transactionapprove Error: " . $e->getMessage());
-                
-                $actionObj=new stdClass();
-                $actionObj->icon = 'fas fa-exclamation-triangle';
-                $actionObj->title = '';
-                $actionObj->message = 'Operation Failed: ' . $e->getMessage();
-                $actionObj->url = '';
-                $actionObj->target = '_blank';
-                $actionObj->type = 'danger';
-        
-                $obj=new stdClass();
-                $obj->status = 0;
-                $obj->action = json_encode($actionObj);
-            }   
-
-            echo json_encode($obj);
+                throw new Exception('Record Error, Transaction failed');
+            }
+    
+        } catch(Exception $e){
+            if($this->db->trans_enabled){
+                $this->db->trans_rollback();
+            }
+            error_log('BatchTransactionapprove Error: ' . $e->getMessage());
+            $this->_jsonResponse(0, 'fas fa-exclamation-triangle', $e->getMessage(), 'danger');
+        }
+    }
+    
+    /**
+     * Helper — Insert journal main + detail lines + post
+     * Used by category 1 (inventory), 2 (receipt), 3 (payment)
+     *
+     * @param object      $mainRecord           batch main record row
+     * @param float       $amount               transaction amount
+     * @param int         $companyID
+     * @param int         $branchID
+     * @param int         $userID
+     * @param string      $updatedatetime
+     * @param string      $today
+     * @param object|null $respondtranstypeinfo trans type info result (null = fetch inside)
+     * @param object|null $rowtransactiondata   current transaction row (for crdr flip logic)
+     */
+    private function _processBatchJournalEntry(
+        $mainRecord, $amount,
+        $companyID, $branchID, $userID,
+        $updatedatetime, $today,
+        $respondtranstypeinfo = null,
+        $rowtransactiondata   = null
+    ){
+        $narration = $mainRecord->batch_category . ' - ' . $mainRecord->batctranstype . ' on ' . $today;
+    
+        // Fetch trans type info if not passed (category 1)
+        if(empty($respondtranstypeinfo)){
+            $this->db->select('`crdr`, `tbl_account_idtbl_account`, `tbl_account_detail_idtbl_account_detail`');
+            $this->db->from('tbl_batch_trans_type_info');
+            $this->db->where('tbl_batch_trans_type_idtbl_batch_trans_type', $mainRecord->idtbl_batch_trans_type);
+            $this->db->where('status', 1);
+            $respondtranstypeinfo = $this->db->get();
+    
+            if($respondtranstypeinfo->num_rows() == 0) return;
+        }
+    
+        $masterdata = get_account_period_acco_date($companyID, $branchID, $mainRecord->transaction_date);
+    
+        if(empty($masterdata) || empty($masterdata->idtbl_master)){
+            throw new Exception('Record Error, Active account period not found for transaction date');
+        }
+    
+        $prefix   = generate_prefix($companyID, $branchID, $mainRecord->transaction_date, 'JE');
+        $batchno  = tr_batch_num($prefix, $branchID);
+        $masterID = $masterdata->idtbl_master;
+    
+        if(empty($batchno)){
+            throw new Exception('Record Error, Batch no could not be defined by system');
+        }
+    
+        // Insert journal main header
+        $this->db->insert('tbl_account_transaction_manual_main', [
+            'tradate'                                 => $today,
+            'batchno'                                 => $batchno,
+            'amount'                                  => $amount,
+            'narration'                               => $narration,
+            'poststatus'                              => '0',
+            'status'                                  => '1',
+            'insertdatetime'                          => $updatedatetime,
+            'tbl_user_idtbl_user'                     => $userID,
+            'tbl_master_idtbl_master'                 => $masterID,
+            'tbl_company_idtbl_company'               => $companyID,
+            'tbl_company_branch_idtbl_company_branch' => $branchID
+        ]);
+    
+        $journalmainID = $this->db->insert_id();
+    
+        if(empty($journalmainID)){
+            throw new Exception('Record Error, Failed to insert journal main record');
+        }
+    
+        // Insert journal detail lines
+        $i = 1;
+        foreach($respondtranstypeinfo->result() as $rowtranstypeinfo){
+            $chartofaccountID       = $rowtranstypeinfo->tbl_account_idtbl_account;
+            $chartofdetailaccountID = $rowtranstypeinfo->tbl_account_detail_idtbl_account_detail;
+    
+            // crdr flip logic for category 2 & 3
+            if(!empty($rowtransactiondata)){
+                if($rowtransactiondata->crdr == $rowtransactiondata->batchtypecrdr){
+                    $crdr = $rowtranstypeinfo->crdr;
+                } else {
+                    $crdr = ($rowtranstypeinfo->crdr == 'C') ? 'D' : 'C';
+                }
+            } else {
+                $crdr = $rowtranstypeinfo->crdr;
+            }
+    
+            $this->db->insert('tbl_account_transaction_manual', [
+                'tradate'                                 => $today,
+                'batchno'                                 => $batchno,
+                'tratype'                                 => 'J',
+                'seqno'                                   => $i,
+                'crdr'                                    => $crdr,
+                'amount'                                  => $amount,
+                'narration'                               => $narration,
+                'status'                                  => '1',
+                'insertdatetime'                          => $updatedatetime,
+                'tbl_user_idtbl_user'                     => $userID,
+                'tbl_account_idtbl_account'               => $chartofaccountID,
+                'tbl_account_detail_idtbl_account_detail' => $chartofdetailaccountID,
+                'tbl_master_idtbl_master'                 => $masterID,
+                'tbl_company_idtbl_company'               => $companyID,
+                'tbl_company_branch_idtbl_company_branch' => $branchID,
+                'manualtrans_main_id'                     => $journalmainID
+            ]);
+            $i++;
+        }
+    
+        // Post the journal entry
+        $postingSuccess = $this->Journalentryposting($journalmainID);
+        if(!$postingSuccess){
+            throw new Exception('Journal entry posting failed for batch: ' . $journalmainID);
         }
     }
     public function BatchTransactionedit(){
@@ -1478,173 +2142,278 @@ class BatchTransactioninfo extends CI_Model{
             echo json_encode($obj);
         endif;
     }
-    public function BatchTransactionstatus($x, $y){
-        $userID=$_SESSION['userid'];
-        $recordID=$x;
-        $type=$y;
-        $updatedatetime=date('Y-m-d H:i:s');
+    // public function BatchTransactionstatus($x, $y){
+    //     $userID=$_SESSION['userid'];
+    //     $recordID=$x;
+    //     $type=$y;
+    //     $updatedatetime=date('Y-m-d H:i:s');
 
-        $this->db->select('`approvestatus`');
-        $this->db->from('tbl_batch_transaction_main');
-        $this->db->where('idtbl_batch_transaction_main', $recordID);
+    //     $this->db->select('`approvestatus`');
+    //     $this->db->from('tbl_batch_transaction_main');
+    //     $this->db->where('idtbl_batch_transaction_main', $recordID);
 
-        $respondcheck = $this->db->get();
+    //     $respondcheck = $this->db->get();
         
-        if($respondcheck->row(0)->approvestatus==0){
+    //     if($respondcheck->row(0)->approvestatus==0){
+    //         $this->db->trans_begin();
+
+    //         if($type==1){
+    //             $data = array(
+    //                 'status' => '1',
+    //                 'updateuser'=> $userID, 
+    //                 'updatedatetime'=> $updatedatetime
+    //             );
+
+    //             $this->db->where('idtbl_batch_transaction_main', $recordID);
+    //             $this->db->update('tbl_batch_transaction_main', $data);
+
+    //             $this->db->trans_complete();
+
+    //             if ($this->db->trans_status() === TRUE) {
+    //                 $this->db->trans_commit();
+                    
+    //                 $actionObj=new stdClass();
+    //                 $actionObj->icon='fas fa-check';
+    //                 $actionObj->title='';
+    //                 $actionObj->message='Record Activate Successfully';
+    //                 $actionObj->url='';
+    //                 $actionObj->target='_blank';
+    //                 $actionObj->type='success';
+
+    //                 $actionJSON=json_encode($actionObj);
+                    
+    //                 $this->session->set_flashdata('msg', $actionJSON);
+    //                 redirect('BatchTransaction');                
+    //             } else {
+    //                 $this->db->trans_rollback();
+
+    //                 $actionObj=new stdClass();
+    //                 $actionObj->icon='fas fa-warning';
+    //                 $actionObj->title='';
+    //                 $actionObj->message='Record Error';
+    //                 $actionObj->url='';
+    //                 $actionObj->target='_blank';
+    //                 $actionObj->type='danger';
+
+    //                 $actionJSON=json_encode($actionObj);
+                    
+    //                 $this->session->set_flashdata('msg', $actionJSON);
+    //                 redirect('BatchTransaction');
+    //             }
+    //         }
+    //         else if($type==2){
+    //             $data = array(
+    //                 'status' => '2',
+    //                 'updateuser'=> $userID, 
+    //                 'updatedatetime'=> $updatedatetime
+    //             );
+
+    //             $this->db->where('idtbl_batch_transaction_main', $recordID);
+    //             $this->db->update('tbl_batch_transaction_main', $data);
+
+    //             $this->db->trans_complete();
+
+    //             if ($this->db->trans_status() === TRUE) {
+    //                 $this->db->trans_commit();
+                    
+    //                 $actionObj=new stdClass();
+    //                 $actionObj->icon='fas fa-times';
+    //                 $actionObj->title='';
+    //                 $actionObj->message='Record Deactivate Successfully';
+    //                 $actionObj->url='';
+    //                 $actionObj->target='_blank';
+    //                 $actionObj->type='warning';
+
+    //                 $actionJSON=json_encode($actionObj);
+                    
+    //                 $this->session->set_flashdata('msg', $actionJSON);
+    //                 redirect('BatchTransaction');                
+    //             } else {
+    //                 $this->db->trans_rollback();
+
+    //                 $actionObj=new stdClass();
+    //                 $actionObj->icon='fas fa-warning';
+    //                 $actionObj->title='';
+    //                 $actionObj->message='Record Error';
+    //                 $actionObj->url='';
+    //                 $actionObj->target='_blank';
+    //                 $actionObj->type='danger';
+
+    //                 $actionJSON=json_encode($actionObj);
+                    
+    //                 $this->session->set_flashdata('msg', $actionJSON);
+    //                 redirect('BatchTransaction');
+    //             }
+    //         }
+    //         else if($type==3){
+    //             $data = array(
+    //                 'status' => '3',
+    //                 'updateuser'=> $userID, 
+    //                 'updatedatetime'=> $updatedatetime
+    //             );
+
+    //             $this->db->where('idtbl_batch_transaction_main', $recordID);
+    //             $this->db->update('tbl_batch_transaction_main', $data);
+
+    //             $this->db->trans_complete();
+
+    //             if ($this->db->trans_status() === TRUE) {
+    //                 $this->db->trans_commit();
+                    
+    //                 $actionObj=new stdClass();
+    //                 $actionObj->icon='fas fa-trash-alt';
+    //                 $actionObj->title='';
+    //                 $actionObj->message='Record Remove Successfully';
+    //                 $actionObj->url='';
+    //                 $actionObj->target='_blank';
+    //                 $actionObj->type='danger';
+
+    //                 $actionJSON=json_encode($actionObj);
+                    
+    //                 $this->session->set_flashdata('msg', $actionJSON);
+    //                 redirect('BatchTransaction');                
+    //             } else {
+    //                 $this->db->trans_rollback();
+
+    //                 $actionObj=new stdClass();
+    //                 $actionObj->icon='fas fa-warning';
+    //                 $actionObj->title='';
+    //                 $actionObj->message='Record Error';
+    //                 $actionObj->url='';
+    //                 $actionObj->target='_blank';
+    //                 $actionObj->type='danger';
+
+    //                 $actionJSON=json_encode($actionObj);
+                    
+    //                 $this->session->set_flashdata('msg', $actionJSON);
+    //                 redirect('BatchTransaction');
+    //             }
+    //         }
+    //     }
+    //     else{
+    //         $actionObj=new stdClass();
+    //         $actionObj->icon='fas fa-warning';
+    //         $actionObj->title='';
+    //         $actionObj->message='Record Error, Already approve this batch.';
+    //         $actionObj->url='';
+    //         $actionObj->target='_blank';
+    //         $actionObj->type='danger';
+
+    //         $actionJSON=json_encode($actionObj);
+            
+    //         $obj=new stdClass();
+    //         $obj->status=0;
+    //         $obj->batchno='';
+    //         $obj->batchtransmainID='';
+    //         $obj->batchtransID='';
+    //         $obj->action=$actionJSON;
+
+    //         echo json_encode($obj);
+    //     }
+    // }
+    public function BatchTransactionstatus($x, $y){
+        $userID         = $_SESSION['userid'];
+        $recordID       = $x;
+        $type           = $y;
+        $updatedatetime = date('Y-m-d H:i:s');
+
+        // ── Type config map ───────────────────────────────────────────────────
+        // type 1 = Activate, type 2 = Deactivate, type 3 = Remove
+        $typeConfig = array(
+            1 => array(
+                'status'  => '1',
+                'icon'    => 'fas fa-check',
+                'message' => 'Record Activate Successfully',
+                'type'    => 'success'
+            ),
+            2 => array(
+                'status'  => '2',
+                'icon'    => 'fas fa-times',
+                'message' => 'Record Deactivate Successfully',
+                'type'    => 'warning'
+            ),
+            3 => array(
+                'status'  => '3',
+                'icon'    => 'fas fa-trash-alt',
+                'message' => 'Record Remove Successfully',
+                'type'    => 'danger'
+            ),
+        );
+
+        try {
+
+            if(empty($recordID)){
+                throw new Exception('Record ID is required');
+            }
+
+            if(!array_key_exists($type, $typeConfig)){
+                throw new Exception('Invalid status type provided');
+            }
+
+            // ── Fetch batch main record ───────────────────────────────────────
+            $this->db->select('approvestatus');
+            $this->db->from('tbl_batch_transaction_main');
+            $this->db->where('idtbl_batch_transaction_main', $recordID);
+
+            $respondcheck = $this->db->get();
+
+            if(!$respondcheck || $respondcheck->num_rows() == 0){
+                throw new Exception('Batch transaction record not found');
+            }
+
+            // ── Validate approve status ───────────────────────────────────────
+            if($respondcheck->row(0)->approvestatus == 1){
+                throw new Exception('Record Error, Already approve this batch.');
+            }
+
+            $config = $typeConfig[$type];
+
+            // ── Begin Transaction ─────────────────────────────────────────────
             $this->db->trans_begin();
 
-            if($type==1){
-                $data = array(
-                    'status' => '1',
-                    'updateuser'=> $userID, 
-                    'updatedatetime'=> $updatedatetime
-                );
+            $this->db->where('idtbl_batch_transaction_main', $recordID);
+            $this->db->update('tbl_batch_transaction_main', [
+                'status'         => $config['status'],
+                'updateuser'     => $userID,
+                'updatedatetime' => $updatedatetime
+            ]);
 
-                $this->db->where('idtbl_batch_transaction_main', $recordID);
-                $this->db->update('tbl_batch_transaction_main', $data);
+            // ── Complete Transaction ──────────────────────────────────────────
+            $this->db->trans_complete();
 
-                $this->db->trans_complete();
+            if($this->db->trans_status() === TRUE){
+                $this->db->trans_commit();
 
-                if ($this->db->trans_status() === TRUE) {
-                    $this->db->trans_commit();
-                    
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-check';
-                    $actionObj->title='';
-                    $actionObj->message='Record Activate Successfully';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='success';
+                $actionObj          = new stdClass();
+                $actionObj->icon    = $config['icon'];
+                $actionObj->title   = '';
+                $actionObj->message = $config['message'];
+                $actionObj->url     = '';
+                $actionObj->target  = '_blank';
+                $actionObj->type    = $config['type'];
 
-                    $actionJSON=json_encode($actionObj);
-                    
-                    $this->session->set_flashdata('msg', $actionJSON);
-                    redirect('BatchTransaction');                
-                } else {
-                    $this->db->trans_rollback();
-
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-warning';
-                    $actionObj->title='';
-                    $actionObj->message='Record Error';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='danger';
-
-                    $actionJSON=json_encode($actionObj);
-                    
-                    $this->session->set_flashdata('msg', $actionJSON);
-                    redirect('BatchTransaction');
-                }
+                $this->session->set_flashdata('msg', json_encode($actionObj));
+                redirect('BatchTransaction');
+            } else {
+                $this->db->trans_rollback();
+                throw new Exception('Record Error');
             }
-            else if($type==2){
-                $data = array(
-                    'status' => '2',
-                    'updateuser'=> $userID, 
-                    'updatedatetime'=> $updatedatetime
-                );
 
-                $this->db->where('idtbl_batch_transaction_main', $recordID);
-                $this->db->update('tbl_batch_transaction_main', $data);
-
-                $this->db->trans_complete();
-
-                if ($this->db->trans_status() === TRUE) {
-                    $this->db->trans_commit();
-                    
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-times';
-                    $actionObj->title='';
-                    $actionObj->message='Record Deactivate Successfully';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='warning';
-
-                    $actionJSON=json_encode($actionObj);
-                    
-                    $this->session->set_flashdata('msg', $actionJSON);
-                    redirect('BatchTransaction');                
-                } else {
-                    $this->db->trans_rollback();
-
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-warning';
-                    $actionObj->title='';
-                    $actionObj->message='Record Error';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='danger';
-
-                    $actionJSON=json_encode($actionObj);
-                    
-                    $this->session->set_flashdata('msg', $actionJSON);
-                    redirect('BatchTransaction');
-                }
+        } catch(Exception $e){
+            if($this->db->trans_enabled){
+                $this->db->trans_rollback();
             }
-            else if($type==3){
-                $data = array(
-                    'status' => '3',
-                    'updateuser'=> $userID, 
-                    'updatedatetime'=> $updatedatetime
-                );
 
-                $this->db->where('idtbl_batch_transaction_main', $recordID);
-                $this->db->update('tbl_batch_transaction_main', $data);
+            $actionObj          = new stdClass();
+            $actionObj->icon    = 'fas fa-warning';
+            $actionObj->title   = '';
+            $actionObj->message = $e->getMessage();
+            $actionObj->url     = '';
+            $actionObj->target  = '_blank';
+            $actionObj->type    = 'danger';
 
-                $this->db->trans_complete();
-
-                if ($this->db->trans_status() === TRUE) {
-                    $this->db->trans_commit();
-                    
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-trash-alt';
-                    $actionObj->title='';
-                    $actionObj->message='Record Remove Successfully';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='danger';
-
-                    $actionJSON=json_encode($actionObj);
-                    
-                    $this->session->set_flashdata('msg', $actionJSON);
-                    redirect('BatchTransaction');                
-                } else {
-                    $this->db->trans_rollback();
-
-                    $actionObj=new stdClass();
-                    $actionObj->icon='fas fa-warning';
-                    $actionObj->title='';
-                    $actionObj->message='Record Error';
-                    $actionObj->url='';
-                    $actionObj->target='_blank';
-                    $actionObj->type='danger';
-
-                    $actionJSON=json_encode($actionObj);
-                    
-                    $this->session->set_flashdata('msg', $actionJSON);
-                    redirect('BatchTransaction');
-                }
-            }
-        }
-        else{
-            $actionObj=new stdClass();
-            $actionObj->icon='fas fa-warning';
-            $actionObj->title='';
-            $actionObj->message='Record Error, Already approve this batch.';
-            $actionObj->url='';
-            $actionObj->target='_blank';
-            $actionObj->type='danger';
-
-            $actionJSON=json_encode($actionObj);
-            
-            $obj=new stdClass();
-            $obj->status=0;
-            $obj->batchno='';
-            $obj->batchtransmainID='';
-            $obj->batchtransID='';
-            $obj->action=$actionJSON;
-
-            echo json_encode($obj);
+            $this->session->set_flashdata('msg', json_encode($actionObj));
+            redirect('BatchTransaction');
         }
     }
     public function Gettransactiontypelist(){
@@ -1781,5 +2550,22 @@ class BatchTransactioninfo extends CI_Model{
             error_log("Journalentryposting Error: " . $e->getMessage());
             return false;
         }
+    }
+
+    // ── Private helper ────────────────────────────────────────────────────────────
+    private function _jsonResponse($status, $icon, $message, $type) {
+        $actionObj          = new stdClass();
+        $actionObj->icon    = $icon;
+        $actionObj->title   = '';
+        $actionObj->message = $message;
+        $actionObj->url     = '';
+        $actionObj->target  = '_blank';
+        $actionObj->type    = $type;
+
+        $obj         = new stdClass();
+        $obj->status = $status;
+        $obj->action = json_encode($actionObj);
+
+        echo json_encode($obj);
     }
 }

@@ -61,4 +61,11 @@ class Journalentry extends CI_Controller {
     public function Journalentryinfostatus(){
         $result=$this->Journalentryinfo->Journalentryinfostatus();
 	}
+    public function Printjournalentry($x){
+        $result=$this->Journalentryinfo->Printjournalentry($x);
+	}
+    public function Journalentryreverse(){
+        $recordID = $this->input->post('recordID');
+        $this->Journalentryinfo->Journalentryreverse($recordID);
+    }
 }
