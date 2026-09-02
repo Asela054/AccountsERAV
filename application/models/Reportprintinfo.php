@@ -1,17 +1,33 @@
 <?php
 class Reportprintinfo extends CI_Model{
     public function ReceivablesettlereceiptMulti($invoicereceipt, $printtype){
-        $this->db->select('`tbl_receivable_info`.`invoiceno`, `tbl_receivable`.`receiptno`, `tbl_receivable_info`.`narration`, `tbl_receivable_info`.`amount`,`tbl_receivable`.`idtbl_receivable`, `tbl_receivable`.`recdate`');
-        $this->db->from('tbl_receivable_info');
-        $this->db->join('tbl_receivable', 'tbl_receivable.idtbl_receivable = tbl_receivable_info.tbl_receivable_idtbl_receivable', 'left');
+        $companyid=$_SESSION['companyid'];
+        $branchid=$_SESSION['branchid'];
+
+        $this->db->select('recsettlefiltertype');
+        $this->db->from('tbl_receivable');
+        $this->db->where('tbl_receivable.receiptno', $invoicereceipt);
+        $this->db->where('tbl_receivable.status', '1');
+        $this->db->where('tbl_receivable.tbl_company_idtbl_company', $companyid);
+        $this->db->where('tbl_receivable.tbl_company_branch_idtbl_company_branch', $branchid);
+        $respondreceivablesettletype=$this->db->get();
+
+        $this->db->select('`tbl_receivable_info`.`invoiceno`, `tbl_receivable`.`receiptno`, `tbl_receivable`.`narration`, `tbl_receivable`.`amount`,`tbl_receivable`.`idtbl_receivable`, `tbl_receivable`.`recdate`');
+        $this->db->from('tbl_receivable');
+        $this->db->join('tbl_receivable_info', 'tbl_receivable_info.tbl_receivable_idtbl_receivable = tbl_receivable.idtbl_receivable', 'left');
         if($printtype==1){
             $this->db->where('`tbl_receivable_info`.`invoiceno`', $invoicereceipt);
         }
         else{
             $this->db->where('tbl_receivable.receiptno', $invoicereceipt);
         }
-        $this->db->where('tbl_receivable_info.status', '1');
+
+        if($respondreceivablesettletype->row(0)->recsettlefiltertype<3){
+            $this->db->where('tbl_receivable_info.status', '1');
+        }
         $this->db->where('tbl_receivable.status', '1');
+        $this->db->where('tbl_receivable.tbl_company_idtbl_company', $companyid);
+        $this->db->where('tbl_receivable.tbl_company_branch_idtbl_company_branch', $branchid);
         $respondinvoiceinfo=$this->db->get();
 
         $this->db->select('`tbl_customer`.`customer` AS `customer`, `tbl_customer`.`address_line1`, `tbl_customer`.`address_line2`, `tbl_customer`.`city`, `tbl_customer`.`state`, SUM(tbl_receivable.amount) AS `receipttotal`, `tbl_receivable`.`idtbl_receivable` AS `receipts`, `tbl_receivable`.`recdate` AS `receiptdates`');
@@ -26,6 +42,8 @@ class Reportprintinfo extends CI_Model{
             $this->db->where('tbl_receivable.receiptno', $invoicereceipt);
         }
         $this->db->where('tbl_receivable.status', '1');
+        $this->db->where('tbl_receivable.tbl_company_idtbl_company', $companyid);
+        $this->db->where('tbl_receivable.tbl_company_branch_idtbl_company_branch', $branchid);
         // $this->db->group_by('`tbl_receivable_info`.`tbl_receivable_idtbl_receivable`');
         $respondreceipt=$this->db->get();   
 
@@ -41,6 +59,8 @@ class Reportprintinfo extends CI_Model{
             $this->db->where('tbl_receivable.receiptno', $invoicereceipt);
         }
         $this->db->where('tbl_receivable.status', '1');
+        $this->db->where('tbl_receivable.tbl_company_idtbl_company', $companyid);
+        $this->db->where('tbl_receivable.tbl_company_branch_idtbl_company_branch', $branchid);
         $respondcheque=$this->db->get(); 
         
         $this->db->select('tbl_company.company AS companyname,tbl_company.address1 As companyaddress,tbl_company.mobile AS companymobile,
@@ -58,6 +78,8 @@ class Reportprintinfo extends CI_Model{
             $this->db->where('tbl_receivable.receiptno', $invoicereceipt);
         }
         $this->db->where('tbl_receivable.status', '1');
+        $this->db->where('tbl_receivable.tbl_company_idtbl_company', $companyid);
+        $this->db->where('tbl_receivable.tbl_company_branch_idtbl_company_branch', $branchid);
 		$companydetails = $this->db->get();
 
         $obj = new stdClass();
@@ -992,7 +1014,7 @@ class Reportprintinfo extends CI_Model{
                 <table style="width:100%;border-collapse: collapse;">
                     <tr>
                         <td width="55%" style="vertical-align: top;padding:0px;">
-                            <p style="margin:0px;font-size:16px;font-weight: bold;">PAYMENT RECEIPT</p>';
+                            <p style="margin:0px;font-size:16px;font-weight: bold;">PAYMENT VOUCHER</p>';
                             if($respondreceipt->row(0)->paysettlefiltertype==1){
                                 $html.='<p style="margin:0px;font-size:13px;font-weight: bold;">To: '.$respondreceipt->row(0)->suppliername.'</p>
                                 <p style="margin:0px;font-size:13px;padding-left: 24px;"> '.$respondreceipt->row(0)->address.',</p>
@@ -1263,7 +1285,7 @@ class Reportprintinfo extends CI_Model{
                 <table style="width:100%;border-collapse: collapse;">
                     <tr>
                         <td width="55%" style="vertical-align: top;padding:0px;">
-                            <p style="margin:0px;font-size:16px;font-weight: bold;">PAYMENT RECEIPT</p>';
+                            <p style="margin:0px;font-size:16px;font-weight: bold;">PAYMENT VOUCHER</p>';
                             if($respondreceipt->row(0)->paysettlefiltertype==1){
                                 $html.='<p style="margin:0px;font-size:13px;font-weight: bold;">To: '.$respondreceipt->row(0)->suppliername.'</p>
                                 <p style="margin:0px;font-size:13px;padding-left: 24px;"> '.$respondreceipt->row(0)->address.',</p>

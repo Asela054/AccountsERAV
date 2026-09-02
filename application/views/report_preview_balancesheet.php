@@ -69,10 +69,10 @@ foreach($balancedata as $r){
             if(!empty($showsub)): ?>
             <tr><th colspan='4'><?php echo $showsub; ?></th></tr>
             <?php endif; ?>
-
+            <?php if($rowdatalist->nettrabalreal != 0): ?>
             <tr>
                 <td><?php echo $shownest; ?></td>
-                <td><?php echo $rowdatalist->accountno.' - '.$rowdatalist->accountname; ?></td>
+                <td><?php echo $rowdatalist->accountno.' - '.$rowdatalist->accountname; ?><a href="<?php echo base_url().'ReportModule/ledger_folio?refno='.str_replace(' ', '', $rowdatalist->accountno).'&periodfrom='.$from_id.'&periodto='.$to_id; ?>" target="_blank"><i class="far fa-question-circle ml-2"></i></a></td>
                 <td class="text-right">
                     <?php
                     if($rowdatalist->nettrabalreal < 0)
@@ -85,7 +85,7 @@ foreach($balancedata as $r){
                 </td>
                 <td>&nbsp;</td>
             </tr>
-
+            <?php endif; ?>
             <?php
             // Count accounts in this nest group (AS only)
             $nest_count = count(array_filter($balancedata, function($r) use($nestcategory){
@@ -173,10 +173,10 @@ foreach($balancedata as $r){
             if(!empty($showsub)): ?>
             <tr><th colspan='4'><?php echo $showsub; ?></th></tr>
             <?php endif; ?>
-
+            <?php if($rowdatalist->nettrabalreal != 0): ?>
             <tr>
                 <td><?php echo $shownest; ?></td>
-                <td><?php echo $rowdatalist->accountno.' - '.$rowdatalist->accountname; ?></td>
+                <td><?php echo $rowdatalist->accountno.' - '.$rowdatalist->accountname; ?><a href="<?php echo base_url().'ReportModule/ledger_folio?refno='.str_replace(' ', '', $rowdatalist->accountno).'&periodfrom='.$from_id.'&periodto='.$to_id; ?>" target="_blank"><i class="far fa-question-circle ml-2"></i></a></td>
                 <td class="text-right">
                     <?php
                     if($rowdatalist->nettrabalreal > 0)
@@ -189,7 +189,7 @@ foreach($balancedata as $r){
                 </td>
                 <th class="text-right">&nbsp;</th>
             </tr>
-
+            <?php endif; ?>
             <?php
             $nest_count = count(array_filter($balancedata, function($r) use($nestcategory){
                 return $r->idtbl_account_nestcategory == $nestcategory

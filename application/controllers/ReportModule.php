@@ -281,7 +281,7 @@ class ReportModule extends CI_Controller {
 		$result['branch_period_list_filter']=get_all_company_branch_list();
 		$result['all_account_periods']=get_all_account_periods();
 		
-		$result['report_gen_url'] = 'ReportModule/preview_pnl_cus';
+		$result['report_gen_url'] = 'ReportModule/preview_pnl';
 		$result['report_title'] = 'Profit & Loss';
 		
 		$this->load->view('periodic_reports_view', $result);
@@ -331,6 +331,9 @@ class ReportModule extends CI_Controller {
 		$result['branch_period_list_filter']=get_all_company_branch_list();
 		$result['all_account_periods']=get_all_account_periods();
 		// $result['all_chart_of_acc']=$this->ReportModuleinfo->getChartOfAccounts();
+		if(!empty($_GET['refno'])){
+			$result['selectaccount']=$this->ReportModuleinfo->Getselectedaccount($_GET['refno']);
+		}
 		
 		$result['report_gen_url'] = 'ReportModule/preview_ledgerfolio';
 		$result['report_title'] = 'Ledger Folio';
@@ -557,47 +560,250 @@ class ReportModule extends CI_Controller {
 			'balanceinfo'    => $balanceinfo,
 			'net_profit_loss'=> $net_profit_loss,
 			'is_cross_year'  => $is_cross_year,
-			'period_count'   => count($master_ids)
+			'period_count'   => count($master_ids),
+			'from_id'        => $period_from,
+			'to_id'          => $period_upto
 		];
 
 		$this->load->view('report_preview_balancesheet', $params);
 	}
-	
+
 	// public function preview_ledgerfolio(){
-	// 	$params['a'] = $this->input->post('company_id');
-	// 	$params['b'] = $this->input->post('company_branch_id');
-	// 	$params['c'] = $this->input->post('period_from');
-	// 	$params['d'] = $this->input->post('period_upto');
+	// 	$companyid      = $this->input->post('company_id');
+	// 	$branchid       = $this->input->post('company_branch_id');
+	// 	$period_from    = $this->input->post('period_from');  // master id
+	// 	$period_upto    = $this->input->post('period_upto');  // master id
+	// 	$chartAccId     = $this->input->post('chart_acc_id');
+	// 	$chartAccType   = $this->input->post('chart_acc_type');
+
+	// 	// ── Get from/to master period details ─────────────────────────────────
+	// 	$from_master = $this->db->get_where('tbl_master', [
+	// 		'idtbl_master' => $period_from,
+	// 		'status'       => 1
+	// 	])->row();
+
+	// 	$to_master = $this->db->get_where('tbl_master', [
+	// 		'idtbl_master' => $period_upto,
+	// 		'status'       => 1
+	// 	])->row();
 		
-	// 	$companyBranchId = $this->input->post('company_branch_id');
-	// 	$chartAccId = $this->input->post('chart_acc_id');
-	// 	$acc_period_from = $this->input->post('period_from');//master-id
-	// 	$acc_period_upto = $this->input->post('period_upto');
+	// 	// ── Build period range ────────────────────────────────────────────────
+	// 	if(!empty($from_master) && !empty($to_master)){
+	// 		$range = $this->ReportModuleinfo->getPeriodRangeMasterIds(
+	// 			$from_master->tbl_finacial_month_idtbl_finacial_month,
+	// 			$from_master->tbl_finacial_year_idtbl_finacial_year,
+	// 			$to_master->tbl_finacial_month_idtbl_finacial_month,
+	// 			$to_master->tbl_finacial_year_idtbl_finacial_year,
+	// 			$companyid,
+	// 			$branchid
+	// 		);
+			
+	// 		if(!empty($range)){
+	// 			$master_ids      = $range['master_ids'];
+	// 			$open_bal_master = $range['from_master_id'];
+	// 			$is_cross_year   = $range['is_cross_year'];
+	// 		} else {
+	// 			$master_ids      = [$period_from];
+	// 			$open_bal_master = $period_from;
+	// 			$is_cross_year   = false;
+	// 		}
+	// 	} else {
+	// 		$master_ids      = [$period_from];
+	// 		$open_bal_master = $period_from;
+	// 		$is_cross_year   = false;
+	// 	}
 		
-	// 	$open_stock = $this->ReportModuleinfo->ledgerFolioOpenStockValue($companyBranchId, $chartAccId);
+	// 	// ── Opening stock/balance for this account ────────────────────────────
+	// 	$open_stock = $this->ReportModuleinfo->ledgerFolioOpenStockValue(
+	// 		$branchid,
+	// 		$chartAccId,
+	// 		$open_bal_master   // first period opening balance only
+	// 	);
+
+	// 	// ── Ledger folio transactions — ALL periods ───────────────────────────
+	// 	$ledger_folio_data = $this->ReportModuleinfo->ledgerFolioDetails(
+	// 		$branchid,
+	// 		$chartAccId,
+	// 		$chartAccType,
+	// 		$master_ids,       // array — single or multi
+	// 		$open_bal_master
+	// 	);
 		
-	// 	$ledger_folio_data = $this->ReportModuleinfo->ledgerFolioDetails($companyBranchId, $chartAccId, $acc_period_from);
-	// 	$total_detail_rows = count($ledger_folio_data);
-		
-	// 	$params['account_code'] = $open_stock->accountno;
-	// 	$acc_period_from = $this->input->post('period_from');
-	// 	$acc_period_upto = $this->input->post('period_upto');
-	// 	$rpt_from_str = $this->ReportModuleinfo->printDate($acc_period_from, 1);
-	// 	$rpt_to_str = $this->ReportModuleinfo->printDate($acc_period_upto);
-	// 	$params['report_duration'] = $rpt_from_str.' / '.$rpt_to_str;
-	// 	$params['open_stock'] = $open_stock->ac_open_balance;
-		
-	// 	$params['ledger_folio_data'] = $ledger_folio_data;
-	// 	$params['total_rows_ledger_folio'] = $total_detail_rows;
-		
+	// 	$params = [
+	// 		'a'                      => $companyid,
+	// 		'b'                      => $branchid,
+	// 		'c'                      => $period_from,
+	// 		'd'                      => $period_upto,
+	// 		'account_code'           => $open_stock->accountno ?? '',
+	// 		'report_duration'        => $this->ReportModuleinfo->printDate($period_from, 1)
+	// 									. ' / '
+	// 									. $this->ReportModuleinfo->printDate($period_upto),
+	// 		'rpt_from'               => $this->ReportModuleinfo->printDate($period_from, 1),
+	// 		'rpt_to'                 => $this->ReportModuleinfo->printDate($period_upto),
+	// 		'open_stock'             => $open_stock->ac_open_balance ?? 0,
+	// 		'open_stock_crdr'        => $open_stock->creditdebit ?? 'D',
+	// 		'ledger_folio_data'      => $ledger_folio_data,
+	// 		'total_rows_ledger_folio'=> count($ledger_folio_data),
+	// 		'is_cross_year'          => $is_cross_year,
+	// 		'period_count'           => count($master_ids)
+	// 	];
+
+	// 	$this->load->view('report_preview_ledgerfolio', $params);
+	// }
+
+	//Join with PNL & Balance sheet on 17/08/2026
+	// public function preview_ledgerfolio(){
+	// 	$companyid      = $this->input->post('company_id');
+	// 	$branchid       = $this->input->post('company_branch_id');
+	// 	$period_from    = $this->input->post('period_from');
+	// 	$period_upto    = $this->input->post('period_upto');
+	// 	$selectedAccId  = $this->input->post('chart_acc_id');   // chart ID or detail ID (acctype අනුව)
+	// 	$chartAccType   = $this->input->post('chart_acc_type'); // '1' = chart, '2' = detail
+	// 	$ledgerfiltertype   = $this->input->post('ledgerfiltertype'); // '1' = Normal Report, '2' = Link Report
+
+	// 	// ★ NEW: acctype = 2 (detail account) නම්, parent chart account ID එක resolve කරගන්නවා
+	// 	$chartAccId  = $selectedAccId;
+	// 	$detailAccId = null;
+
+	// 	if($ledgerfiltertype == 1 && $chartAccType == 1){
+	// 		$this->db->select('`idtbl_account_detail`, `accountno`, `accountname`');
+	// 		$this->db->from('tbl_account_detail');
+	// 		$this->db->where('status', 1);
+	// 		$this->db->where('tbl_account_idtbl_account', $selectedAccId);
+	// 		$responddetailaccounts = $this->db->get();
+	// 	}
+
+	// 	if($chartAccType == 2){
+	// 		$detailAccId = $selectedAccId;
+
+	// 		$parent = $this->db->select('tbl_account_idtbl_account, accountno, accountname')
+	// 							->get_where('tbl_account_detail', [
+	// 								'idtbl_account_detail' => $detailAccId
+	// 							])
+	// 							->row();
+
+	// 		$chartAccId = $parent->tbl_account_idtbl_account ?? null;
+	// 		$detailaccountinfo = ($parent->accountname.' - '.$parent->accountno) ?? '';
+	// 	}		
+
+	// 	// ── Get from/to master period details ─────────────────────────────────
+	// 	$from_master = $this->db->get_where('tbl_master', [
+	// 		'idtbl_master' => $period_from,
+	// 		'status'       => 1
+	// 	])->row();
+
+	// 	$to_master = $this->db->get_where('tbl_master', [
+	// 		'idtbl_master' => $period_upto,
+	// 		'status'       => 1
+	// 	])->row();
+
+	// 	// ── Build period range ────────────────────────────────────────────────
+	// 	if(!empty($from_master) && !empty($to_master)){
+	// 		$range = $this->ReportModuleinfo->getPeriodRangeMasterIds(
+	// 			$from_master->tbl_finacial_month_idtbl_finacial_month,
+	// 			$from_master->tbl_finacial_year_idtbl_finacial_year,
+	// 			$to_master->tbl_finacial_month_idtbl_finacial_month,
+	// 			$to_master->tbl_finacial_year_idtbl_finacial_year,
+	// 			$companyid,
+	// 			$branchid
+	// 		);
+
+	// 		if(!empty($range)){
+	// 			$master_ids      = $range['master_ids'];
+	// 			$open_bal_master = $range['from_master_id'];
+	// 			$is_cross_year   = $range['is_cross_year'];
+	// 		} else {
+	// 			$master_ids      = [$period_from];
+	// 			$open_bal_master = $period_from;
+	// 			$is_cross_year   = false;
+	// 		}
+	// 	} else {
+	// 		$master_ids      = [$period_from];
+	// 		$open_bal_master = $period_from;
+	// 		$is_cross_year   = false;
+	// 	}
+
+	// 	// ── Opening stock/balance — always chart-level ──────────────────────────
+
+	// 	$period_start_date = $this->ReportModuleinfo->printDate($period_from, 1);
+
+	// 	$open_stock = $this->ReportModuleinfo->ledgerFolioOpenStockValue(
+	// 		$branchid,
+	// 		$chartAccId,        // ★ resolved chart account ID (detail select වුනත් chart ID එකම)
+	// 		$open_bal_master,
+    // 		$detailAccId,
+	// 		$period_start_date 
+	// 	);
+
+	// 	// ── Ledger folio transactions ──────────────────────────────────────────
+	// 	$ledger_folio_data = $this->ReportModuleinfo->ledgerFolioDetails(
+	// 		$branchid,
+	// 		$chartAccId,        // ★ resolved chart account ID
+	// 		$chartAccType,
+	// 		$master_ids,
+	// 		$open_bal_master,
+	// 		$detailAccId        // ★ NEW — detail filter (type=1 නම් null)
+	// 	);
+
+	// 	$params = [
+	// 		'a'                      => $companyid,
+	// 		'b'                      => $branchid,
+	// 		'c'                      => $period_from,
+	// 		'd'                      => $period_upto,
+	// 		'account_code'           => $detailaccountinfo ?? $open_stock->accountno ?? '',
+	// 		'report_duration'        => $this->ReportModuleinfo->printDate($period_from, 1)
+	// 									. ' / '
+	// 									. $this->ReportModuleinfo->printDate($period_upto),
+	// 		'rpt_from'               => $this->ReportModuleinfo->printDate($period_from, 1),
+	// 		'rpt_to'                 => $this->ReportModuleinfo->printDate($period_upto),
+	// 		'open_stock'             => $open_stock->ac_open_balance ?? 0,
+	// 		'open_stock_crdr'        => $open_stock->creditdebit ?? 'D',
+	// 		'ledger_folio_data'      => $ledger_folio_data,
+	// 		'total_rows_ledger_folio'=> count($ledger_folio_data),
+	// 		'is_cross_year'          => $is_cross_year,
+	// 		'period_count'           => count($master_ids)
+	// 	];
+
 	// 	$this->load->view('report_preview_ledgerfolio', $params);
 	// }
 	public function preview_ledgerfolio(){
 		$companyid      = $this->input->post('company_id');
 		$branchid       = $this->input->post('company_branch_id');
-		$period_from    = $this->input->post('period_from');  // master id
-		$period_upto    = $this->input->post('period_upto');  // master id
-		$chartAccId     = $this->input->post('chart_acc_id');
+		$period_from    = $this->input->post('period_from');
+		$period_upto    = $this->input->post('period_upto');
+		$selectedAccId  = $this->input->post('chart_acc_id');   // chart ID or detail ID (acctype අනුව)
+		$chartAccType   = $this->input->post('chart_acc_type'); // '1' = chart, '2' = detail
+		$ledgerfiltertype   = $this->input->post('ledgerfiltertype'); // '1' = Normal Report, '2' = Link Report
+
+		// acctype = 2 (detail account) නම්, parent chart account ID එක resolve කරගන්නවා
+		$chartAccId        = $selectedAccId;
+		$detailAccId       = null;
+		$detailaccountinfo = '';
+
+		// ★ Normal Report + chart account select කළොත් — ඒ chart එකට අයිති detail accounts ලැයිස්තුව ගන්නවා
+		$responddetailaccounts = [];
+		if($ledgerfiltertype == 1 && $chartAccType == 1){
+			$responddetailaccounts = $this->db
+				->select('idtbl_account_detail, accountno, accountname')
+				->from('tbl_account_detail')
+				->where('status', 1)
+				->where('tbl_account_idtbl_account', $selectedAccId)
+				->get()
+				->result();   // ★ FIX: ->result() එකතු කළා (ඉස්සර object row set එකක් විතරයි return වුනේ)
+		}
+
+		if($chartAccType == 2){
+			$detailAccId = $selectedAccId;
+
+			$parent = $this->db->select('tbl_account_idtbl_account, accountno, accountname')
+								->get_where('tbl_account_detail', [
+									'idtbl_account_detail' => $detailAccId
+								])
+								->row();
+
+			$chartAccId        = $parent->tbl_account_idtbl_account ?? null;
+			$detailaccountinfo = ($parent->accountname.' - '.$parent->accountno) ?? '';
+		}
 
 		// ── Get from/to master period details ─────────────────────────────────
 		$from_master = $this->db->get_where('tbl_master', [
@@ -609,7 +815,7 @@ class ReportModule extends CI_Controller {
 			'idtbl_master' => $period_upto,
 			'status'       => 1
 		])->row();
-		
+
 		// ── Build period range ────────────────────────────────────────────────
 		if(!empty($from_master) && !empty($to_master)){
 			$range = $this->ReportModuleinfo->getPeriodRangeMasterIds(
@@ -620,7 +826,7 @@ class ReportModule extends CI_Controller {
 				$companyid,
 				$branchid
 			);
-			
+
 			if(!empty($range)){
 				$master_ids      = $range['master_ids'];
 				$open_bal_master = $range['from_master_id'];
@@ -635,28 +841,83 @@ class ReportModule extends CI_Controller {
 			$open_bal_master = $period_from;
 			$is_cross_year   = false;
 		}
-		
-		// ── Opening stock/balance for this account ────────────────────────────
-		$open_stock = $this->ReportModuleinfo->ledgerFolioOpenStockValue(
-			$branchid,
-			$chartAccId,
-			$open_bal_master   // first period opening balance only
-		);
 
-		// ── Ledger folio transactions — ALL periods ───────────────────────────
-		$ledger_folio_data = $this->ReportModuleinfo->ledgerFolioDetails(
-			$branchid,
-			$chartAccId,
-			$master_ids,       // array — single or multi
-			$open_bal_master
-		);
-		
+		$period_start_date = $this->ReportModuleinfo->printDate($period_from, 1);
+
+		// ★ NEW: Normal Report + chart account + detail accounts තිබ්බොත් —
+		// detail accounts ලැයිස්තුව loop කරලා, එකින් එකට open_stock + ledger transactions වෙන වෙනම ගන්නවා
+		$detail_accounts_data = [];
+
+		if($ledgerfiltertype == 1 && $chartAccType == 1 && !empty($responddetailaccounts)){
+
+			foreach($responddetailaccounts as $detail){
+
+				$d_open_stock = $this->ReportModuleinfo->ledgerFolioOpenStockValue(
+					$branchid,
+					$chartAccId,
+					$open_bal_master,
+					$detail->idtbl_account_detail,
+					$period_start_date
+				);
+
+				$d_ledger_folio_data = $this->ReportModuleinfo->ledgerFolioDetails(
+					$branchid,
+					$chartAccId,
+					2,                                   // ★ union branch (AR/AP/JE/RE/PS) force කරන්න
+					$master_ids,
+					$open_bal_master,
+					$detail->idtbl_account_detail
+				);
+
+				$detail_accounts_data[] = [
+					'idtbl_account_detail' => $detail->idtbl_account_detail,
+					'accountno'            => $detail->accountno,
+					'accountname'          => $detail->accountname,
+					'open_stock'           => $d_open_stock->ac_open_balance ?? 0,
+					'open_stock_crdr'      => $d_open_stock->creditdebit ?? 'D',
+					'ledger_folio_data'    => $d_ledger_folio_data,
+					'total_rows'           => count($d_ledger_folio_data)
+				];
+			}
+
+			// chart-level opening balance (report header එකේ පෙන්නන්න) — detail_acc_id null = chart level
+			$open_stock = $this->ReportModuleinfo->ledgerFolioOpenStockValue(
+				$branchid,
+				$chartAccId,
+				$open_bal_master,
+				null,
+				$period_start_date
+			);
+
+			// Normal Report මේකේදී flat list එක පාවිච්චි නොකර, detail_accounts_data breakdown එකෙන් view එකේ පෙන්නනවා
+			$ledger_folio_data = [];
+		}
+		else{
+			// ── existing single-account flow (Link Report, හෝ detail account එකක් directly select කළොත්) ──
+			$open_stock = $this->ReportModuleinfo->ledgerFolioOpenStockValue(
+				$branchid,
+				$chartAccId,
+				$open_bal_master,
+				$detailAccId,
+				$period_start_date
+			);
+
+			$ledger_folio_data = $this->ReportModuleinfo->ledgerFolioDetails(
+				$branchid,
+				$chartAccId,
+				$chartAccType,
+				$master_ids,
+				$open_bal_master,
+				$detailAccId
+			);
+		}
+
 		$params = [
 			'a'                      => $companyid,
 			'b'                      => $branchid,
 			'c'                      => $period_from,
 			'd'                      => $period_upto,
-			'account_code'           => $open_stock->accountno ?? '',
+			'account_code'           => $detailaccountinfo ?? $open_stock->accountno ?? '',
 			'report_duration'        => $this->ReportModuleinfo->printDate($period_from, 1)
 										. ' / '
 										. $this->ReportModuleinfo->printDate($period_upto),
@@ -666,6 +927,7 @@ class ReportModule extends CI_Controller {
 			'open_stock_crdr'        => $open_stock->creditdebit ?? 'D',
 			'ledger_folio_data'      => $ledger_folio_data,
 			'total_rows_ledger_folio'=> count($ledger_folio_data),
+			'detail_accounts_data'   => $detail_accounts_data,   // ★ NEW — Normal Report: detail-wise breakdown
 			'is_cross_year'          => $is_cross_year,
 			'period_count'           => count($master_ids)
 		];
@@ -944,7 +1206,9 @@ class ReportModule extends CI_Controller {
             'tot_transfer' => $tot_transfer,
             'pnl_trlist' => $sect_trlist,
             'rpt_from' => $this->formatPeriodDisplay($from_master),
-            'rpt_to' => $this->formatPeriodDisplay($to_master)
+            'rpt_to' => $this->formatPeriodDisplay($to_master),
+			'from_id' => $from_master_id,
+			'to_id' => $to_master_id
         );
         
         $this->load->view('report_preview_pnl', $data);
@@ -1023,7 +1287,7 @@ class ReportModule extends CI_Controller {
         $branchid=$this->input->post('branchid');
 
         // $result=get_child_account_list($companyid, $branchid);
-        $result=get_chart_acount_select2($searchTerm, $companyid, $branchid);
+        $result=get_accounts_list($searchTerm, $companyid, $branchid);
 	}
 
 	public function cash_flow(){
@@ -2055,23 +2319,30 @@ class ReportModule extends CI_Controller {
 		// 6. OPERATING PROFIT
 		$operating_profit = $gross_profit - $this->refine_value($tot_operating_expenses) + $this->refine_value($tot_other_income);
 
-		// 7. FINANCE COSTS
+		// 7. SELLING & DISTRIBUTION COSTS
+        $sd_data = $this->add_pnl_heading_sect('selling_distribution_costs', 'l', $from_master_id, $to_master_id, $company_id, $branch_id);
+        $tot_selling_distribution = $sd_data['sect_total'];
+        $sect_trlist['selling_distribution_costs'] = $sd_data['sect_trlist'];
+ 
+        $profit_after_sd = $operating_profit - $this->refine_value($tot_selling_distribution);
+
+		// 8. FINANCE COSTS
 		$finance_data = $this->add_pnl_heading_sect('finance_costs', 'l', $from_master_id, $to_master_id, $company_id, $branch_id);
 		$tot_finance_costs = $finance_data['sect_total'];
 		$sect_trlist['finance_costs'] = $finance_data['sect_trlist'];
 
-		// 8. PROFIT BEFORE TAX
-		$profit_before_tax = $operating_profit - $this->refine_value($tot_finance_costs);
+		// 9. PROFIT BEFORE TAX
+		$profit_before_tax = $profit_after_sd - $this->refine_value($tot_finance_costs);
 
-		// 9. TAXES
+		// 10. TAXES
 		$tax_data = $this->add_pnl_heading_sect('taxes', 'l', $from_master_id, $to_master_id, $company_id, $branch_id);
 		$tot_taxes = $tax_data['sect_total'];
 		$sect_trlist['taxes'] = $tax_data['sect_trlist'];
 
-		// 10. NET PROFIT AFTER TAX
+		// 11. NET PROFIT AFTER TAX
 		$net_profit_after_tax = $profit_before_tax - $this->refine_value($tot_taxes);
 
-		// 11. EARNINGS ALLOCATION
+		// 12. EARNINGS ALLOCATION
 		//     Only "Dividends" type accounts should ever be mapped to this
 		//     heading. "Transfer to Retained Earnings" is always the
 		//     remainder — it is never account-mapped, always computed.
@@ -2081,20 +2352,23 @@ class ReportModule extends CI_Controller {
 
 		$data = array(
 			'tot_sale'                      => $tot_sale,
-			'cost_of_sale'                   => $cost_of_sale,
-			'gross_profit'                   => $gross_profit,
-			'tot_operating_expenses'         => $tot_operating_expenses,
-			'tot_other_income'               => $tot_other_income,
-			'operating_profit'               => $operating_profit,
-			'tot_finance_costs'              => $tot_finance_costs,
-			'profit_before_tax'              => $profit_before_tax,
-			'tot_taxes'                      => $tot_taxes,
-			'net_profit_after_tax'           => $net_profit_after_tax,
-			'tot_dividends'                  => $tot_dividends,
-			'transfer_to_retained_earnings'  => $transfer_to_retained_earnings,
-			'pnl_trlist'                     => $sect_trlist,
-			'rpt_from'                       => $this->formatPeriodDisplay($from_master),
-			'rpt_to'                         => $this->formatPeriodDisplay($to_master)
+			'cost_of_sale'                  => $cost_of_sale,
+			'gross_profit'                  => $gross_profit,
+			'tot_operating_expenses'        => $tot_operating_expenses,
+			'tot_other_income'              => $tot_other_income,
+			'operating_profit'              => $operating_profit,
+			'tot_selling_distribution'      => $tot_selling_distribution,
+			'tot_finance_costs'             => $tot_finance_costs,
+			'profit_before_tax'             => $profit_before_tax,
+			'tot_taxes'                     => $tot_taxes,
+			'net_profit_after_tax'          => $net_profit_after_tax,
+			'tot_dividends'                 => $tot_dividends,
+			'transfer_to_retained_earnings' => $transfer_to_retained_earnings,
+			'pnl_trlist'                    => $sect_trlist,
+			'rpt_from'                      => $this->formatPeriodDisplay($from_master),
+			'rpt_to'                        => $this->formatPeriodDisplay($to_master),
+			'from_id' 						=> $from_master_id,
+			'to_id' 						=> $to_master_id
 		);
 
 		$this->load->view('report_preview_pnl_new', $data);

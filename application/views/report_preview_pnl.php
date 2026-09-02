@@ -14,6 +14,7 @@ function display_amount($amount) {
         return format_currency($amount);
     }
 }
+
 ?>
 
 <div class="col-12 text-right">
@@ -43,13 +44,16 @@ function display_amount($amount) {
             if(!empty($tr_sale) && isset($tr_sale[0]['tdtext']) && strpos($tr_sale[0]['tdtext'], 'Total') === false):
                 $amount = isset($tr_sale[1]['tdtext']) ? floatval(str_replace(',', '', $tr_sale[1]['tdtext'])) : 0;
                 $sales_total += $amount;
+
+                if($amount != 0):
         ?>
         <tr>
-            <td><?php echo $tr_sale[0]['tdtext']; ?></td>
+            <td><?php echo $tr_sale[0]['tdtext']; $accountdetail = explode('-', $tr_sale[0]['tdtext']); ?><a href="<?php echo base_url().'ReportModule/ledger_folio?refno='.str_replace(' ', '', $accountdetail[0]).'&periodfrom='.$from_id.'&periodto='.$to_id; ?>" target="_blank"><i class="far fa-question-circle ml-2"></i></a></td>
             <td class="text-right <?php echo get_amount_class($amount); ?>"><?php echo display_amount($amount); ?></td>
             <td></td>
         </tr>
         <?php 
+                endif;
             endif;
         endforeach; 
         ?>
@@ -81,13 +85,16 @@ function display_amount($amount) {
             if(!empty($tr_cost) && isset($tr_cost[0]['tdtext']) && strpos($tr_cost[0]['tdtext'], 'Total') === false):
                 $amount = isset($tr_cost[1]['tdtext']) ? floatval(str_replace(',', '', $tr_cost[1]['tdtext'])) : 0;
                 $cost_of_sales_total += $amount;
+
+                if($amount != 0):
         ?>
         <tr>
-            <td><?php echo $tr_cost[0]['tdtext']; ?></td>
+            <td><?php echo $tr_cost[0]['tdtext']; $accountdetail = explode('-', $tr_cost[0]['tdtext']); ?><a href="<?php echo base_url().'ReportModule/ledger_folio?refno='.str_replace(' ', '', $accountdetail[0]).'&periodfrom='.$from_id.'&periodto='.$to_id; ?>" target="_blank"><i class="far fa-question-circle ml-2"></i></a></td>
             <td class="text-right"><?php echo display_amount($amount); ?></td>
             <td></td>
         </tr>
         <?php 
+                endif;
             endif;
         endforeach; 
         ?>
@@ -124,13 +131,16 @@ function display_amount($amount) {
             if(!empty($tr_income) && isset($tr_income[0]['tdtext']) && strpos($tr_income[0]['tdtext'], 'Total') === false):
                 $amount = isset($tr_income[1]['tdtext']) ? floatval(str_replace(',', '', $tr_income[1]['tdtext'])) : 0;
                 $other_income_total += $amount;
+
+                if($amount != 0):
         ?>
         <tr>
-            <td><?php echo $tr_income[0]['tdtext']; ?></td>
+            <td><?php echo $tr_income[0]['tdtext']; $accountdetail = explode('-', $tr_income[0]['tdtext']); ?><a href="<?php echo base_url().'ReportModule/ledger_folio?refno='.str_replace(' ', '', $accountdetail[0]).'&periodfrom='.$from_id.'&periodto='.$to_id; ?>" target="_blank"><i class="far fa-question-circle ml-2"></i></a></td>
             <td class="text-right"><?php echo display_amount($amount); ?></td>
             <td></td>
         </tr>
         <?php 
+                endif;
             endif;
         endforeach; 
         ?>
@@ -165,13 +175,16 @@ function display_amount($amount) {
             if(!empty($tr_expense) && isset($tr_expense[0]['tdtext']) && strpos($tr_expense[0]['tdtext'], 'Total') === false):
                 $amount = isset($tr_expense[1]['tdtext']) ? floatval(str_replace(',', '', $tr_expense[1]['tdtext'])) : 0;
                 $expenses_total += $amount;
+
+                if($amount != 0):
         ?>
         <tr>
-            <td><?php echo $tr_expense[0]['tdtext']; ?></td>
+            <td><?php echo $tr_expense[0]['tdtext']; $accountdetail = explode('-', $tr_expense[0]['tdtext']); ?><a href="<?php echo base_url().'ReportModule/ledger_folio?refno='.str_replace(' ', '', $accountdetail[0]).'&periodfrom='.$from_id.'&periodto='.$to_id; ?>" target="_blank"><i class="far fa-question-circle ml-2"></i></a></td>
             <td class="text-right negative-amount">(<?php echo format_currency($amount); ?>)</td>
             <td></td>
         </tr>
         <?php 
+                endif;
             endif;
         endforeach; 
         ?>
@@ -199,3 +212,47 @@ function display_amount($amount) {
 <input type="hidden" id="reporttitle" value="Profit and Loss Statement">
 <input type="hidden" id="filetitle" value="PNL_Report_">
 <input type="hidden" id="reporttype" value="2">
+
+<!-- Hidden fields for reporting -->
+<input type="hidden" id="periodtitle" value="<?php echo $rpt_from.' / '.$rpt_to; ?>">
+<input type="hidden" id="reporttitle" value="Profit and Loss Statement">
+<input type="hidden" id="filetitle" value="PNL_Report_">
+<input type="hidden" id="reporttype" value="2">
+
+<script>
+// Self-contained Excel export — no external library needed.
+// Wraps #tablereport in a minimal HTML document and downloads it as .xls,
+// which Excel opens natively (it reads HTML tables inside an .xls container).
+document.getElementById('btnexcelconvert').addEventListener('click', function () {
+    var table       = document.getElementById('tablereport');
+    var periodTitle = document.getElementById('periodtitle').value;
+    var reportTitle = document.getElementById('reporttitle').value;
+    var fileTitle    = document.getElementById('filetitle').value;
+ 
+    var companyName = <?php echo json_encode($_SESSION['company']); ?>;
+ 
+    var html = '<html xmlns:x="urn:schemas-microsoft-com:office:excel">'
+        + '<head><meta charset="UTF-8">'
+        + '<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>'
+        + '<x:Name>Cash Flow</x:Name>'
+        + '<x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>'
+        + '</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->'
+        + '</head><body>'
+        + '<h3>' + companyName + '</h3>'
+        + '<h4>' + reportTitle + '</h4>'
+        + '<p>' + periodTitle + '</p>'
+        + table.outerHTML
+        + '</body></html>';
+ 
+    var blob = new Blob(['\ufeff' + html], { type: 'application/vnd.ms-excel' });
+    var url  = URL.createObjectURL(blob);
+ 
+    var a = document.createElement('a');
+    a.href     = url;
+    a.download = fileTitle + periodTitle.replace(/[^a-z0-9]+/gi, '_') + '.xls';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+});
+</script>

@@ -42,6 +42,7 @@ include "include/topnavbar.php";
                                         <thead>
                                             <tr>
                                                 <th>#</th>
+                                                <th>Receivable Filter Type</th>
                                                 <th>Receipt No</th>
                                                 <th>Rec. Type</th>
                                                 <th>Company</th>
@@ -154,6 +155,20 @@ include "include/topnavbar.php";
                                     </select>
                                 </div>
                             </div>
+                            <div class="form-row mt-2 d-none" id="divpaymentlist">
+                                <div class="col">
+                                    <label class="small font-weight-bold">Description*</label>
+                                    <input type="text" name="settledesc" id="settledesc" class="form-control form-control-sm" value="" readonly>
+                                </div>
+                                <div class="col-3">
+                                    <label class="small font-weight-bold">Amount*</label>
+                                    <input type="text" name="settleamount" id="settleamount" class="form-control form-control-sm text-right input-integer" value="" readonly>
+                                </div>
+                                <div class="col-2 text-right">
+                                    <label class="small font-weight-bold">&nbsp;</label><br>
+                                    <button type="button" class="btn btn-primary btn-sm w-100" id="btnaddlist" disabled><i class="fas fa-list mr-2"></i>Add List</button>
+                                </div>
+                            </div>
                             <div class="collapse" id="collapseCreditNote">
                                 <div class="card card-body shadow-none p-0 border-0 rounded-0">
                                     <div class="row mt-3">
@@ -218,6 +233,24 @@ include "include/topnavbar.php";
                                             </table>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                            <div class="collapse mt-3" id="collapseVoucherList">
+                                <div class="card card-body shadow-none p-0 border-0 rounded-0">
+                                    <h6 class="small title-style"><span>Voucher Receivable Information</span></h6>
+                                    <table class="table table-striped table-bordered table-sm small mb-0" id="tablevoucherlist">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Account | Customer</th>
+                                                <th class="d-none">AccountID</th>
+                                                <th class="d-none">AccountType</th>
+                                                <th>Description</th>
+                                                <th class="text-right">Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
                                 </div>
                             </div>
                             <div class="row mt-3">
@@ -412,7 +445,29 @@ include "include/topnavbar.php";
         $('#receivablefilter').change(function() {
             var recefilter = $(this).val();
 
-            // if()
+            if(recefilter == 3){
+                $('#collapseCreditNote').collapse('hide');
+                $('#collapseUnappliedPayment').collapse('hide');
+                $('#collapseInvoiceList').collapse('hide');
+                $('#collapseVoucherList').collapse('show');
+
+                $('#divpaymentlist').removeClass('d-none');
+                $('#btnaddlist').prop('disabled', false);
+                $('#settleamount').prop('readonly', false);
+                $('#settledesc').prop('readonly', false);
+                $('#customer').prop('required', false);
+            }
+            else{
+                $('#collapseCreditNote').collapse('hide');
+                $('#collapseUnappliedPayment').collapse('hide');
+                $('#collapseInvoiceList').collapse('hide');
+                $('#collapseVoucherList').collapse('hide');
+                $('#divpaymentlist').addClass('d-none');
+                $('#btnaddlist').prop('disabled', true);
+                $('#settleamount').prop('readonly', true);
+                $('#settledesc').prop('readonly', true);
+                $('#customer').prop('required', true);
+            }
         });
 
         // $('#chartofdetailaccount').select2({dropdownParent: $('#modalreceivable')});
@@ -457,6 +512,9 @@ include "include/topnavbar.php";
             "columns": [
                 {
                     "data": "idtbl_receivable"
+                },
+                {
+                    "data": "recsettlefiltertype"
                 },
                 {
                     "data": "receiptno"
@@ -664,10 +722,27 @@ include "include/topnavbar.php";
                 delay: 250,
                 data: function (params) {
                     return {
-                        searchTerm: params.term // search term
+                        searchTerm: params.term, // search term
+                        receivablefilter : $('#receivablefilter').val()
                     };
                 },
                 processResults: function (response) {
+                    var receivablefilter = $('#receivablefilter').val();
+
+                    if (receivablefilter == 2 || receivablefilter == 3) {
+                        return {
+                            results: response.map(function (item) {
+                                return {
+                                    id: item.id,
+                                    text: item.text,
+                                    data: {
+                                        type: item.acctype
+                                    }
+                                };
+                            })
+                        };
+                    }
+
                     return {
                         results: response
                     };
@@ -677,14 +752,31 @@ include "include/topnavbar.php";
         });
         $('#customer').change(function(){
             var id = $(this).val();
+            var receivablefilter = $('#receivablefilter').val();
+            var accounttype = '';
+            if(receivablefilter == 2){
+                var selectedData = $('#customer').select2('data')[0];
+                // var accounttype = selectedData ? selectedData.data.type : null;
+                var accounttype = (selectedData && selectedData.data) ? selectedData.data.type : null;
+            }
+
             $.ajax({
                 type: "POST",
                 data: {
-                    recordID: id
+                    recordID: id,
+                    receivablefilter : receivablefilter,
+                    accounttype : accounttype
                 },
                 url: '<?php echo base_url() ?>Receivablesettle/Getinvoiceaccocustomer',
                 success: function(result) { // alert(result);
-                    $('#tableinvoicepayment tbody').empty().append(result);
+                    if(result.trim()!=""){
+                        $('#tableinvoicepayment tbody').empty().append(result);
+                        $('#collapseInvoiceList').collapse('show'); 
+                    }
+                    else{
+                        $('#collapseInvoiceList').collapse('hide'); 
+                        $('#tableinvoicepayment tbody').empty();
+                    }
                 }
             });
             $.ajax({
@@ -877,6 +969,20 @@ include "include/topnavbar.php";
                     jsonObjCreditNote.push(itemCN);
                 });
                 var myJSONCreditNote = JSON.stringify(jsonObjCreditNote);
+
+                jsonObjVoucher = [];
+                $('#tablevoucherlist tbody tr').each(function() {
+                    item = {}
+                    var row = $(this).closest("tr");
+                    item["voucherdate"] = row.find('td:eq(0)').text();
+                    item["accountname"] = row.find('td:eq(1)').text();
+                    item["accountid"] = row.find('td:eq(2)').text();
+                    item["accounttype"] = row.find('td:eq(3)').text();
+                    item["desc"] = row.find('td:eq(4)').text();
+                    item["amount"] = row.find('td:eq(5)').text();
+                    jsonObjVoucher.push(item);
+                });
+                var myJSONVoucher = JSON.stringify(jsonObjVoucher);
                 
                 var recordID = $('#recordID').val();
                 var recordOption = $('#recordOption').val();
@@ -888,6 +994,14 @@ include "include/topnavbar.php";
                 var unappliedamount = parseFloat($('#hideunappliedtotal').val());
                 var creditnotetotal   = parseFloat($('#hidecreditnotetotal').val());
                 var recsettdate = $('#recsettdate').val();
+                var receivablefilter = $('#receivablefilter').val();
+                if($('#receivablefilter').val() == 2){
+                    var selectedCustomerData = $('#customer').select2('data')[0];
+                    var customerAccountType = selectedCustomerData ? selectedCustomerData.data.type : null;
+                }
+                else{
+                    var customerAccountType = '';
+                }
 
                 Swal.fire({
                     title: '',
@@ -910,6 +1024,7 @@ include "include/topnavbar.php";
                                 tableReceData: myJSONPay,
                                 tableUnapplyData: myJSONUnapplied,
                                 tableCreditNoteData: myJSONCreditNote, 
+                                tableVoucherData: myJSONVoucher,
                                 company: company,
                                 branch: branch,
                                 customer: customerID,
@@ -918,6 +1033,8 @@ include "include/topnavbar.php";
                                 recsettdate: recsettdate,
                                 unappliedamount: unappliedamount,
                                 creditnotetotal: creditnotetotal,
+                                receivablefilter: receivablefilter,
+                                customerAccountType: customerAccountType,
                                 recordOption: recordOption,
                                 recordID: recordID
                             },
@@ -1100,6 +1217,63 @@ include "include/topnavbar.php";
                 checkcreditnote();
             }
         });
+
+        $('#btnaddlist').click(function(){
+            var receivablefilter = $('#receivablefilter').val();
+            var accountid = $('#customer').val();
+            var selectedCustomerData = $('#customer').select2('data')[0];
+            var accounttype = selectedCustomerData ? selectedCustomerData.data.type : null;
+            
+            var accounttext = $('#customer').find(':selected').text();
+            var description = $('#settledesc').val();
+            var settleamount = $('#settleamount').val();
+            var recsettdate = $('#recsettdate').val();
+
+            if(receivablefilter != '3'){
+                $swl.fire({
+                    title: 'Warning',
+                    text: 'This method only use for payment voucher. Please select payment voucher in payable filter.',
+                    icon: 'warning',
+                    confirmButtonText: 'OK'
+                });
+            }
+            else if(accountid == ''){
+                var el = document.getElementById('customer');
+                el.setCustomValidity('Please select a customer / account no.');
+                el.reportValidity();
+                el.onchange = function(){ this.setCustomValidity(''); };
+            }
+            else if(description == ''){
+                var el = document.getElementById('settledesc');
+                el.setCustomValidity('Please enter a description.');
+                el.reportValidity();
+                el.oninput = function(){ this.setCustomValidity(''); };
+            }
+            else if(settleamount == '' || settleamount <= 0){
+                var el = document.getElementById('settleamount');
+                el.setCustomValidity(settleamount == '' ? 'Please enter an amount.' : 'Amount must be greater than 0.');
+                el.reportValidity();
+                el.oninput = function(){ this.setCustomValidity(''); };
+            }
+            else{
+                var rowCount = $("#tablevoucherlist tbody tr").length;
+                
+                $('#tablevoucherlist tbody').append('<tr><td>'+recsettdate+'</td><td>'+accounttext+'</td><td class="d-none">'+accountid+'</td><td class="d-none">'+accounttype+'</td><td>'+description+'</td><td class="text-right">'+settleamount+'</td></tr>');
+
+                setTotalAmount();
+
+                $('#customer').val('').trigger('change');
+                $('#settledesc').val('');
+                $('#settleamount').val('');
+            }
+        });
+        $('#tablevoucherlist tbody').on('click', 'td', async function() {
+            var r = await Otherconfirmation("You want to remove this record ? ");
+    		if (r == true) {
+    			$(this).closest('tr').remove();
+                setTotalAmount();
+    		}
+    	});
     });
 
     function getbranchlist(id, value){
@@ -1350,6 +1524,23 @@ include "include/topnavbar.php";
     function createprint(){
         var printtype = $('#printtype').val();
         var printinvoicereceipt = $('#printinvoicereceipt').val();
+    }
+
+    function setTotalAmount(){
+        var intVal = function (i) {
+            return typeof i === 'string' ?
+                i.replace(/[\$,]/g, '') * 1 :
+                typeof i === 'number' ?
+                i : 0;
+        };
+        
+        var sum = 0;
+        $('#tablevoucherlist tbody tr').each(function() {
+            var row = $(this).closest("tr");
+            sum += parseFloat(intVal(row.find('td:eq(5)').text()));
+        });
+
+        $('#invoicepayamount').val(addCommas(parseFloat(sum).toFixed(2)));
     }
 
     function addCommas(nStr){

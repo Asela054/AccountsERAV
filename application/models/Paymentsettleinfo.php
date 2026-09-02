@@ -24,7 +24,7 @@ class Paymentsettleinfo extends CI_Model{
 
         if($payablefilter==1):
             // $this->db->select('`tbl_sales_info`.`idtbl_sales_info`, `tbl_sales_info`.`invno`, `tbl_sales_info`.`amount`, IFNULL(SUM(`tbl_receivable_info`.`amount`), 0) AS `sumpay`, (`tbl_sales_info`.`amount`-IFNULL(SUM(`tbl_receivable_info`.`amount`), 0)) AS `balpay`, `tbl_sales_info`.`tbl_customer_idtbl_customer`, `tbl_customer`.`customer`');
-            $this->db->select("`tbl_expence_info`.`idtbl_expence_info`, `tbl_expence_info`.`grnno`, `tbl_expence_info`.`amount`, `tbl_expence_info`.`invamount`, IFNULL(SUM(CASE WHEN `tbl_account_paysettle_info`.`status` = 1 THEN `tbl_account_paysettle_info`.`amount` ELSE 0 END), 0) AS `sumpay`, (`tbl_expence_info`.`invamount`-IFNULL(SUM(CASE WHEN `tbl_account_paysettle_info`.`status` = 1 THEN `tbl_account_paysettle_info`.`amount` ELSE 0 END), 0)) AS `balpay`, `tbl_expence_info`.`tbl_supplier_idtbl_supplier`, IF($has_table = 0, '', $tablename.$column2) AS suppliername");
+            $this->db->select("`tbl_expence_info`.`idtbl_expence_info`, `tbl_expence_info`.`grnno`, `tbl_expence_info`.`supinvno`, `tbl_expence_info`.`amount`, `tbl_expence_info`.`invamount`, IFNULL(SUM(CASE WHEN `tbl_account_paysettle_info`.`status` = 1 THEN `tbl_account_paysettle_info`.`amount` ELSE 0 END), 0) AS `sumpay`, (`tbl_expence_info`.`invamount`-IFNULL(SUM(CASE WHEN `tbl_account_paysettle_info`.`status` = 1 THEN `tbl_account_paysettle_info`.`amount` ELSE 0 END), 0)) AS `balpay`, `tbl_expence_info`.`tbl_supplier_idtbl_supplier`, IF($has_table = 0, '', $tablename.$column2) AS suppliername");
             $this->db->from('tbl_expence_info');
             $this->db->join('tbl_account_paysettle_info', 'tbl_account_paysettle_info.invoiceno = tbl_expence_info.grnno', 'left');
             if(!empty($tablename)):
@@ -63,6 +63,7 @@ class Paymentsettleinfo extends CI_Model{
                         <td>'.$rowdatalist->suppliername.'</td>
                         <td class="d-none">'.$rowdatalist->grnno.'</td>
                         <td>'.$rowdatalist->grnno.'</td>
+                        <td>'.$rowdatalist->supinvno.'</td>
                         <td class="text-right">'.number_format($rowdatalist->invamount, 2).'</td>
                         <td class="text-right invbalamount">'.number_format($netbalpay, 2).'</td>
                     </tr>
@@ -1610,6 +1611,8 @@ class Paymentsettleinfo extends CI_Model{
             $recordID       = $this->input->post('recordID');
             $updatedatetime = date('Y-m-d H:i:s');
             $userID         = $_SESSION['userid'];
+            $companyid      = $_SESSION['companyid'];
+		    $branchid       = $_SESSION['branchid'];
             $i              = 0;
 
             if (empty($recordID)) {
@@ -1686,6 +1689,13 @@ class Paymentsettleinfo extends CI_Model{
             // Generate batch number for account transaction
             $prefix  = generate_prefix($record->tbl_company_idtbl_company, $record->tbl_company_branch_idtbl_company_branch, $recdate, 'AT');
             $batchno = tr_batch_num($prefix, $record->tbl_company_branch_idtbl_company_branch);
+            $masterdata = get_account_period_acco_date($companyid, $branchid, $recdate);
+
+            if (empty($masterdata) || empty($masterdata->idtbl_master)) {
+                throw new Exception('Record Error, Account period not found for the given date');
+            }
+
+            $masterID = $masterdata->idtbl_master ? $masterdata->idtbl_master : '';
 
             if (empty($batchno)) {
                 throw new Exception('Record Error, Batch no could not be defined by system');
@@ -1713,7 +1723,7 @@ class Paymentsettleinfo extends CI_Model{
                 $chartaccount    = $rowdetail->tbl_account_idtbl_account;
                 $company         = $rowdetail->tbl_company_idtbl_company;
                 $branch          = $rowdetail->tbl_company_branch_idtbl_company_branch;
-                $masterID        = $rowdetail->tbl_master_idtbl_master;
+                $masterID        = $masterID; // Use the masterID determined earlier
                 $amount          = $rowdetail->amount;
                 $narration       = $rowdetail->narration;
                 $tratype         = $rowdetail->tratype;

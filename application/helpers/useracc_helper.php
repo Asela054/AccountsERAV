@@ -967,4 +967,180 @@
 		$monthName = $date->format('M');
 		return $prefix . $row->year . strtoupper($monthName);
 	}
+
+	function get_receivable_account_list($searchTerm){
+		$companyid=$_SESSION['companyid'];
+		$branchid=$_SESSION['branchid'];
+
+		$CI = get_instance();
+
+		// Get distinct account_detail and account IDs where payable is unsettled
+		$payable_sql = "SELECT DISTINCT 
+							`tbl_account_transaction_manual`.`tbl_account_detail_idtbl_account_detail`,
+							`tbl_account_transaction_manual`.`tbl_account_idtbl_account`
+						FROM `tbl_account_transaction_manual`
+						WHERE `tbl_account_transaction_manual`.`tbl_company_idtbl_company` = ?
+						AND `tbl_account_transaction_manual`.`tbl_company_branch_idtbl_company_branch` = ?
+						AND `tbl_account_transaction_manual`.`recestatus` = 1
+						AND `tbl_account_transaction_manual`.`recesettle` = 0";
+
+		$payable_result = $CI->db->query($payable_sql, array($companyid, $branchid))->result();
+
+		// Separate into detail IDs and account IDs
+		$detail_ids = array_filter(array_unique(array_column($payable_result, 'tbl_account_detail_idtbl_account_detail')));
+		$account_ids = array_filter(array_unique(array_column($payable_result, 'tbl_account_idtbl_account')));
+
+		if (empty($detail_ids) && empty($account_ids)) {
+			echo json_encode(array());
+			return;
+		}
+
+		$detail_ids_str  = implode(',', array_map('intval', $detail_ids));
+		$account_ids_str = implode(',', array_map('intval', $account_ids));
+
+		$search_condition_account = !empty($searchTerm)
+			? " AND (`tbl_account`.`accountno` LIKE '%$searchTerm%' OR `tbl_account`.`accountname` LIKE '%$searchTerm%')"
+			: "";
+
+		$search_condition_detail = !empty($searchTerm)
+			? " AND (`tbl_account_detail`.`accountno` LIKE '%$searchTerm%' OR `tbl_account_detail`.`accountname` LIKE '%$searchTerm%')"
+			: "";
+
+		$sql = "";
+
+		// Chart of Accounts
+		if (!empty($account_ids_str)) {
+			$sql .= "SELECT 
+						`tbl_account`.`idtbl_account` AS `accountid`,
+						`tbl_account`.`accountno`,
+						`tbl_account`.`accountname`,
+						'1' AS `acctype`
+					FROM `tbl_account`
+					WHERE `tbl_account`.`status` = 1
+					AND `tbl_account`.`idtbl_account` IN ($account_ids_str)
+					$search_condition_account";
+		}
+
+		// Chart of detail accounts
+		if (!empty($detail_ids_str)) {
+			if (!empty($sql)) { $sql .= " UNION ALL "; }
+			$sql .= "SELECT 
+						`tbl_account_detail`.`idtbl_account_detail` AS `accountid`,
+						`tbl_account_detail`.`accountno`,
+						`tbl_account_detail`.`accountname`,
+						'2' AS `acctype`
+					FROM `tbl_account_detail`
+					WHERE `tbl_account_detail`.`status` = 1
+					AND `tbl_account_detail`.`idtbl_account_detail` IN ($detail_ids_str)
+					$search_condition_detail";
+		}
+
+		if (empty($searchTerm)) {
+			$sql .= " LIMIT 5";
+		}
+
+		$respond = $CI->db->query($sql);
+
+		$data = array();
+		foreach ($respond->result() as $row) {
+			$data[] = array(
+				"id"      => $row->accountid,
+				"text"    => $row->accountname . ' - ' . $row->accountno,
+				"acctype" => $row->acctype
+			);
+		}
+
+		echo json_encode($data);
+	}
+
+	function get_accounts_list($searchTerm, $companyid, $branchid) {
+		$CI = get_instance();
+		$accountcategory = $CI->input->post('accountcategory');
+		$accountcategory = !empty($accountcategory) ? $accountcategory : '';
+
+		// Normalize: treat "not set" and "set but empty" the same way (they were identical before)
+		$hasSearch = isset($searchTerm) && !empty($searchTerm);
+
+		$params = array(1, 1, $companyid, $branchid, 1, 1, $companyid, $branchid);
+
+		// ---- First part: tbl_account ----
+		$sql = "SELECT `tbl_account`.`idtbl_account` AS `accountid`,
+					`tbl_account`.`accountno`,
+					`tbl_account`.`accountname`,
+					'1' AS `acctype`
+				FROM `tbl_account`
+				WHERE `tbl_account`.`status` = ?
+				AND EXISTS (
+						SELECT 1 FROM `tbl_account_allocation`
+						WHERE `tbl_account_allocation`.`tbl_account_idtbl_account` = `tbl_account`.`idtbl_account`
+						AND `tbl_account_allocation`.`status` = ?
+						AND `tbl_account_allocation`.`companybank` = ?
+						AND `tbl_account_allocation`.`branchcompanybank` = ?
+					)";
+
+		if ($hasSearch) {
+			$sql .= " AND (`tbl_account`.`accountno` LIKE CONCAT('%', ?, '%')
+						OR `tbl_account`.`accountname` LIKE CONCAT('%', ?, '%'))";
+		}
+		if (!empty($accountcategory)) {
+			$sql .= " AND `tbl_account`.`tbl_account_category_idtbl_account_category` = ?";
+		}
+
+		// ---- UNION ALL: tbl_account_detail ----
+		$sql .= " UNION ALL
+				SELECT `tbl_account_detail`.`idtbl_account_detail` AS `accountid`,
+					`tbl_account_detail`.`accountno`,
+					`tbl_account_detail`.`accountname`,
+					'2' AS `acctype`
+				FROM `tbl_account_detail`";
+
+		if (!empty($accountcategory)) {
+			$sql .= " LEFT JOIN `tbl_account` ON `tbl_account`.`idtbl_account` = `tbl_account_detail`.`tbl_account_idtbl_account`";
+		}
+
+		$sql .= " WHERE `tbl_account_detail`.`status` = ?
+				AND EXISTS (
+						SELECT 1 FROM `tbl_account_allocation`
+						WHERE `tbl_account_allocation`.`tbl_account_detail_idtbl_account_detail` = `tbl_account_detail`.`idtbl_account_detail`
+						AND `tbl_account_allocation`.`status` = ?
+						AND `tbl_account_allocation`.`companybank` = ?
+						AND `tbl_account_allocation`.`branchcompanybank` = ?
+					)";
+
+		if ($hasSearch) {
+			$sql .= " AND (`tbl_account_detail`.`accountno` LIKE CONCAT('%', ?, '%')
+						OR `tbl_account_detail`.`accountname` LIKE CONCAT('%', ?, '%'))";
+		}
+		if (!empty($accountcategory)) {
+			$sql .= " AND `tbl_account`.`tbl_account_category_idtbl_account_category` = ?";
+		}
+
+		if (!$hasSearch) {
+			$sql .= " LIMIT 5";
+		}
+
+		// Build bound params in the exact order placeholders appear
+		$firstParams = array(1, 1, $companyid, $branchid);
+		if ($hasSearch) { $firstParams[] = $searchTerm; $firstParams[] = $searchTerm; }
+		if (!empty($accountcategory)) { $firstParams[] = $accountcategory; }
+
+		$secondParams = array(1, 1, $companyid, $branchid);
+		if ($hasSearch) { $secondParams[] = $searchTerm; $secondParams[] = $searchTerm; }
+		if (!empty($accountcategory)) { $secondParams[] = $accountcategory; }
+
+		$params = array_merge($firstParams, $secondParams);
+
+		$respond = $CI->db->query($sql, $params);
+
+		$data = array();
+		foreach ($respond->result() as $row) {
+			$data[] = array(
+				"id"      => $row->accountid,
+				"text"    => $row->accountname . ' - ' . $row->accountno,
+				"acctype" => $row->acctype
+			);
+		}
+
+		echo json_encode($data);
+	}
 ?>

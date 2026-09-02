@@ -186,6 +186,14 @@ include "include/topnavbar.php";
                                             <input type="text" name="narrationdr" id="narrationdr" class="form-control form-control-sm">
                                         </div>
                                     </div>
+                                    <div class="form-row mb-1">
+                                        <div class="col">
+                                            <div class="custom-control custom-checkbox mt-2">
+                                                <input type="checkbox" class="custom-control-input" id="receivableentry" name="receivableentry" value="1">
+                                                <label class="custom-control-label font-weight-bold small" for="receivableentry">Receivable Entry</label>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                             <input type="hidden" name="recordOption" id="recordOption" value="1">
@@ -732,6 +740,7 @@ include "include/topnavbar.php";
                 var accounttypedr = selectedData ? selectedData.data.type : null;
                 var narrationdr = $('#narrationdr').val();
                 var payableentry = $('#payableentry').is(':checked') ? 1 : 0;
+                var receivableentry = $('#receivableentry').is(':checked') ? 1 : 0;
 
                 Swal.fire({
                     title: '',
@@ -762,7 +771,8 @@ include "include/topnavbar.php";
                                 accounttypedr: accounttypedr,
                                 recordOption: recordOption,
                                 recordID: recordID,
-                                payableentry: payableentry
+                                payableentry: payableentry,
+                                receivableentry: receivableentry
                             },
                             url: 'Journalentry/Journalentryinsertupdate',
                             success: function (result) { //alert(result);
@@ -779,6 +789,8 @@ include "include/topnavbar.php";
                                     $('#accountdrtype').val('');
                                     $('#accountdrno').val('').trigger('change');
                                     $('#narrationdr').val('');
+                                    $('#payableentry').prop('checked', false);
+                                    $('#receivableentry').prop('checked', false);
                                     $('#btncreatejournal').prop('disabled', false).html('<i class="fas fa-save mr-2"></i> Complete');
 
                                     if(recordOption==2){
@@ -1096,7 +1108,7 @@ include "include/topnavbar.php";
                                 var obj = JSON.parse(result);
                                 if (obj.status == 1) {
                                     $('#batchtablelist tbody').append('<tr>' +
-                                        '<td nowrap class="d-none">'+obj.batchtransmainID+'</td>' +
+                                        '<td nowrap class="d-none">'+obj.batchtransID+'</td>' +
                                         '<td nowrap>' + glbatchtradate + '</td>' +
                                         '<td nowrap class="d-none">'+glbatchaccountID+'</td>' +
                                         '<td nowrap>' + glbatchaccountno + '</td>' +
@@ -1312,7 +1324,7 @@ include "include/topnavbar.php";
         $("#"+field).select2({
             dropdownParent: $('#'+modalname),
             ajax: {
-                url: "<?php echo base_url() ?>Payablesegregation/Getaccountlist",
+                url: "<?php echo base_url() ?>Journalentry/Getaccountlist",
                 type: "post",
                 dataType: 'json',
                 delay: 250,

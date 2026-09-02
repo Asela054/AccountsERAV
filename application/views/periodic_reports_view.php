@@ -21,6 +21,7 @@ include "include/topnavbar.php";
 			<div class="container-fluid mt-2 p-0 p-2">
 				<div class="card rounded-0">
 					<div class="card-body p-0 p-2">
+						<?php //print_r($selectaccount); ?>
 						<form id="frmParams" method="post">
 							<div class="form-row mb-1">
 								<div class="col">
@@ -43,6 +44,8 @@ include "include/topnavbar.php";
 									<select class="form-control form-control-sm" id="drp_filter_chart_of_acc" name="chart_acc_id">
 										<option value="">Select</option>
 									</select>
+									<input type="hidden" name="chart_acc_type" id="chart_acc_type" value="">
+									<input type="hidden" name="ledgerfiltertype" id="ledgerfiltertype" value="0">
 								</div>
 								<?php } if($functionmenu=='DebtorReport'){ ?>
 								<div class="col-3">
@@ -91,8 +94,10 @@ include "include/topnavbar.php";
 <?php include "include/footerscripts.php"; ?>
 <script>
 $(document).ready(function(){
+	var alreadyaccount = <?php echo (!isset($_GET['refno']) || $_GET['refno']==='') ? '0' : '1'; ?>;
+	
 	getbranchlist('<?php echo $_SESSION['companyid'] ?>', '<?php echo $_SESSION['branchid'] ?>');
-	getperiodlist('<?php echo $_SESSION['companyid'] ?>', '<?php echo $_SESSION['branchid'] ?>');
+	getperiodlist('<?php echo $_SESSION['companyid'] ?>', '<?php echo $_SESSION['branchid'] ?>', alreadyaccount);
 	var functionmenu = '<?php echo $functionmenu ?>';
 
 	$("#drp_filter_chart_of_acc").select2({
@@ -124,6 +129,12 @@ $(document).ready(function(){
 			},
 			cache: true
 		},
+	});
+
+	$("#drp_filter_chart_of_acc").on("select2:select", function (e) {
+		var selectedData = e.params.data;
+		var chartAccType = selectedData.data.type;
+		$("#chart_acc_type").val(chartAccType);
 	});
 
 	if(functionmenu=='DebtorReport'){
@@ -175,6 +186,7 @@ $(document).ready(function(){
 	}
 	
 	$("#frmParams").submit(function(event){
+		console.log($(this).serialize());
 		event.preventDefault();
 
 		Swal.fire({
@@ -205,6 +217,19 @@ $(document).ready(function(){
 			}
 		});		
 	});
+	
+	<?php if(isset($selectaccount) && $selectaccount): ?>
+	if(alreadyaccount == 1){
+		var newOptioncr = new Option('<?php echo $selectaccount->accountname.' - '.$selectaccount->accountno ?>', '<?php echo $selectaccount->idtbl_account ?>', true, true);
+		$('#drp_filter_chart_of_acc').append(newOptioncr).trigger('change');
+		var optionDatacr = $('#drp_filter_chart_of_acc').select2('data');
+		var lastOptioncr = optionDatacr[optionDatacr.length - 1]; 
+		lastOptioncr.data = { type: <?php echo $selectaccount->accounttype ?> };
+		$('#drp_filter_chart_of_acc').trigger('change');  
+		$("#chart_acc_type").val('<?php echo $selectaccount->accounttype ?>');
+		$("#ledgerfiltertype").val(alreadyaccount);
+	}
+	<?php endif; ?>
 });
 
 function exportoption(){
@@ -816,7 +841,7 @@ function getbranchlist(id, value){
 	});
 }
 
-function getperiodlist(company, branch){
+function getperiodlist(company, branch, alreadyaccount){
 	$.ajax({
 		type: "POST",
 		data: {
@@ -837,6 +862,17 @@ function getperiodlist(company, branch){
 			});
 			$('#period_from').empty().append(html);  
 			$('#period_upto').empty().append(html);  
+
+			<?php if(isset($selectaccount) && $selectaccount): ?>
+			if(alreadyaccount == 1){
+				$('#period_from').val('<?php echo $_GET['periodfrom'] ?>');
+				$('#period_upto').val('<?php echo $_GET['periodto'] ?>');
+
+				setTimeout(function() {
+					$("#submit").click();
+				}, 2000);
+			}
+			<?php endif; ?>
 		}
 	});
 }

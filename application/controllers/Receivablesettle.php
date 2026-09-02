@@ -43,7 +43,17 @@ class Receivablesettle extends CI_Controller {
 	}
     public function Getcustomerlist(){
         $searchTerm=$this->input->post('searchTerm');
-        $result=get_customer_search_list($searchTerm);
+        $receivablefilter=$this->input->post('receivablefilter');
+        $companyid=$_SESSION['companyid'];
+		$branchid=$_SESSION['branchid'];
+
+        if($receivablefilter == '1'){
+            $result=get_customer_search_list($searchTerm);
+        } else if($receivablefilter == '2'){
+            $result=get_receivable_account_list($searchTerm);
+        }else if($receivablefilter == '3'){
+            $result=get_all_accounts($searchTerm, $companyid, $branchid);
+        }
 	}
     public function Getinvoiceaccocustomer(){
         $result=$this->Receivablesettleinfo->Getinvoiceaccocustomer();
