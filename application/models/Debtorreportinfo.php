@@ -587,7 +587,7 @@ class Debtorreportinfo extends CI_Model{
 
                     // Receivable Payments parameters (positions 11-17)
                     $fromdate, $todate,                           // date range
-                    1, 1,                                         // status, poststatus
+                    1, 1,                                      // status, poststatus, return status
                     $cust->idtbl_customer, $companyID, $branchID, // payer and company
 
                     // Standalone Overpayments parameters (positions 18-24)

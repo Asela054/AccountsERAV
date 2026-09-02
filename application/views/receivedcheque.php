@@ -255,7 +255,7 @@ include "include/topnavbar.php";
                                 recordID: id
                             },
                             url: '<?php echo base_url() ?>Receivedcheque/Receivedchequestatus',
-                            success: function(result) { alert(result);
+                            success: function(result) { // alert(result);
                                 Swal.close();
                                 var obj = JSON.parse(result);
                                 if (obj.status == 1) {

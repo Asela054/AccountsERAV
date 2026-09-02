@@ -122,7 +122,7 @@ $joinQuery = "FROM (
     LEFT JOIN `tbl_finacial_month` AS `ue`
         ON (`ue`.`idtbl_finacial_month` = `uc`.`tbl_finacial_month_idtbl_finacial_month`)
     LEFT JOIN `tbl_expence_info` AS `uf`
-        ON (`uf`.`grnno` = `u`.`invoiceno` AND `uf`.`status`=1)
+        ON (`uf`.`grnno` = `u`.`invoiceno` AND `uf`.`status`=1 AND `uf`.`tbl_company_idtbl_company` = `u`.`tbl_company_idtbl_company` AND `uf`.`tbl_company_branch_idtbl_company_branch` = `u`.`tbl_company_branch_idtbl_company_branch`)
     LEFT JOIN `$tablename` AS `ug`
         ON (`ug`.$column1 = `uf`.`tbl_supplier_idtbl_supplier`)
     WHERE

@@ -430,72 +430,375 @@ class ReportModuleinfo extends CI_Model{
 	 * @param int $open_bal_master tbl_master_idtbl_master (first period in range)
 	 * @return object|null
 	 */
-	public function ledgerFolioOpenStockValue($branch_id, $acc_id, $open_bal_master = null){
 
+	// public function ledgerFolioOpenStockValue($branch_id, $acc_id, $open_bal_master = null){
+
+	// 	$sql = "SELECT
+	// 				tbl_account.accountno,
+	// 				tbl_finacial_year.`desc`         AS financial_year,
+	// 				tbl_master.idtbl_master,
+
+	// 				-- Opening balance: real value from tbl_account_open_bal
+	// 				-- OLD: always 0 (empty subquery) ❌
+	// 				-- NEW: actual openbal for the first period ✅
+	// 				IFNULL(drv_open.ac_open_balance, 0) AS ac_open_balance,
+	// 				IFNULL(drv_open.creditdebit, 'D')    AS creditdebit
+
+	// 			FROM tbl_account_allocation
+
+	// 			INNER JOIN tbl_account
+	// 				ON tbl_account_allocation.tbl_account_idtbl_account = tbl_account.idtbl_account
+
+	// 			INNER JOIN tbl_master
+	// 				ON tbl_account_allocation.branchcompanybank = tbl_master.tbl_company_branch_idtbl_company_branch
+
+	// 			INNER JOIN tbl_finacial_year
+	// 				ON tbl_master.tbl_finacial_year_idtbl_finacial_year = tbl_finacial_year.idtbl_finacial_year
+
+	// 			-- Real opening balance from tbl_account_open_bal ─────────────
+	// 			LEFT OUTER JOIN (
+	// 				SELECT
+	// 					tbl_master_idtbl_master,
+	// 					tbl_account_idtbl_account,
+	// 					IFNULL(SUM(openbal), 0)  AS ac_open_balance,
+	// 					MAX(creditdebit)          AS creditdebit
+	// 				FROM tbl_account_open_bal
+	// 				WHERE status = 1
+	// 				AND tbl_master_idtbl_master = ?
+	// 				GROUP BY tbl_account_idtbl_account
+	// 			) AS drv_open
+	// 				ON tbl_master.idtbl_master = drv_open.tbl_master_idtbl_master
+	// 				AND tbl_account_allocation.tbl_account_idtbl_account = drv_open.tbl_account_idtbl_account
+
+	// 			WHERE tbl_account_allocation.branchcompanybank = ?
+	// 			AND tbl_account_allocation.tbl_account_idtbl_account = ?
+	// 			AND tbl_master.idtbl_master = ?
+	// 			AND tbl_master.status = 1
+	// 			LIMIT 1";
+
+	// 	$open_val = $this->db->query($sql, [
+	// 		$open_bal_master,   // drv_open subquery period filter
+	// 		$branch_id,         // allocation branch
+	// 		$acc_id,            // account ID
+	// 		$open_bal_master    // master period filter
+	// 	]);
+
+	// 	return $open_val->row();
+	// }
+	public function ledgerFolioOpenStockValue($branch_id, $acc_id, $open_bal_master = null, $detail_acc_id = null, $period_start_date = null){
+
+		// ══════════════════════════════════════════════════════════════════
+		// CASE 1: Chart Account — ORIGINAL logic, unchanged
+		// ══════════════════════════════════════════════════════════════════
+		if(empty($detail_acc_id)){
+
+			$sql = "SELECT
+						tbl_account.accountno,
+						tbl_finacial_year.`desc`         AS financial_year,
+						tbl_master.idtbl_master,
+						IFNULL(drv_open.ac_open_balance, 0) AS ac_open_balance,
+						IFNULL(drv_open.creditdebit, 'D')    AS creditdebit
+					FROM tbl_account_allocation
+					INNER JOIN tbl_account
+						ON tbl_account_allocation.tbl_account_idtbl_account = tbl_account.idtbl_account
+					INNER JOIN tbl_master
+						ON tbl_account_allocation.branchcompanybank = tbl_master.tbl_company_branch_idtbl_company_branch
+					INNER JOIN tbl_finacial_year
+						ON tbl_master.tbl_finacial_year_idtbl_finacial_year = tbl_finacial_year.idtbl_finacial_year
+					LEFT OUTER JOIN (
+						SELECT
+							tbl_master_idtbl_master,
+							tbl_account_idtbl_account,
+							IFNULL(SUM(openbal), 0)  AS ac_open_balance,
+							MAX(creditdebit)          AS creditdebit
+						FROM tbl_account_open_bal
+						WHERE status = 1
+						AND tbl_master_idtbl_master = ?
+						GROUP BY tbl_account_idtbl_account
+					) AS drv_open
+						ON tbl_master.idtbl_master = drv_open.tbl_master_idtbl_master
+						AND tbl_account_allocation.tbl_account_idtbl_account = drv_open.tbl_account_idtbl_account
+					WHERE tbl_account_allocation.branchcompanybank = ?
+					AND tbl_account_allocation.tbl_account_idtbl_account = ?
+					AND tbl_master.idtbl_master = ?
+					AND tbl_master.status = 1
+					LIMIT 1";
+
+			$open_val = $this->db->query($sql, [
+				$open_bal_master,
+				$branch_id,
+				$acc_id,
+				$open_bal_master
+			]);
+
+			return $open_val->row();
+		}
+
+		// ══════════════════════════════════════════════════════════════════
+		// CASE 2: Detail Account — NEW: sum all transactions BEFORE period start
+		// ══════════════════════════════════════════════════════════════════
 		$sql = "SELECT
-					tbl_account.accountno,
-					tbl_finacial_year.`desc`         AS financial_year,
-					tbl_master.idtbl_master,
+					SUM(CASE WHEN combined.crdr = 'D' THEN combined.accamount ELSE 0 END) AS total_debit,
+					SUM(CASE WHEN combined.crdr = 'C' THEN combined.accamount ELSE 0 END) AS total_credit
+				FROM (
 
-					-- Opening balance: real value from tbl_account_open_bal
-					-- OLD: always 0 (empty subquery) ❌
-					-- NEW: actual openbal for the first period ✅
-					IFNULL(drv_open.ac_open_balance, 0) AS ac_open_balance,
-					IFNULL(drv_open.creditdebit, 'D')    AS creditdebit
+					-- AR
+					SELECT t.accamount, t.crdr
+					FROM tbl_account_receivable ar
+					JOIN tbl_account_transaction t
+						ON t.trabatchotherno = ar.batchno
+						AND t.accamount     = ar.amount
+						AND t.crdr          = ar.tratype
+						AND t.trabatchotherno LIKE 'AR%'
+					WHERE ar.tbl_account_detail_idtbl_account_detail = ?
+						AND t.tbl_company_branch_idtbl_company_branch = ?
+						AND t.tbl_account_idtbl_account = ?
+						AND t.tradate < ?
 
-				FROM tbl_account_allocation
+					UNION ALL
 
-				INNER JOIN tbl_account
-					ON tbl_account_allocation.tbl_account_idtbl_account = tbl_account.idtbl_account
+					-- AP
+					SELECT t.accamount, t.crdr
+					FROM tbl_account_payable ap
+					JOIN tbl_account_transaction t
+						ON t.trabatchotherno = ap.batchno
+						AND t.accamount     = ap.amount
+						AND t.crdr          = ap.tratype
+						AND t.trabatchotherno LIKE 'AP%'
+					WHERE ap.tbl_account_detail_idtbl_account_detail = ?
+						AND t.tbl_company_branch_idtbl_company_branch = ?
+						AND t.tbl_account_idtbl_account = ?
+						AND t.tradate < ?
 
-				INNER JOIN tbl_master
-					ON tbl_account_allocation.branchcompanybank = tbl_master.tbl_company_branch_idtbl_company_branch
+					UNION ALL
 
-				INNER JOIN tbl_finacial_year
-					ON tbl_master.tbl_finacial_year_idtbl_finacial_year = tbl_finacial_year.idtbl_finacial_year
+					-- JE
+					SELECT t.accamount, t.crdr
+					FROM tbl_account_transaction_manual je
+					JOIN tbl_account_transaction t
+						ON t.trabatchotherno = je.batchno
+						AND t.accamount     = je.amount
+						AND t.crdr          = je.crdr
+						AND t.trabatchotherno LIKE 'JE%'
+					WHERE je.tbl_account_detail_idtbl_account_detail = ?
+						AND t.tbl_company_branch_idtbl_company_branch = ?
+						AND t.tbl_account_idtbl_account = ?
+						AND t.tradate < ?
 
-				-- Real opening balance from tbl_account_open_bal ─────────────
-				LEFT OUTER JOIN (
-					SELECT
-						tbl_master_idtbl_master,
-						tbl_account_idtbl_account,
-						IFNULL(SUM(openbal), 0)  AS ac_open_balance,
-						MAX(creditdebit)          AS creditdebit
-					FROM tbl_account_open_bal
-					WHERE status = 1
-					AND tbl_master_idtbl_master = ?
-					GROUP BY tbl_account_idtbl_account
-				) AS drv_open
-					ON tbl_master.idtbl_master = drv_open.tbl_master_idtbl_master
-					AND tbl_account_allocation.tbl_account_idtbl_account = drv_open.tbl_account_idtbl_account
+					UNION ALL
 
-				WHERE tbl_account_allocation.branchcompanybank = ?
-				AND tbl_account_allocation.tbl_account_idtbl_account = ?
-				AND tbl_master.idtbl_master = ?
-				AND tbl_master.status = 1
-				LIMIT 1";
+					-- RE (via entry table)
+					SELECT t.accamount, t.crdr
+					FROM tbl_receivable re
+					JOIN tbl_receivable_entry ree
+						ON ree.tbl_receivable_idtbl_receivable = re.idtbl_receivable
+					JOIN tbl_account_transaction t
+						ON t.trabatchotherno = re.batchno
+						AND t.accamount     = re.amount
+						AND t.crdr          = ree.tratype
+						AND t.trabatchotherno LIKE 'RE%'
+					WHERE ree.tbl_account_detail_idtbl_account_detail = ?
+						AND t.tbl_company_branch_idtbl_company_branch = ?
+						AND t.tbl_account_idtbl_account = ?
+						AND t.tradate < ?
 
-		$open_val = $this->db->query($sql, [
-			$open_bal_master,   // drv_open subquery period filter
-			$branch_id,         // allocation branch
-			$acc_id,            // account ID
-			$open_bal_master    // master period filter
-		]);
+					UNION ALL
 
-		return $open_val->row();
+					-- PS (via entry table)
+					SELECT t.accamount, t.crdr
+					FROM tbl_account_paysettle ps
+					JOIN tbl_account_paysettle_entry pse
+						ON pse.tbl_account_paysettle_idtbl_account_paysettle = ps.idtbl_account_paysettle
+					JOIN tbl_account_transaction t
+						ON t.trabatchotherno = ps.batchno
+						AND t.accamount     = ps.totalpayment
+						AND t.crdr          = pse.tratype
+						AND t.trabatchotherno LIKE 'PS%'
+					WHERE pse.tbl_account_detail_idtbl_account_detail = ?
+						AND t.tbl_company_branch_idtbl_company_branch = ?
+						AND t.tbl_account_idtbl_account = ?
+						AND t.tradate < ?
+
+				) AS combined";
+
+		$branch_params = [$detail_acc_id, $branch_id, $acc_id, $period_start_date];
+		$params = array_merge(
+			$branch_params,   // AR
+			$branch_params,   // AP
+			$branch_params,   // JE
+			$branch_params,   // RE
+			$branch_params    // PS
+		);
+
+		$sum_row = $this->db->query($sql, $params)->row();
+
+		// ── Net balance calculate: Debit - Credit ──────────────────────────
+		$total_debit  = $sum_row->total_debit  ?? 0;
+		$total_credit = $sum_row->total_credit ?? 0;
+		$net          = $total_debit - $total_credit;
+
+		// ── Account number (for display) — pull from tbl_account_detail ────
+		$acc_no = $this->db->select('accountno')
+							->get_where('tbl_account_detail', [
+								'idtbl_account_detail' => $detail_acc_id
+							])
+							->row();
+
+		$result = new stdClass();
+		$result->accountno       = $acc_no->accountno ?? '';
+		$result->ac_open_balance = abs($net);
+		$result->creditdebit     = ($net >= 0) ? 'D' : 'C';
+
+		return $result;
 	}
-	
-	// public function ledgerFolioDetails($branch_id, $acc_id, $report_period_id){
-	// 	/*
-	// 	$rpt_sql = "SELECT drv_reg.tradate, drv_reg.narration, drv_reg.accamount*((drv_reg.crdr='C')*IFNULL(NULLIF(1-tbl_mainclass.transactiontype, 0), 1)+(drv_reg.crdr='D')*IFNULL(NULLIF(tbl_mainclass.transactiontype-2, 0), 1)) AS accamount, drv_reg.crdr FROM (SELECT acccode, tradate, narration, accamount, crdr FROM `tbl_account_transaction` WHERE `acccode`=? AND `tbl_master_idtbl_master`=? AND `tradate`<=DATE(NOW())) AS drv_reg INNER JOIN tbl_subaccount ON drv_reg.acccode=tbl_subaccount.subaccount INNER JOIN tbl_mainclass ON tbl_subaccount.mainclasscode=tbl_mainclass.code ORDER BY drv_reg.crdr DESC, drv_reg.tradate ASC";
-	// 	*/
-	// 	$sql = "SELECT drv_reg.tradate, drv_reg.narration, drv_reg.accamount*((drv_reg.crdr='C')*IFNULL(NULLIF(1-tbl_account_category.tbl_account_transactiontype_idtbl_account_transactiontype, 0), 1)+(drv_reg.crdr='D')*IFNULL(NULLIF(tbl_account_category.tbl_account_transactiontype_idtbl_account_transactiontype-2, 0), 1)) AS accamount, drv_reg.crdr FROM (SELECT tbl_account_idtbl_account, tradate, narration, accamount, crdr FROM `tbl_account_transaction_full` WHERE tbl_company_branch_idtbl_company_branch=? AND `tbl_account_idtbl_account`=? AND `tbl_master_idtbl_master`=? AND `tradate`<=DATE(NOW())) AS drv_reg INNER JOIN tbl_account ON drv_reg.tbl_account_idtbl_account=tbl_account.idtbl_account INNER JOIN tbl_account_category ON tbl_account.tbl_account_category_idtbl_account_category=tbl_account_category.idtbl_account_category ORDER BY drv_reg.crdr DESC, drv_reg.tradate ASC";
-		
-	// 	$ledger_folio = $this->db->query($sql, array($branch_id, $acc_id, $report_period_id));
-	// 	print_r($this->db->last_query());
+
+	// public function ledgerFolioDetails($branch_id, $acc_id, $chartAccType, $report_period_id, $open_bal_master = null){
+	// 	// Single period backward compatible — array or single ID handle
+	// 	if(is_array($report_period_id)){
+	// 		$master_ids      = $report_period_id;
+	// 		$open_bal_master = !empty($open_bal_master) ? $open_bal_master : $master_ids[0];
+	// 	} else {
+	// 		$master_ids      = [$report_period_id];
+	// 		$open_bal_master = $report_period_id;
+	// 	}
+
+	// 	$in_placeholders = implode(',', array_fill(0, count($master_ids), '?'));
+
+	// 	if($chartAccType == 1){
+	// 		$sql = "SELECT
+	// 			drv_reg.tradate,
+	// 			drv_reg.narration,
+	// 			drv_reg.accamount,   -- ← simply use raw amount, always positive
+	// 			drv_reg.crdr
+	// 		FROM (
+	// 			SELECT
+	// 				tbl_account_idtbl_account,
+	// 				tradate,
+	// 				narration,
+	// 				accamount,
+	// 				crdr
+	// 			FROM tbl_account_transaction_full
+	// 			WHERE tbl_company_branch_idtbl_company_branch = ?
+	// 			AND tbl_account_idtbl_account = ?
+	// 			AND tbl_master_idtbl_master IN ($in_placeholders)
+	// 			AND tradate <= DATE(NOW())
+	// 		) AS drv_reg
+	// 		INNER JOIN tbl_account
+	// 			ON drv_reg.tbl_account_idtbl_account = tbl_account.idtbl_account
+	// 		INNER JOIN tbl_account_category cat
+	// 			ON tbl_account.tbl_account_category_idtbl_account_category = cat.idtbl_account_category
+	// 		ORDER BY drv_reg.tradate ASC, drv_reg.crdr DESC";
+
+	// 		// params: branch_id, acc_id, then all master_ids
+	// 		$params = array_merge([$branch_id, $acc_id], $master_ids);
+
+	// 		$ledger_folio = $this->db->query($sql, $params);
+	// 	}
+	// 	else{
+	// 		$sql = "SELECT tradate, narration, accamount, crdr FROM (
+
+	// 			-- AR
+	// 			SELECT t.tradate, t.narration, t.accamount, t.crdr
+	// 			FROM tbl_account_receivable ar
+	// 			JOIN tbl_account_transaction_full t
+	// 				ON t.trabatchotherno = ar.batchno
+	// 				AND t.accamount     = ar.amount
+	// 				AND t.crdr          = ar.tratype
+	// 				AND t.trabatchotherno LIKE 'AR%'
+	// 			WHERE ar.tbl_account_detail_idtbl_account_detail = ?
+	// 				AND t.tbl_company_branch_idtbl_company_branch = ?
+	// 				AND t.tbl_account_idtbl_account = ?
+	// 				AND t.tbl_master_idtbl_master IN ($in_placeholders)
+	// 				AND t.tradate <= DATE(NOW())
+
+	// 			UNION ALL
+
+	// 			-- AP
+	// 			SELECT t.tradate, t.narration, t.accamount, t.crdr
+	// 			FROM tbl_account_payable ap
+	// 			JOIN tbl_account_transaction_full t
+	// 				ON t.trabatchotherno = ap.batchno
+	// 				AND t.accamount     = ap.amount
+	// 				AND t.crdr          = ap.tratype
+	// 				AND t.trabatchotherno LIKE 'AP%'
+	// 			WHERE ap.tbl_account_detail_idtbl_account_detail = ?
+	// 				AND t.tbl_company_branch_idtbl_company_branch = ?
+	// 				AND t.tbl_account_idtbl_account = ?
+	// 				AND t.tbl_master_idtbl_master IN ($in_placeholders)
+	// 				AND t.tradate <= DATE(NOW())
+
+	// 			UNION ALL
+
+	// 			-- JE
+	// 			SELECT t.tradate, t.narration, t.accamount, t.crdr
+	// 			FROM tbl_account_transaction_manual je
+	// 			JOIN tbl_account_transaction_full t
+	// 				ON t.trabatchotherno = je.batchno
+	// 				AND t.accamount     = je.amount
+	// 				AND t.crdr          = je.crdr
+	// 				AND t.trabatchotherno LIKE 'JE%'
+	// 			WHERE je.tbl_account_detail_idtbl_account_detail = ?
+	// 				AND t.tbl_company_branch_idtbl_company_branch = ?
+	// 				AND t.tbl_account_idtbl_account = ?
+	// 				AND t.tbl_master_idtbl_master IN ($in_placeholders)
+	// 				AND t.tradate <= DATE(NOW())
+
+	// 			UNION ALL
+
+	// 			-- RE (via entry table)
+	// 			SELECT t.tradate, t.narration, t.accamount, t.crdr
+	// 			FROM tbl_receivable re
+	// 			JOIN tbl_receivable_entry ree
+	// 				ON ree.tbl_receivable_idtbl_receivable = re.idtbl_receivable
+	// 			JOIN tbl_account_transaction_full t
+	// 				ON t.trabatchotherno = re.batchno
+	// 				AND t.accamount     = re.amount
+	// 				AND t.crdr          = ree.tratype
+	// 				AND t.trabatchotherno LIKE 'RE%'
+	// 			WHERE ree.tbl_account_detail_idtbl_account_detail = ?
+	// 				AND t.tbl_company_branch_idtbl_company_branch = ?
+	// 				AND t.tbl_account_idtbl_account = ?
+	// 				AND t.tbl_master_idtbl_master IN ($in_placeholders)
+	// 				AND t.tradate <= DATE(NOW())
+
+	// 			UNION ALL
+
+	// 			-- PS (via entry table)
+	// 			SELECT t.tradate, t.narration, t.accamount, t.crdr
+	// 			FROM tbl_account_paysettle ps
+	// 			JOIN tbl_account_paysettle_entry pse
+	// 				ON pse.tbl_account_paysettle_idtbl_account_paysettle = ps.idtbl_account_paysettle
+	// 			JOIN tbl_account_transaction_full t
+	// 				ON t.trabatchotherno = ps.batchno
+	// 				AND t.accamount     = ps.totalpayment
+	// 				AND t.crdr          = pse.tratype
+	// 				AND t.trabatchotherno LIKE 'PS%'
+	// 			WHERE pse.tbl_account_detail_idtbl_account_detail = ?
+	// 				AND t.tbl_company_branch_idtbl_company_branch = ?
+	// 				AND t.tbl_account_idtbl_account = ?
+	// 				AND t.tbl_master_idtbl_master IN ($in_placeholders)
+	// 				AND t.tradate <= DATE(NOW())
+
+	// 		) AS combined
+	// 		ORDER BY tradate ASC, crdr DESC";
+
+	// 		// Each UNION branch needs: detail_acc_id, branch_id, acc_id, master_ids...
+	// 		$branch_params = [$acc_id, $branch_id, $acc_id];
+	// 		$params = array_merge(
+	// 			$branch_params, $master_ids,   // AR
+	// 			$branch_params, $master_ids,   // AP
+	// 			$branch_params, $master_ids,   // JE
+	// 			$branch_params, $master_ids,   // RE
+	// 			$branch_params, $master_ids    // PS
+	// 		);
+
+	// 		$ledger_folio = $this->db->query($sql, $params);
+	// 	}
+
 	// 	return $ledger_folio->result();
 	// }
-	public function ledgerFolioDetails($branch_id, $acc_id, $report_period_id, $open_bal_master = null){
+
+	public function ledgerFolioDetails($branch_id, $acc_id, $chartAccType, $report_period_id, $open_bal_master = null, $detail_acc_id = null){
 		// Single period backward compatible — array or single ID handle
 		if(is_array($report_period_id)){
 			$master_ids      = $report_period_id;
@@ -507,60 +810,142 @@ class ReportModuleinfo extends CI_Model{
 
 		$in_placeholders = implode(',', array_fill(0, count($master_ids), '?'));
 
-		// $sql = "SELECT
-		// 			drv_reg.tradate,
-		// 			drv_reg.narration,
-		// 			drv_reg.accamount * (
-		// 				(drv_reg.crdr = 'C') * IFNULL(NULLIF(1 - cat.tbl_account_transactiontype_idtbl_account_transactiontype, 0), 1)
-		// 			+ (drv_reg.crdr = 'D') * IFNULL(NULLIF(cat.tbl_account_transactiontype_idtbl_account_transactiontype - 2, 0), 1)
-		// 			) AS accamount,
-		// 			drv_reg.crdr
-		// 		FROM (
-		// 			SELECT
-		// 				tbl_account_idtbl_account,
-		// 				tradate,
-		// 				narration,
-		// 				accamount,
-		// 				crdr
-		// 			FROM tbl_account_transaction_full
-		// 			WHERE tbl_company_branch_idtbl_company_branch = ?
-		// 			AND tbl_account_idtbl_account = ?
-		// 			AND tbl_master_idtbl_master IN ($in_placeholders)
-		// 			AND tradate <= DATE(NOW())
-		// 		) AS drv_reg
-		// 		INNER JOIN tbl_account
-		// 			ON drv_reg.tbl_account_idtbl_account = tbl_account.idtbl_account
-		// 		INNER JOIN tbl_account_category cat
-		// 			ON tbl_account.tbl_account_category_idtbl_account_category = cat.idtbl_account_category
-		// 		ORDER BY drv_reg.tradate ASC, drv_reg.crdr DESC";	
-		$sql = "SELECT
-            drv_reg.tradate,
-            drv_reg.narration,
-            drv_reg.accamount,   -- ← simply use raw amount, always positive
-            drv_reg.crdr
-        FROM (
-            SELECT
-                tbl_account_idtbl_account,
-                tradate,
-                narration,
-                accamount,
-                crdr
-            FROM tbl_account_transaction_full
-            WHERE tbl_company_branch_idtbl_company_branch = ?
-            AND tbl_account_idtbl_account = ?
-            AND tbl_master_idtbl_master IN ($in_placeholders)
-            AND tradate <= DATE(NOW())
-        ) AS drv_reg
-        INNER JOIN tbl_account
-            ON drv_reg.tbl_account_idtbl_account = tbl_account.idtbl_account
-        INNER JOIN tbl_account_category cat
-            ON tbl_account.tbl_account_category_idtbl_account_category = cat.idtbl_account_category
-        ORDER BY drv_reg.tradate ASC, drv_reg.crdr DESC";
+		if($chartAccType == 1){
+			$sql = "SELECT
+				drv_reg.tradate,
+				drv_reg.narration,
+				drv_reg.accamount,
+				drv_reg.crdr
+			FROM (
+				SELECT
+					tbl_account_idtbl_account,
+					tradate,
+					narration,
+					accamount,
+					crdr
+				FROM tbl_account_transaction_full
+				WHERE tbl_company_branch_idtbl_company_branch = ?
+				AND tbl_account_idtbl_account = ?
+				AND tbl_master_idtbl_master IN ($in_placeholders)
+				AND tradate <= DATE(NOW())
+				AND `status` = 1
+			) AS drv_reg
+			INNER JOIN tbl_account
+				ON drv_reg.tbl_account_idtbl_account = tbl_account.idtbl_account
+			INNER JOIN tbl_account_category cat
+				ON tbl_account.tbl_account_category_idtbl_account_category = cat.idtbl_account_category
+			ORDER BY drv_reg.tradate ASC, drv_reg.crdr DESC";
 
-		// params: branch_id, acc_id, then all master_ids
-		$params = array_merge([$branch_id, $acc_id], $master_ids);
+			$params = array_merge([$branch_id, $acc_id], $master_ids);
 
-		$ledger_folio = $this->db->query($sql, $params);
+			$ledger_folio = $this->db->query($sql, $params);
+		}
+		else{
+			$sql = "SELECT tradate, narration, accamount, crdr FROM (
+
+				-- AR
+				SELECT t.tradate, t.narration, t.accamount, t.crdr
+				FROM tbl_account_receivable ar
+				JOIN tbl_account_transaction t
+					ON t.trabatchotherno = ar.batchno
+					AND t.accamount     = ar.amount
+					AND t.crdr          = ar.tratype
+					AND t.trabatchotherno LIKE 'AR%'
+				WHERE ar.tbl_account_detail_idtbl_account_detail = ?
+					AND t.tbl_company_branch_idtbl_company_branch = ?
+					AND t.tbl_account_idtbl_account = ?
+					AND t.tbl_master_idtbl_master IN ($in_placeholders)
+					AND t.tradate <= DATE(NOW())
+					AND t.`status` = 1
+
+				UNION ALL
+
+				-- AP
+				SELECT t.tradate, t.narration, t.accamount, t.crdr
+				FROM tbl_account_payable ap
+				JOIN tbl_account_transaction t
+					ON t.trabatchotherno = ap.batchno
+					AND t.accamount     = ap.amount
+					AND t.crdr          = ap.tratype
+					AND t.trabatchotherno LIKE 'AP%'
+				WHERE ap.tbl_account_detail_idtbl_account_detail = ?
+					AND t.tbl_company_branch_idtbl_company_branch = ?
+					AND t.tbl_account_idtbl_account = ?
+					AND t.tbl_master_idtbl_master IN ($in_placeholders)
+					AND t.tradate <= DATE(NOW())
+					AND t.`status` = 1
+
+				UNION ALL
+
+				-- JE
+				SELECT t.tradate, t.narration, t.accamount, t.crdr
+				FROM tbl_account_transaction_manual je
+				JOIN tbl_account_transaction t
+					ON t.trabatchotherno = je.batchno
+					AND t.accamount     = je.amount
+					AND t.crdr          = je.crdr
+					AND t.trabatchotherno LIKE 'JE%'
+				WHERE je.tbl_account_detail_idtbl_account_detail = ?
+					AND t.tbl_company_branch_idtbl_company_branch = ?
+					AND t.tbl_account_idtbl_account = ?
+					AND t.tbl_master_idtbl_master IN ($in_placeholders)
+					AND t.tradate <= DATE(NOW())
+					AND t.`status` = 1
+
+				UNION ALL
+
+				-- RE (via entry table)
+				SELECT t.tradate, t.narration, t.accamount, t.crdr
+				FROM tbl_receivable re
+				JOIN tbl_receivable_entry ree
+					ON ree.tbl_receivable_idtbl_receivable = re.idtbl_receivable
+				JOIN tbl_account_transaction t
+					ON t.trabatchotherno = re.batchno
+					AND t.accamount     = re.amount
+					AND t.crdr          = ree.tratype
+					AND t.trabatchotherno LIKE 'RE%'
+				WHERE ree.tbl_account_detail_idtbl_account_detail = ?
+					AND t.tbl_company_branch_idtbl_company_branch = ?
+					AND t.tbl_account_idtbl_account = ?
+					AND t.tbl_master_idtbl_master IN ($in_placeholders)
+					AND t.tradate <= DATE(NOW())
+					AND t.`status` = 1
+
+				UNION ALL
+
+				-- PS (via entry table)
+				SELECT t.tradate, t.narration, t.accamount, t.crdr
+				FROM tbl_account_paysettle ps
+				JOIN tbl_account_paysettle_entry pse
+					ON pse.tbl_account_paysettle_idtbl_account_paysettle = ps.idtbl_account_paysettle
+				JOIN tbl_account_transaction t
+					ON t.trabatchotherno = ps.batchno
+					AND t.accamount     = ps.totalpayment
+					AND t.crdr          = pse.tratype
+					AND t.trabatchotherno LIKE 'PS%'
+				WHERE pse.tbl_account_detail_idtbl_account_detail = ?
+					AND t.tbl_company_branch_idtbl_company_branch = ?
+					AND t.tbl_account_idtbl_account = ?
+					AND t.tbl_master_idtbl_master IN ($in_placeholders)
+					AND t.tradate <= DATE(NOW())
+					AND t.`status` = 1
+
+			) AS combined
+			ORDER BY tradate ASC, crdr DESC";
+
+			// ★ FIX: detail_acc_id (filter) සහ acc_id (chart, JOIN safety) වෙනස් values
+			$branch_params = [$detail_acc_id, $branch_id, $acc_id];
+			$params = array_merge(
+				$branch_params, $master_ids,   // AR
+				$branch_params, $master_ids,   // AP
+				$branch_params, $master_ids,   // JE
+				$branch_params, $master_ids,   // RE
+				$branch_params, $master_ids    // PS
+			);
+
+			$ledger_folio = $this->db->query($sql, $params);
+		}
+
 		return $ledger_folio->result();
 	}
 
@@ -4332,5 +4717,21 @@ class ReportModuleinfo extends CI_Model{
 				'is_reconciled'        => $is_reconciled
 			]
 		];
+	}
+
+	public function Getselectedaccount($accountno){
+		$company_id = $_SESSION['companyid'];
+        $branch_id =  $_SESSION['branchid'];
+
+		$this->db->select("tbl_account.idtbl_account, tbl_account.accountno, tbl_account.accountname, '1' AS accounttype");
+		$this->db->from('tbl_account');
+		$this->db->join('tbl_account_allocation', 'tbl_account_allocation.tbl_account_idtbl_account = tbl_account.idtbl_account', 'left');
+		$this->db->where('tbl_account.status', 1);
+		$this->db->where('tbl_account_allocation.companybank', $company_id);
+		$this->db->where('tbl_account_allocation.branchcompanybank', $branch_id);
+		$this->db->where('tbl_account.accountno', $accountno);
+		$respond=$this->db->get();
+
+		return $respond->row(0);
 	}
 }

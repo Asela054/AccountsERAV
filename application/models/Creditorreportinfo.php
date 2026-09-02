@@ -186,6 +186,38 @@ class Creditorreportinfo extends CI_Model{
                     AND `tbl_expence_info`.`status` = ?
                     GROUP BY `tbl_account_payable_main`.`invoiceno`
 
+                    UNION ALL 
+
+                    -- Payment voucher
+                    SELECT 
+                        `tbl_account_paysettle`.`date` AS `repaydate`, 
+                        `tbl_account_paysettle`.`paymentno` AS `regrnno`, 
+                        '' AS `expcode`, 
+                        `tbl_account_paysettle`.`totalpayment` AS `amount`, 
+                        `tbl_account_paysettle`.`remark` AS `narration`, 
+                        'D' AS `tratype`, 
+                        `tbl_cheque_issue`.`chedate`, 
+                        `tbl_cheque_issue`.`chequeno` 
+                    FROM `tbl_account_paysettle` 
+                    LEFT JOIN `tbl_account_paysettle_has_tbl_cheque_issue` 
+                        ON `tbl_account_paysettle_has_tbl_cheque_issue`.`tbl_account_paysettle_idtbl_account_paysettle` = `tbl_account_paysettle`.`idtbl_account_paysettle` 
+                    LEFT JOIN `tbl_cheque_issue` 
+                        ON `tbl_cheque_issue`.`idtbl_cheque_issue` = `tbl_account_paysettle_has_tbl_cheque_issue`.`tbl_cheque_issue_idtbl_cheque_issue` 
+                    LEFT JOIN `tbl_account_paysettle_entry`
+                    	ON `tbl_account_paysettle_entry`.`tbl_account_paysettle_idtbl_account_paysettle` = `tbl_account_paysettle`.`idtbl_account_paysettle`
+                    INNER JOIN `tbl_account_detail_other`
+                        ON `tbl_account_detail_other`.`tbl_account_detail_idtbl_account_detail` = `tbl_account_paysettle_entry`.`tbl_account_detail_idtbl_account_detail`
+                        AND `tbl_account_detail_other`.`otheroptiontype` = ?
+                        AND `tbl_account_detail_other`.`otheroption` = ?
+                        AND `tbl_account_detail_other`.`tbl_company_idtbl_company` = ?
+                        AND `tbl_account_detail_other`.`tbl_company_branch_idtbl_company_branch` = ?
+                    WHERE `tbl_account_paysettle`.`date` BETWEEN ? AND  ?
+                    AND `tbl_account_paysettle`.`status` = ? 
+                    AND `tbl_account_paysettle`.`poststatus` = ? 
+                    AND `tbl_account_paysettle`.`supplier` = ?
+                    AND `tbl_account_paysettle`.`tbl_company_idtbl_company` = ? 
+                    AND `tbl_account_paysettle`.`tbl_company_branch_idtbl_company_branch` = ?
+
                 ) AS `u` ORDER BY `u`.`repaydate` ASC";
 
                 $transactions = $this->db->query($sql, [
@@ -207,8 +239,17 @@ class Creditorreportinfo extends CI_Model{
                     $sup->idtbl_supplier,           // supplier (WHERE)
                     $fromdate, $todate,             // date range
                     1, 1,                           // poststatus, status
-                ])->result();
 
+                    // Payment voucher params
+                    1,                              // account_detail_other otheroptiontype = 1 (JOIN)
+                    $sup->idtbl_supplier,           // account_detail_other otheroption = supplier ID (JOIN)
+                    $companyID, $branchID,          // account_detail_other company/branch (JOIN)
+                    $fromdate, $todate,             // date range
+                    1, 1,                           // paysettle status, poststatus
+                    0,                              // supplier
+                    $companyID, $branchID           // company/branch
+                ])->result();
+                
                 //Get Post-dated cheque info
                 $this->db->select("tbl_account_paysettle.paymentno, tbl_cheque_issue.amount, tbl_cheque_issue.chedate, tbl_cheque_issue.chequeno, tbl_cheque_issue.narration, $tablename.$column2 AS suppliername");
                 $this->db->from('tbl_account_paysettle');
@@ -630,21 +671,70 @@ class Creditorreportinfo extends CI_Model{
             ])->result();
 
             // Get all payments for this creditor
+            // $sqlPayments = "
+            //     SELECT 
+            //         SUM(api.amount) as total_payments
+            //     FROM tbl_account_paysettle ap
+            //     JOIN tbl_account_paysettle_info api ON ap.idtbl_account_paysettle = api.tbl_account_paysettle_idtbl_account_paysettle
+            //     WHERE ap.supplier = ?
+            //     AND ap.status = 1
+            //     AND ap.poststatus = 1
+            //     AND ap.date <= ?
+            //     AND ap.tbl_company_idtbl_company = ?
+            //     AND ap.tbl_company_branch_idtbl_company_branch = ?
+            // ";
+
+            // $paymentsResult = $this->db->query($sqlPayments, [
+            //     $creditor, $asofdate, $companyID, $branchID
+            // ])->row();
             $sqlPayments = "
-                SELECT 
-                    SUM(api.amount) as total_payments
-                FROM tbl_account_paysettle ap
-                JOIN tbl_account_paysettle_info api ON ap.idtbl_account_paysettle = api.tbl_account_paysettle_idtbl_account_paysettle
-                WHERE ap.supplier = ?
-                AND ap.status = 1
-                AND ap.poststatus = 1
-                AND ap.date <= ?
-                AND ap.tbl_company_idtbl_company = ?
-                AND ap.tbl_company_branch_idtbl_company_branch = ?
+                SELECT SUM(pay_amounts.amount) as total_payments
+                FROM (
+                    -- Direct supplier link (paysettlefiltertype = 1)
+                    SELECT api.amount AS amount
+                    FROM tbl_account_paysettle ap
+                    JOIN tbl_account_paysettle_info api 
+                        ON ap.idtbl_account_paysettle = api.tbl_account_paysettle_idtbl_account_paysettle
+                    WHERE ap.supplier = ?
+                    AND ap.status = 1
+                    AND ap.poststatus = 1
+                    AND api.status = 1
+                    AND ap.date <= ?
+                    AND ap.tbl_company_idtbl_company = ?
+                    AND ap.tbl_company_branch_idtbl_company_branch = ?
+
+                    UNION ALL
+
+                    -- Voucher / Journal supplier link (paysettlefiltertype = 2, supplier = 0)
+                    SELECT ap.totalpayment AS amount
+                    FROM tbl_account_paysettle ap
+                    WHERE ap.supplier = 0
+                    AND ap.status = 1
+                    AND ap.poststatus = 1
+                    AND ap.date <= ?
+                    AND ap.tbl_company_idtbl_company = ?
+                    AND ap.tbl_company_branch_idtbl_company_branch = ?
+                    AND EXISTS (
+                        SELECT 1
+                        FROM tbl_account_paysettle_entry ape
+                        INNER JOIN tbl_account_detail_other ado
+                            ON ado.tbl_account_detail_idtbl_account_detail = ape.tbl_account_detail_idtbl_account_detail
+                        WHERE ape.tbl_account_paysettle_idtbl_account_paysettle = ap.idtbl_account_paysettle
+                        AND ado.otheroptiontype = 1
+                        AND ado.otheroption = ?
+                        AND ado.tbl_company_idtbl_company = ?
+                        AND ado.tbl_company_branch_idtbl_company_branch = ?
+                    )
+                ) AS pay_amounts
             ";
 
             $paymentsResult = $this->db->query($sqlPayments, [
-                $creditor, $asofdate, $companyID, $branchID
+                // Direct supplier branch
+                $creditor, $asofdate, $companyID, $branchID,
+                // Voucher branch WHERE
+                $asofdate, $companyID, $branchID,
+                // Voucher branch EXISTS
+                $creditor, $companyID, $branchID
             ])->row();
             $totalPayments = $paymentsResult ? $paymentsResult->total_payments : 0;
 
@@ -821,6 +911,43 @@ class Creditorreportinfo extends CI_Model{
 
         } else {
             // No creditor selected - show all creditors in summary table
+            // $sql = "
+            //     SELECT 
+            //         s.$column1 AS idtbl_supplier,
+            //         s.$column2 AS suppliername,
+            //         s.$column3 AS bus_reg_no,
+            //         SUM(CASE WHEN DATEDIFF(?, e.grndate) > 89 AND e.status = 1 THEN e.amount ELSE 0 END) AS over_90,
+            //         SUM(CASE WHEN DATEDIFF(?, e.grndate) BETWEEN 60 AND 89 AND e.status = 1 THEN e.amount ELSE 0 END) AS days_60_89,
+            //         SUM(CASE WHEN DATEDIFF(?, e.grndate) BETWEEN 30 AND 59 AND e.status = 1 THEN e.amount ELSE 0 END) AS days_30_59,
+            //         SUM(CASE WHEN DATEDIFF(?, e.grndate) < 30 AND e.status = 1 THEN e.amount ELSE 0 END) AS less_30,
+            //         SUM(CASE WHEN e.status = 1 THEN e.amount ELSE 0 END) AS total_grns,
+            //         SUM(CASE WHEN ap.status = 1 THEN ap.totalpayment ELSE 0 END) AS total_payments,
+            //         (SUM(CASE WHEN e.status = 1 THEN e.amount ELSE 0 END) - 
+            //         SUM(CASE WHEN ap.status = 1 THEN ap.totalpayment ELSE 0 END)) AS net_balance
+            //     FROM $tablename s
+            //     LEFT JOIN tbl_expence_info e ON s.$column1 = e.tbl_supplier_idtbl_supplier 
+            //         AND e.tbl_company_idtbl_company = ? 
+            //         AND e.tbl_company_branch_idtbl_company_branch = ?
+            //         AND e.grndate <= ?
+            //         AND e.status = 1
+            //     LEFT JOIN tbl_account_paysettle ap ON s.$column1 = ap.supplier 
+            //         AND ap.tbl_company_idtbl_company = ? 
+            //         AND ap.tbl_company_branch_idtbl_company_branch = ?
+            //         AND ap.date <= ?
+            //         AND ap.status = 1
+            //         AND ap.poststatus = 1
+            //     WHERE s.status = 1
+            //     GROUP BY s.$column1
+            //     HAVING net_balance > 0
+            //     ORDER BY s.$column2 ASC
+            // ";
+
+            // $creditors = $this->db->query($sql, [
+            //     $asofdate, $asofdate, $asofdate, $asofdate,
+            //     $companyID, $branchID, $asofdate,
+            //     $companyID, $branchID, $asofdate
+            // ])->result();
+
             $sql = "
                 SELECT 
                     s.$column1 AS idtbl_supplier,
@@ -831,21 +958,89 @@ class Creditorreportinfo extends CI_Model{
                     SUM(CASE WHEN DATEDIFF(?, e.grndate) BETWEEN 30 AND 59 AND e.status = 1 THEN e.amount ELSE 0 END) AS days_30_59,
                     SUM(CASE WHEN DATEDIFF(?, e.grndate) < 30 AND e.status = 1 THEN e.amount ELSE 0 END) AS less_30,
                     SUM(CASE WHEN e.status = 1 THEN e.amount ELSE 0 END) AS total_grns,
-                    SUM(CASE WHEN ap.status = 1 THEN ap.totalpayment ELSE 0 END) AS total_payments,
-                    (SUM(CASE WHEN e.status = 1 THEN e.amount ELSE 0 END) - 
-                    SUM(CASE WHEN ap.status = 1 THEN ap.totalpayment ELSE 0 END)) AS net_balance
+                    (
+                        IFNULL((
+                            SELECT SUM(api.amount)
+                            FROM tbl_account_paysettle ap
+                            JOIN tbl_account_paysettle_info api 
+                                ON ap.idtbl_account_paysettle = api.tbl_account_paysettle_idtbl_account_paysettle
+                            WHERE ap.supplier = s.$column1
+                            AND ap.status = 1
+                            AND ap.poststatus = 1
+                            AND api.status = 1
+                            AND ap.date <= ?
+                            AND ap.tbl_company_idtbl_company = ?
+                            AND ap.tbl_company_branch_idtbl_company_branch = ?
+                        ), 0)
+                        +
+                        IFNULL((
+                            SELECT SUM(ap2.totalpayment)
+                            FROM tbl_account_paysettle ap2
+                            WHERE ap2.supplier = 0
+                            AND ap2.status = 1
+                            AND ap2.poststatus = 1
+                            AND ap2.date <= ?
+                            AND ap2.tbl_company_idtbl_company = ?
+                            AND ap2.tbl_company_branch_idtbl_company_branch = ?
+                            AND EXISTS (
+                                SELECT 1
+                                FROM tbl_account_paysettle_entry ape
+                                INNER JOIN tbl_account_detail_other ado
+                                    ON ado.tbl_account_detail_idtbl_account_detail = ape.tbl_account_detail_idtbl_account_detail
+                                WHERE ape.tbl_account_paysettle_idtbl_account_paysettle = ap2.idtbl_account_paysettle
+                                AND ado.otheroptiontype = 1
+                                AND ado.otheroption = s.$column1
+                                AND ado.tbl_company_idtbl_company = ?
+                                AND ado.tbl_company_branch_idtbl_company_branch = ?
+                            )
+                        ), 0)
+                    ) AS total_payments,
+                    (
+                        SUM(CASE WHEN e.status = 1 THEN e.amount ELSE 0 END) - 
+                        (
+                            IFNULL((
+                                SELECT SUM(api.amount)
+                                FROM tbl_account_paysettle ap
+                                JOIN tbl_account_paysettle_info api 
+                                    ON ap.idtbl_account_paysettle = api.tbl_account_paysettle_idtbl_account_paysettle
+                                WHERE ap.supplier = s.$column1
+                                AND ap.status = 1
+                                AND ap.poststatus = 1
+                                AND api.status = 1
+                                AND ap.date <= ?
+                                AND ap.tbl_company_idtbl_company = ?
+                                AND ap.tbl_company_branch_idtbl_company_branch = ?
+                            ), 0)
+                            +
+                            IFNULL((
+                                SELECT SUM(ap2.totalpayment)
+                                FROM tbl_account_paysettle ap2
+                                WHERE ap2.supplier = 0
+                                AND ap2.status = 1
+                                AND ap2.poststatus = 1
+                                AND ap2.date <= ?
+                                AND ap2.tbl_company_idtbl_company = ?
+                                AND ap2.tbl_company_branch_idtbl_company_branch = ?
+                                AND EXISTS (
+                                    SELECT 1
+                                    FROM tbl_account_paysettle_entry ape
+                                    INNER JOIN tbl_account_detail_other ado
+                                        ON ado.tbl_account_detail_idtbl_account_detail = ape.tbl_account_detail_idtbl_account_detail
+                                    WHERE ape.tbl_account_paysettle_idtbl_account_paysettle = ap2.idtbl_account_paysettle
+                                    AND ado.otheroptiontype = 1
+                                    AND ado.otheroption = s.$column1
+                                    AND ado.tbl_company_idtbl_company = ?
+                                    AND ado.tbl_company_branch_idtbl_company_branch = ?
+                                )
+                            ), 0)
+                        )
+                    ) AS net_balance
                 FROM $tablename s
                 LEFT JOIN tbl_expence_info e ON s.$column1 = e.tbl_supplier_idtbl_supplier 
                     AND e.tbl_company_idtbl_company = ? 
                     AND e.tbl_company_branch_idtbl_company_branch = ?
                     AND e.grndate <= ?
                     AND e.status = 1
-                LEFT JOIN tbl_account_paysettle ap ON s.$column1 = ap.supplier 
-                    AND ap.tbl_company_idtbl_company = ? 
-                    AND ap.tbl_company_branch_idtbl_company_branch = ?
-                    AND ap.date <= ?
-                    AND ap.status = 1
-                    AND ap.poststatus = 1
                 WHERE s.status = 1
                 GROUP BY s.$column1
                 HAVING net_balance > 0
@@ -853,24 +1048,79 @@ class Creditorreportinfo extends CI_Model{
             ";
 
             $creditors = $this->db->query($sql, [
-                $asofdate, $asofdate, $asofdate, $asofdate,
-                $companyID, $branchID, $asofdate,
+                $asofdate, $asofdate, $asofdate, $asofdate,   // 4x DATEDIFF in SELECT
+
+                // total_payments: direct branch
+                $asofdate, $companyID, $branchID,
+                // total_payments: voucher branch WHERE
+                $asofdate, $companyID, $branchID,
+                // total_payments: voucher branch EXISTS
+                $companyID, $branchID,
+
+                // net_balance recomputes payments again: direct branch
+                $asofdate, $companyID, $branchID,
+                // net_balance: voucher branch WHERE
+                $asofdate, $companyID, $branchID,
+                // net_balance: voucher branch EXISTS
+                $companyID, $branchID,
+
+                // LEFT JOIN tbl_expence_info
                 $companyID, $branchID, $asofdate
             ])->result();
 
             //Get Post-dated cheque info
-            $this->db->select("tbl_account_paysettle.paymentno, tbl_cheque_issue.amount, tbl_cheque_issue.chedate, tbl_cheque_issue.chequeno, tbl_cheque_issue.narration, $tablename.$column2 AS suppliername");
-            $this->db->from('tbl_account_paysettle');
-            $this->db->join('tbl_account_paysettle_has_tbl_cheque_issue', 'tbl_account_paysettle_has_tbl_cheque_issue.tbl_account_paysettle_idtbl_account_paysettle = tbl_account_paysettle.idtbl_account_paysettle', 'left');
-            $this->db->join('tbl_cheque_issue', 'tbl_cheque_issue.idtbl_cheque_issue = tbl_account_paysettle_has_tbl_cheque_issue.tbl_cheque_issue_idtbl_cheque_issue', 'left');
-            $this->db->join("$tablename", "$tablename.$column1 = tbl_account_paysettle.supplier", 'left');
-            $this->db->where('tbl_account_paysettle.status', '1');
-            $this->db->where('tbl_account_paysettle.postdatedstatus', '1');
-            $this->db->where('tbl_account_paysettle.poststatus', '0');
-            if(!empty($creditor)) {
-                $this->db->where('tbl_account_paysettle.supplier', $creditor);
+            // $this->db->select("tbl_account_paysettle.paymentno, tbl_cheque_issue.amount, tbl_cheque_issue.chedate, tbl_cheque_issue.chequeno, tbl_cheque_issue.narration, $tablename.$column2 AS suppliername");
+            // $this->db->from('tbl_account_paysettle');
+            // $this->db->join('tbl_account_paysettle_has_tbl_cheque_issue', 'tbl_account_paysettle_has_tbl_cheque_issue.tbl_account_paysettle_idtbl_account_paysettle = tbl_account_paysettle.idtbl_account_paysettle', 'left');
+            // $this->db->join('tbl_cheque_issue', 'tbl_cheque_issue.idtbl_cheque_issue = tbl_account_paysettle_has_tbl_cheque_issue.tbl_cheque_issue_idtbl_cheque_issue', 'left');
+            // $this->db->join("$tablename", "$tablename.$column1 = tbl_account_paysettle.supplier", 'left');
+            // $this->db->where('tbl_account_paysettle.status', '1');
+            // $this->db->where('tbl_account_paysettle.postdatedstatus', '1');
+            // $this->db->where('tbl_account_paysettle.poststatus', '0');
+            // if(!empty($creditor)) {
+            //     $this->db->where('tbl_account_paysettle.supplier', $creditor);
+            // }
+            // $respondpostdated=$this->db->get();
+
+            $sqlPostdated = "
+                SELECT tbl_account_paysettle.paymentno, tbl_cheque_issue.amount, tbl_cheque_issue.chedate, 
+                    tbl_cheque_issue.chequeno, tbl_cheque_issue.narration, $tablename.$column2 AS suppliername
+                FROM tbl_account_paysettle
+                LEFT JOIN tbl_account_paysettle_has_tbl_cheque_issue 
+                    ON tbl_account_paysettle_has_tbl_cheque_issue.tbl_account_paysettle_idtbl_account_paysettle = tbl_account_paysettle.idtbl_account_paysettle
+                LEFT JOIN tbl_cheque_issue 
+                    ON tbl_cheque_issue.idtbl_cheque_issue = tbl_account_paysettle_has_tbl_cheque_issue.tbl_cheque_issue_idtbl_cheque_issue
+                LEFT JOIN $tablename 
+                    ON $tablename.$column1 = tbl_account_paysettle.supplier
+                WHERE tbl_account_paysettle.status = 1
+                AND tbl_account_paysettle.postdatedstatus = 1
+                AND tbl_account_paysettle.poststatus = 0
+            ";
+
+            $params = [];
+            if (!empty($creditor)) {
+                $sqlPostdated .= "
+                AND (
+                    tbl_account_paysettle.supplier = ?
+                    OR (
+                        tbl_account_paysettle.supplier = 0
+                        AND EXISTS (
+                            SELECT 1
+                            FROM tbl_account_paysettle_entry ape
+                            INNER JOIN tbl_account_detail_other ado
+                                ON ado.tbl_account_detail_idtbl_account_detail = ape.tbl_account_detail_idtbl_account_detail
+                            WHERE ape.tbl_account_paysettle_idtbl_account_paysettle = tbl_account_paysettle.idtbl_account_paysettle
+                            AND ado.otheroptiontype = 1
+                            AND ado.otheroption = ?
+                            AND ado.tbl_company_idtbl_company = ?
+                            AND ado.tbl_company_branch_idtbl_company_branch = ?
+                        )
+                    )
+                )";
+                $params = [$creditor, $creditor, $companyID, $branchID];
             }
-            $respondpostdated=$this->db->get();
+
+            $respondpostdated = $this->db->query($sqlPostdated, $params);
 
             // Calculate totals
             $totalOver90 = 0;

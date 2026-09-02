@@ -38,18 +38,18 @@ $primaryKey = 'idtbl_account_receivable_main';
 // indexes
 $columns = array(
 	array( 'db' => '`u`.`idtbl_account_receivable_main`', 'dt' => 'idtbl_account_receivable_main', 'field' => 'idtbl_account_receivable_main' ),
-	array( 'db' => '`u`.`tradate`', 'dt' => 'tradate', 'field' => 'tradate' ),
-	array( 'db' => '`u`.`batchno`', 'dt' => 'batchno', 'field' => 'batchno' ),
-	array( 'db' => '`u`.`amount`', 'dt' => 'amount', 'field' => 'amount' ),
+	array( 'db' => '`u`.`tradate`',    'dt' => 'tradate',    'field' => 'tradate' ),
+	array( 'db' => '`u`.`batchno`',    'dt' => 'batchno',    'field' => 'batchno' ),
+	array( 'db' => '`u`.`amount`',     'dt' => 'amount',     'field' => 'amount' ),
 	array( 'db' => '`u`.`poststatus`', 'dt' => 'poststatus', 'field' => 'poststatus' ),
-	array( 'db' => '`ua`.`company`', 'dt' => 'company', 'field' => 'company' ),
-	array( 'db' => '`ub`.`branch`', 'dt' => 'branch', 'field' => 'branch' ),
-	array( 'db' => '`ud`.`desc`', 'dt' => 'desc', 'field' => 'desc' ),
-	array( 'db' => '`ue`.`monthname`', 'dt' => 'monthname', 'field' => 'monthname' ),
-	array( 'db' => '`uf`.`invno`', 'dt' => 'invno', 'field' => 'invno' ),
-	array( 'db' => '`uf`.`idtbl_sales_info`', 'dt' => 'idtbl_sales_info', 'field' => 'idtbl_sales_info' ),
-	array( 'db' => "`ug`.`$column2` AS `customer`", 'dt' => 'customer', 'field' => 'customer' ),
-	array( 'db' => '`u`.`status`', 'dt' => 'status', 'field' => 'status' )
+	array( 'db' => '`u`.`company`',    'dt' => 'company',    'field' => 'company' ),
+	array( 'db' => '`u`.`branch`',     'dt' => 'branch',     'field' => 'branch' ),
+	array( 'db' => '`u`.`desc`',       'dt' => 'desc',       'field' => 'desc' ),
+	array( 'db' => '`u`.`monthname`',  'dt' => 'monthname',  'field' => 'monthname' ),
+	array( 'db' => '`u`.`invno`',      'dt' => 'invno',      'field' => 'invno' ),
+	array( 'db' => '`u`.`idtbl_sales_info`', 'dt' => 'idtbl_sales_info', 'field' => 'idtbl_sales_info' ),
+	array( 'db' => '`u`.`customer`',   'dt' => 'customer',   'field' => 'customer' ),
+	array( 'db' => '`u`.`status`',     'dt' => 'status',     'field' => 'status' )
 );
 
 // SQL server connection information
@@ -72,9 +72,52 @@ require('ssp.customized.class.php' );
 $companyid=$_SESSION['companyid'];
 $branchid=$_SESSION['branchid'];
 
-$joinQuery = "FROM `tbl_account_receivable_main` AS `u` LEFT JOIN `tbl_company` AS `ua` ON (`ua`.`idtbl_company` = `u`.`tbl_company_idtbl_company`) LEFT JOIN `tbl_company_branch` AS `ub` ON (`ub`.`idtbl_company_branch` = `u`.`tbl_company_branch_idtbl_company_branch`) LEFT JOIN `tbl_master` AS `uc` ON (`uc`.`idtbl_master` = `u`.`tbl_master_idtbl_master`) LEFT JOIN `tbl_finacial_year` AS `ud` ON (`ud`.`idtbl_finacial_year` = `uc`.`tbl_finacial_year_idtbl_finacial_year`) LEFT JOIN `tbl_finacial_month` AS `ue` ON (`ue`.`idtbl_finacial_month` = `uc`.`tbl_finacial_month_idtbl_finacial_month`) LEFT JOIN `tbl_sales_info` AS `uf` ON (`uf`.`invno` = `u`.`receiptno`) LEFT JOIN $tablename AS `ug` ON (`ug`.`$column1` = `uf`.`tbl_customer_idtbl_customer`)";
+$joinQuery = "FROM (
+    SELECT
+        `u`.`idtbl_account_receivable_main`,
+        `u`.`tradate`,
+        `u`.`batchno`,
+        `u`.`amount`,
+        `u`.`poststatus`,
+        `u`.`status`,
+        `u`.`rectype`,
+        `u`.`tbl_company_idtbl_company`,
+        `u`.`tbl_company_branch_idtbl_company_branch`,
+        `u`.`receiptno`,
+        `ua`.`company`,
+        `ub`.`branch`,
+        `ud`.`desc`,
+        `ue`.`monthname`,
+        CASE
+            WHEN `uf`.`invdate` > '2026-06-30' THEN `uf`.`tax_invno`
+            ELSE `uf`.`invno`
+        END AS `invno`,
+        `uf`.`idtbl_sales_info`,
+        `uf`.`tbl_company_idtbl_company`        AS `sales_companyid`,
+        `uf`.`tbl_company_branch_idtbl_company_branch` AS `sales_branchid`,
+        `ug`.`$column2`                          AS `customer`
+    FROM `tbl_account_receivable_main` AS `u`
+    LEFT JOIN `tbl_company` AS `ua`
+        ON (`ua`.`idtbl_company` = `u`.`tbl_company_idtbl_company`)
+    LEFT JOIN `tbl_company_branch` AS `ub`
+        ON (`ub`.`idtbl_company_branch` = `u`.`tbl_company_branch_idtbl_company_branch`)
+    LEFT JOIN `tbl_master` AS `uc`
+        ON (`uc`.`idtbl_master` = `u`.`tbl_master_idtbl_master`)
+    LEFT JOIN `tbl_finacial_year` AS `ud`
+        ON (`ud`.`idtbl_finacial_year` = `uc`.`tbl_finacial_year_idtbl_finacial_year`)
+    LEFT JOIN `tbl_finacial_month` AS `ue`
+        ON (`ue`.`idtbl_finacial_month` = `uc`.`tbl_finacial_month_idtbl_finacial_month`)
+    LEFT JOIN `tbl_sales_info` AS `uf`
+        ON (`uf`.`invno` = `u`.`receiptno` AND `uf`.`tbl_company_idtbl_company` = `u`.`tbl_company_idtbl_company` AND `uf`.`tbl_company_branch_idtbl_company_branch` = `u`.`tbl_company_branch_idtbl_company_branch`)
+    LEFT JOIN `$tablename` AS `ug`
+        ON (`ug`.`$column1` = `uf`.`tbl_customer_idtbl_customer`)
+    WHERE
+        `u`.`status` IN (1,2)
+    GROUP BY
+        `uf`.`invno`, `uf`.`tbl_company_idtbl_company`, `uf`.`tbl_company_branch_idtbl_company_branch`
+) AS `u`";
 
-$extraWhere = "`u`.`status` IN (1, 2) AND `u`.`rectype`=0 AND `u`.`tbl_company_idtbl_company`='$companyid' AND `u`.`tbl_company_branch_idtbl_company_branch`='$branchid' AND `uf`.`tbl_company_idtbl_company`='$companyid' AND `uf`.`tbl_company_branch_idtbl_company_branch`='$branchid'";
+$extraWhere = "`u`.`status` IN (1, 2) AND `u`.`rectype`=0 AND `u`.`tbl_company_idtbl_company`='$companyid' AND `u`.`tbl_company_branch_idtbl_company_branch`='$branchid' AND `u`.`sales_companyid`='$companyid' AND `u`.`sales_branchid`='$branchid'";
 
 echo json_encode(
 	SSP::simple( $_POST, $sql_details, $table, $primaryKey, $columns, $joinQuery, $extraWhere)

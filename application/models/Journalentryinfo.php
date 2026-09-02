@@ -314,6 +314,7 @@ class Journalentryinfo extends CI_Model{
             $accounttypecr  = $this->input->post('accounttypecr');
             $accounttypedr  = $this->input->post('accounttypedr');
             $payableentry   = $this->input->post('payableentry');
+            $receivableentry   = $this->input->post('receivableentry');
             $recordOption   = $this->input->post('recordOption');
             $recordID       = $this->input->post('recordID');
 
@@ -419,6 +420,7 @@ class Journalentryinfo extends CI_Model{
                     'crdr'                                    => 'D',
                     'amount'                                  => $traamount,
                     'narration'                               => $narrationdr,
+                    'recestatus'                              => $receivableentry,
                     'status'                                  => '1',
                     'insertdatetime'                          => $updatedatetime,
                     'tbl_user_idtbl_user'                     => $userID,
@@ -523,6 +525,7 @@ class Journalentryinfo extends CI_Model{
                     'crdr'                                    => 'D',
                     'amount'                                  => $traamount,
                     'narration'                               => $narrationdr,
+                    'recestatus'                              => $receivableentry,
                     'status'                                  => '1',
                     'insertdatetime'                          => $updatedatetime,
                     'tbl_user_idtbl_user'                     => $userID,
@@ -2583,7 +2586,7 @@ class Journalentryinfo extends CI_Model{
 
             $this->db->where('idtbl_account_transaction_manual', $batchtransinfoID);
             $this->db->update('tbl_account_transaction_manual', $data);
-
+            
             $this->db->trans_complete();
             if ($this->db->trans_status() === TRUE) {
                 $this->db->trans_commit();

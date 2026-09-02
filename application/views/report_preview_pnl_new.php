@@ -18,7 +18,7 @@ function display_amount($amount) {
 // Renders the item rows for one heading section (built by add_pnl_heading_sect()).
 // Skips the auto-appended "Total" row from the array since each section prints
 // its own labeled total row explicitly below.
-function render_section_items($sect_trlist) {
+function render_section_items($sect_trlist, $from_id, $to_id) {
     if (empty($sect_trlist)) return;
     $count = count($sect_trlist);
     foreach ($sect_trlist as $i => $tr) {
@@ -27,13 +27,14 @@ function render_section_items($sect_trlist) {
         $amount = isset($tr[1]['tdtext']) ? floatval(str_replace(',', '', $tr[1]['tdtext'])) : 0;
         ?>
         <tr>
-            <td><?php echo $tr[0]['tdtext']; ?></td>
+            <td><?php echo $tr[0]['tdtext']; $accountdetail = explode('-', $tr[0]['tdtext']); ?><a href="<?php echo base_url().'ReportModule/ledger_folio?refno='.str_replace(' ', '', $accountdetail[0]).'&periodfrom='.$from_id.'&periodto='.$to_id; ?>" target="_blank"><i class="far fa-question-circle ml-2"></i></a></td>
             <td class="text-right <?php echo get_amount_class($amount); ?>"><?php echo display_amount($amount); ?></td>
             <td></td>
         </tr>
         <?php
     }
 }
+
 ?>
 
 <div class="col-12 text-right">
@@ -53,7 +54,7 @@ function render_section_items($sect_trlist) {
         </tr>
         <!-- REVENUE -->
         <tr class="section-header"><th colspan="3">REVENUE</th></tr>
-        <?php render_section_items($pnl_trlist['revenue']); ?>
+        <?php render_section_items($pnl_trlist['revenue'], $from_id, $to_id); ?>
         <tr class="total-row">
             <th>Total Revenue</th>
             <td></td>
@@ -64,7 +65,7 @@ function render_section_items($sect_trlist) {
 
         <!-- COST OF SALES -->
         <tr class="section-header"><th colspan="3">COST OF SALES</th></tr>
-        <?php render_section_items($pnl_trlist['cost_of_sales']); ?>
+        <?php render_section_items($pnl_trlist['cost_of_sales'], $from_id, $to_id); ?>
         <tr class="total-row">
             <th>Cost of Sales</th>
             <td></td>
@@ -83,7 +84,7 @@ function render_section_items($sect_trlist) {
         <!-- OTHER INCOME -->
         <?php if (!empty($pnl_trlist['other_income'])): ?>
         <tr class="section-header"><th colspan="3">OTHER INCOME</th></tr>
-        <?php render_section_items($pnl_trlist['other_income']); ?>
+        <?php render_section_items($pnl_trlist['other_income'], $from_id, $to_id); ?>
         <tr class="total-row">
             <th>Total Other Income</th>
             <td></td>
@@ -95,7 +96,7 @@ function render_section_items($sect_trlist) {
 
         <!-- OPERATING EXPENSES -->
         <tr class="section-header"><th colspan="3">OPERATING EXPENSES (INDIRECT)</th></tr>
-        <?php render_section_items($pnl_trlist['operating_expenses']); ?>
+        <?php render_section_items($pnl_trlist['operating_expenses'], $from_id, $to_id); ?>
         <tr class="total-row">
             <th>Total Operating Expenses</th>
             <td></td>
@@ -109,10 +110,23 @@ function render_section_items($sect_trlist) {
         </tr>
 
         <tr><th colspan="3">&nbsp;</th></tr>
+ 
+        <!-- SELLING & DISTRIBUTION COSTS -->
+        <tr class="section-header"><th colspan="3">SELLING & DISTRIBUTION COSTS</th></tr>
+        <?php render_section_items($pnl_trlist['selling_distribution_costs'], $from_id, $to_id); ?>
+        <tr class="total-row">
+            <th>Total Selling & Distribution Costs</th>
+            <td></td>
+            <th class="text-right negative-amount">(<?php echo format_currency($tot_selling_distribution); ?>)</th>
+        </tr>
+ 
+        <tr><th colspan="3">&nbsp;</th></tr>
+
+        <tr><th colspan="3">&nbsp;</th></tr>
 
         <!-- FINANCE COSTS -->
         <tr class="section-header"><th colspan="3">FINANCE COSTS</th></tr>
-        <?php render_section_items($pnl_trlist['finance_costs']); ?>
+        <?php render_section_items($pnl_trlist['finance_costs'], $from_id, $to_id); ?>
         <tr class="total-row">
             <th>Total Finance Costs</th>
             <td></td>
@@ -130,7 +144,7 @@ function render_section_items($sect_trlist) {
 
         <!-- TAXES -->
         <tr class="section-header"><th colspan="3">TAXES</th></tr>
-        <?php render_section_items($pnl_trlist['taxes']); ?>
+        <?php render_section_items($pnl_trlist['taxes'], $from_id, $to_id); ?>
         <tr class="total-row">
             <th>Total Taxes</th>
             <td></td>

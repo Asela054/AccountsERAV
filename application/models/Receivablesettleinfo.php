@@ -12,6 +12,8 @@ class Receivablesettleinfo extends CI_Model{
     }
     public function Getinvoiceaccocustomer(){
         $recordID=$this->input->post('recordID');
+        $receivablefilter=$this->input->post('receivablefilter');
+        $accounttype=$this->input->post('accounttype');
 
         $configdata = getconfigdata('receivable_search');
 
@@ -21,1826 +23,157 @@ class Receivablesettleinfo extends CI_Model{
 
         $has_table = !empty($tablename) ? 1 : 0;
 
-        // $this->db->select('`tbl_sales_info`.`idtbl_sales_info`, `tbl_sales_info`.`invno`, `tbl_sales_info`.`amount`, IFNULL(SUM(`tbl_receivable_info`.`amount`), 0) AS `sumpay`, (`tbl_sales_info`.`amount`-IFNULL(SUM(`tbl_receivable_info`.`amount`), 0)) AS `balpay`, `tbl_sales_info`.`tbl_customer_idtbl_customer`, `tbl_customer`.`customer`');
-        $this->db->select("`tbl_sales_info`.`idtbl_sales_info`, `tbl_sales_info`.`invno`, `tbl_sales_info`.`invamount`, IFNULL(SUM(CASE WHEN `tbl_receivable_info`.`status` = 1 THEN `tbl_receivable_info`.`amount` ELSE 0 END), 0) AS `sumpay`, (`tbl_sales_info`.`invamount`-IFNULL(SUM(CASE WHEN `tbl_receivable_info`.`status` = 1 THEN `tbl_receivable_info`.`amount` ELSE 0 END), 0)) AS `balpay`, `tbl_sales_info`.`tbl_customer_idtbl_customer`, IF($has_table = 0, '', $tablename.$column2) AS `customer`");
-        $this->db->from('tbl_sales_info');
-        $this->db->join('tbl_receivable_info', 'tbl_receivable_info.invoiceno = tbl_sales_info.invno', 'left');
-        if(!empty($tablename)):
-            $this->db->join("$tablename", "$tablename.$column1 = tbl_sales_info.tbl_customer_idtbl_customer", 'left');
-        endif;
-        $this->db->where('tbl_sales_info.status', 1);
-        $this->db->where('tbl_sales_info.paystatus', 0);
-        $this->db->where('tbl_sales_info.poststatus', 1);
-        $this->db->where('tbl_sales_info.tbl_customer_idtbl_customer', $recordID);
-        $this->db->group_by('`tbl_sales_info`.`idtbl_sales_info`');
+        if($receivablefilter == 1):
+            // $this->db->select('`tbl_sales_info`.`idtbl_sales_info`, `tbl_sales_info`.`invno`, `tbl_sales_info`.`amount`, IFNULL(SUM(`tbl_receivable_info`.`amount`), 0) AS `sumpay`, (`tbl_sales_info`.`amount`-IFNULL(SUM(`tbl_receivable_info`.`amount`), 0)) AS `balpay`, `tbl_sales_info`.`tbl_customer_idtbl_customer`, `tbl_customer`.`customer`');
+            $this->db->select("`tbl_sales_info`.`idtbl_sales_info`, CASE WHEN `tbl_sales_info`.`invdate` > '2026-06-30' THEN `tbl_sales_info`.`tax_invno` ELSE `tbl_sales_info`.`invno` END AS `invno`, `tbl_sales_info`.`invamount`, IFNULL(SUM(CASE WHEN `tbl_receivable_info`.`status` = 1 THEN `tbl_receivable_info`.`amount` ELSE 0 END), 0) AS `sumpay`, (`tbl_sales_info`.`invamount`-IFNULL(SUM(CASE WHEN `tbl_receivable_info`.`status` = 1 THEN `tbl_receivable_info`.`amount` ELSE 0 END), 0)) AS `balpay`, `tbl_sales_info`.`tbl_customer_idtbl_customer`, IF($has_table = 0, '', $tablename.$column2) AS `customer`");
+            $this->db->from('tbl_sales_info');
+            $this->db->join('tbl_receivable', 'tbl_receivable.payer = tbl_sales_info.tbl_customer_idtbl_customer', 'left');
+            $this->db->join('tbl_receivable_info', 'tbl_receivable_info.invoiceno = tbl_sales_info.invno AND tbl_receivable_info.tbl_receivable_idtbl_receivable = tbl_receivable.idtbl_receivable', 'left');
+            if(!empty($tablename)):
+                $this->db->join("$tablename", "$tablename.$column1 = tbl_sales_info.tbl_customer_idtbl_customer", 'left');
+            endif;
+            $this->db->where('tbl_sales_info.status', 1);
+            $this->db->where('tbl_sales_info.paystatus', 0);
+            $this->db->where('tbl_sales_info.poststatus', 1);
+            $this->db->where('tbl_sales_info.tbl_customer_idtbl_customer', $recordID);
+            $this->db->group_by('`tbl_sales_info`.`idtbl_sales_info`');
 
-        $respond=$this->db->get();
-        // print_r($this->db->last_query());
+            $respond=$this->db->get();
+            // print_r($this->db->last_query());
 
-        $html='';
-        $i=1;
-        foreach($respond->result() as $rowdatalist){
-            $this->db->select('IFNULL(SUM(`amount`), 0) AS `returnsum`');
-            $this->db->from('tbl_receivable_info');
-            $this->db->where('status', 2);
-            $this->db->where('invoiceno', $rowdatalist->invno);
+            $html='';
+            $i=1;
+            foreach($respond->result() as $rowdatalist){
+                $this->db->select('IFNULL(SUM(`amount`), 0) AS `returnsum`');
+                $this->db->from('tbl_receivable_info');
+                $this->db->where('status', 2);
+                $this->db->where('invoiceno', $rowdatalist->invno);
 
-            $respondreturn=$this->db->get();
-            
-            $netbalpay=$rowdatalist->balpay+$respondreturn->row(0)->returnsum;
-            if($rowdatalist->invno=='INV251044'):echo $rowdatalist->balpay.'=='.$respondreturn->row(0)->returnsum; endif;
-            
-            if($netbalpay>0){
-                $html.='
-                <tr>
-                    <td class="text-center" width="5%">
-                        <div class="custom-control custom-checkbox">
-                            <input type="checkbox" class="custom-control-input checkclick" id="customCheck'.$i.'">
-                            <label class="custom-control-label m-0" for="customCheck'.$i.'"></label>
-                        </div>
-                    </td>
-                    <td class="d-none">'.$rowdatalist->tbl_customer_idtbl_customer.'</td>
-                    <td>'.$rowdatalist->customer.'</td>
-                    <td class="d-none">'.$rowdatalist->invno.'</td>
-                    <td>'.$rowdatalist->invno.'</td>
-                    <td class="text-right">'.number_format($rowdatalist->invamount, 2).'</td>
-                    <td class="text-right invbalamount">'.number_format($netbalpay, 2).'</td>
-                </tr>
-                ';
-                $i++;
+                $respondreturn=$this->db->get();
+                
+                // $netbalpay=$rowdatalist->balpay+$respondreturn->row(0)->returnsum;
+                $netbalpay=$rowdatalist->balpay;
+                
+                if($netbalpay>0){
+                    $html.='
+                    <tr>
+                        <td class="text-center" width="5%">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input checkclick" id="customCheck'.$i.'">
+                                <label class="custom-control-label m-0" for="customCheck'.$i.'"></label>
+                            </div>
+                        </td>
+                        <td class="d-none">'.$rowdatalist->tbl_customer_idtbl_customer.'</td>
+                        <td>'.$rowdatalist->customer.'</td>
+                        <td class="d-none">'.$rowdatalist->invno.'</td>
+                        <td>'.$rowdatalist->invno.'</td>
+                        <td class="text-right">'.number_format($rowdatalist->invamount, 2).'</td>
+                        <td class="text-right invbalamount">'.number_format($netbalpay, 2).'</td>
+                    </tr>
+                    ';
+                    $i++;
+                }
             }
-        }
+        else:
+            $this->db->select('`tbl_account_transaction_manual`.`idtbl_account_transaction_manual`, `tbl_account_transaction_manual`.`batchno`, `tbl_account_transaction_manual`.`amount`, IFNULL(SUM(CASE WHEN `tbl_receivable_entry`.`status` = 1 THEN `tbl_receivable_entry`.`amount` ELSE 0 END), 0) AS `sumpay`, (`tbl_account_transaction_manual`.`amount`-IFNULL(SUM(CASE WHEN `tbl_receivable_entry`.`status` = 1 THEN `tbl_receivable_entry`.`amount` ELSE 0 END), 0)) AS `balpay`, `tbl_account_transaction_manual`.`narration`, `tbl_account_transaction_manual`.`tbl_account_idtbl_account`, `tbl_account_transaction_manual`.`tbl_account_detail_idtbl_account_detail`, `tbl_account`.`accountno` AS `chartaccountno`, `tbl_account.accountname` AS `chartaccountname`, `tbl_account_detail.accountno` AS `detailaccountno`, `tbl_account_detail.accountname` AS `detailaccountname`');
+            $this->db->from('tbl_account_transaction_manual');
+            if($accounttype == 1){
+                $this->db->join('tbl_receivable_entry', '`tbl_receivable_entry`.`batchno` = `tbl_account_transaction_manual`.`batchno` AND tbl_receivable_entry.tbl_account_idtbl_account = tbl_account_transaction_manual.tbl_account_idtbl_account', 'left');
+            } else if($accounttype == 2){
+                $this->db->join('tbl_receivable_entry', '`tbl_receivable_entry`.`batchno` = `tbl_account_transaction_manual`.`batchno` AND tbl_receivable_entry.tbl_account_detail_idtbl_account_detail = tbl_account_transaction_manual.tbl_account_detail_idtbl_account_detail', 'left');
+            }
+            $this->db->join('tbl_account', 'tbl_account.idtbl_account = tbl_account_transaction_manual.tbl_account_idtbl_account', 'left');
+            $this->db->join('tbl_account_detail', 'tbl_account_detail.idtbl_account_detail = tbl_account_transaction_manual.tbl_account_detail_idtbl_account_detail', 'left');
+            $this->db->where('tbl_account_transaction_manual.status', 1);
+            $this->db->where('tbl_account_transaction_manual.recestatus', 1);
+            $this->db->where('tbl_account_transaction_manual.recesettle', 0);
+            $this->db->where('tbl_account_transaction_manual.poststatus', 1);
+            if($accounttype == 1){
+                $this->db->where('tbl_account_transaction_manual.tbl_account_idtbl_account', $recordID);
+            }
+            else if($accounttype == 2){
+                $this->db->where('tbl_account_transaction_manual.tbl_account_detail_idtbl_account_detail', $recordID);
+            }
+            $this->db->group_by('`tbl_account_transaction_manual`.`idtbl_account_transaction_manual`');
+
+            if($accounttype == 1){
+                $this->db->group_by('`tbl_account_transaction_manual`.`tbl_account_idtbl_account`');
+            }
+            else if($accounttype == 2){
+                $this->db->group_by('`tbl_account_transaction_manual`.`tbl_account_detail_idtbl_account_detail`');
+            }
+
+            $respond=$this->db->get();
+            
+            if($respond->row(0)->tbl_account_detail_idtbl_account_detail>0){
+                $accountno=$respond->row(0)->detailaccountno; 
+                $accountname=$respond->row(0)->detailaccountname;
+            }
+            else{
+                $accountno=$respond->row(0)->chartaccountno; 
+                $accountname=$respond->row(0)->chartaccountname;
+            }
+
+            $html='';
+            $i=1;
+            foreach($respond->result() as $rowdatalist){
+                $this->db->select('IFNULL(SUM(`amount`), 0) AS `returnsum`');
+                $this->db->from('tbl_receivable_info');
+                $this->db->where('status', 1);
+                $this->db->where('invoiceno', $rowdatalist->batchno);
+                $this->db->where('tbl_account_transaction_manual_idtbl_account_transaction_manual', $rowdatalist->idtbl_account_transaction_manual);
+
+                $respondreturn=$this->db->get();
+                
+                $netbalpay=$rowdatalist->balpay+$respondreturn->row(0)->returnsum;
+
+                if($netbalpay>0){
+                    $html.='
+                    <tr>
+                        <td class="text-center" width="5%">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input checkclick" id="customCheck'.$i.'">
+                                <label class="custom-control-label m-0" for="customCheck'.$i.'"></label>
+                            </div>
+                        </td>
+                        <td class="d-none">'.$rowdatalist->idtbl_account_transaction_manual.'</td>
+                        <td>'.$accountno.' - '.$accountname.'</td>
+                        <td class="d-none">'.$rowdatalist->batchno.'</td>
+                        <td>'.$rowdatalist->batchno.'</td>
+                        <td class="text-right">'.number_format($rowdatalist->amount, 2).'</td>
+                        <td class="text-right invbalamount">'.number_format($netbalpay, 2).'</td>
+                    </tr>
+                    ';
+                    $i++;
+                }
+            }   
+        endif;
+
         echo $html;
     }
-    // public function Receivablesettleinsertupdate(){
-    //     $userID=$_SESSION['userid'];
-    //     $detailaccount=0;
-    //     $chartaccount=0;
-
-    //     $company=$this->input->post('company');
-    //     $branch=$this->input->post('branch');
-    //     $customer=$this->input->post('customer');
-    //     // $receivabletype=$this->input->post('receivabletype');
-    //     // $accounttype=$this->input->post('accounttype');
-    //     // if(!empty($this->input->post('chequedate'))){$chequedate=$this->input->post('chequedate');}else{$chequedate='';}
-    //     // if(!empty($this->input->post('chequeno'))){$chequeno=$this->input->post('chequeno');}else{$chequeno='';}
-    //     // $chartofdetailaccount=$this->input->post('chartofdetailaccount');
-    //     // $narration=$this->input->post('narration');
-    //     $invoicepayamount=str_replace(',', '', $this->input->post('invoicepayamount'));
-    //     $paidamount=str_replace(',', '', $this->input->post('paidamount'));
-    //     $invoicedata=json_decode($this->input->post('tableData'));
-    //     $paymentdata=json_decode($this->input->post('tableReceData'));
-    //     print_r($invoicedata);
-    //     print_r($paymentdata);
-    //     die();
-        
-    //     $chequecashamount=$paidamount;
-
-    //     $recordOption=$this->input->post('recordOption');
-    //     if(!empty($this->input->post('recordID'))){$recordID=$this->input->post('recordID');}
-        
-    //     if($recordOption==1){
-    //         $prefix=receiv_prefix($company, $branch);
-    //         $masterdata=get_account_period($company, $branch);
-    //         $batchno=tr_batch_num($prefix, $branch);
-    //         $masterID=$masterdata->idtbl_master;
-    //     }
-
-    //     $updatedatetime=date('Y-m-d H:i:s');
-    //     $today=date('Y-m-d');
-    
-    //     if($recordOption==1){
-    //         if(!empty($batchno)){
-    //             $this->db->trans_begin();
-
-    //             $paymentnettotal=0;
-    //             foreach($paymentdata as $rowpaymentdata):
-    //                 if($rowpaymentdata->accounttype==1){$chartaccount=$rowpaymentdata->chartofaccount; $detailaccount=0;}
-    //                 else if($rowpaymentdata->accounttype==2){$detailaccount=$rowpaymentdata->chartofaccount; $chartaccount=0;}
-
-    //                 $data = array(
-    //                     'recdate'=> $today, 
-    //                     'batchno'=> $batchno, 
-    //                     'payer'=> $customer, 
-    //                     'amount'=> str_replace(',', '', $rowpaymentdata->amount), 
-    //                     'narration'=> $rowpaymentdata->narration, 
-    //                     'chequedate'=> $rowpaymentdata->chequedate, 
-    //                     'chequeno'=> $rowpaymentdata->chequeno, 
-    //                     'poststatus'=> '0', 
-    //                     'status'=> '1', 
-    //                     'insertdatetime'=> $updatedatetime, 
-    //                     'tbl_user_idtbl_user'=> $userID,
-    //                     'tbl_receivable_type_idtbl_receivable_type'=> $rowpaymentdata->receivabletypeid,
-    //                     'tbl_company_idtbl_company'=> $company,
-    //                     'tbl_company_branch_idtbl_company_branch'=> $branch,
-    //                     'tbl_master_idtbl_master'=> $masterID,
-    //                     'tbl_account_idtbl_account'=> $chartaccount,
-    //                     'tbl_account_detail_idtbl_account_detail'=> $detailaccount
-    //                 );
-
-    //                 $this->db->insert('tbl_receivable', $data);
-
-    //                 $receivableID=$this->db->insert_id();
-
-    //                 foreach($invoicedata as $rowinvoicedata){
-    //                     $narration=$rowinvoicedata->customer.' - '.$rowinvoicedata->invoiceno;
-    //                     $invoicetotal=str_replace(',', '', $rowinvoicedata->amount);
-
-    //                     if($chequecashamount>=$invoicetotal){
-    //                         $invoicepayamount=$invoicetotal;
-    //                         $chequecashamount=$chequecashamount-$invoicetotal;
-    //                     }
-    //                     else{
-    //                         $invoicepayamount=$chequecashamount;
-    //                         $chequecashamount=0;
-    //                     }
-
-    //                     $datasub = array(
-    //                         'invoiceno'=> $rowinvoicedata->invid, 
-    //                         'narration'=> $narration, 
-    //                         'amount'=> $invoicepayamount, 
-    //                         'status'=> '1', 
-    //                         'insertdatetime'=> $updatedatetime, 
-    //                         'tbl_user_idtbl_user'=> $userID,
-    //                         'tbl_receivable_main_idtbl_receivable_main'=> $receivableID,
-    //                     );
-
-    //                     $this->db->insert('tbl_receivable_info', $datasub);
-    //                 }
-
-    //                 $paymentnettotal=$paymentnettotal+str_replace(',', '', $rowpaymentdata->amount);
-    //             endforeach;
-
-    //             $this->db->trans_complete();
-    //             if ($this->db->trans_status() === TRUE) {
-    //                 if($paymentnettotal==$paidamount){
-    //                     $this->db->trans_commit();
-
-    //                     $actionObj=new stdClass();
-    //                     $actionObj->icon='fas fa-save';
-    //                     $actionObj->title='';
-    //                     $actionObj->message='Record Added Successfully';
-    //                     $actionObj->url='';
-    //                     $actionObj->target='_blank';
-    //                     $actionObj->type='success';
-
-    //                     $actionJSON=json_encode($actionObj);
-                        
-    //                     $obj=new stdClass();
-    //                     $obj->status=1;
-    //                     $obj->action=$actionJSON;
-
-    //                     echo json_encode($obj);
-    //                 }
-    //                 else{
-    //                     $this->db->trans_rollback();
-
-    //                     $actionObj=new stdClass();
-    //                     $actionObj->icon='fas fa-warning';
-    //                     $actionObj->title='';
-    //                     $actionObj->message='Record Error, Payment amount not equal payment type amount.';
-    //                     $actionObj->url='';
-    //                     $actionObj->target='_blank';
-    //                     $actionObj->type='danger';
-
-    //                     $actionJSON=json_encode($actionObj);
-                        
-    //                     $obj=new stdClass();
-    //                     $obj->status=0;
-    //                     $obj->action=$actionJSON;
-
-    //                     echo json_encode($obj);
-    //                 }                                       
-    //             } else {
-    //                 $this->db->trans_rollback();
-
-    //                 $actionObj=new stdClass();
-    //                 $actionObj->icon='fas fa-warning';
-    //                 $actionObj->title='';
-    //                 $actionObj->message='Record Error';
-    //                 $actionObj->url='';
-    //                 $actionObj->target='_blank';
-    //                 $actionObj->type='danger';
-
-    //                 $actionJSON=json_encode($actionObj);
-                    
-    //                 $obj=new stdClass();
-    //                 $obj->status=0;
-    //                 $obj->action=$actionJSON;
-
-    //                 echo json_encode($obj);
-    //             }
-    //         }
-    //         else{
-    //             $actionObj=new stdClass();
-    //             $actionObj->icon='fas fa-warning';
-    //             $actionObj->title='';
-    //             $actionObj->message='Record Error, Batch no defind by system';
-    //             $actionObj->url='';
-    //             $actionObj->target='_blank';
-    //             $actionObj->type='danger';
-
-    //             $actionJSON=json_encode($actionObj);
-                
-    //             $obj=new stdClass();
-    //             $obj->status=0;
-    //             $obj->action=$actionJSON;
-
-    //             echo json_encode($obj);
-    //         }
-    //     }
-    //     else{
-    //         $this->db->trans_begin();
-
-    //         $this->db->select('batchno, tbl_company_idtbl_company, tbl_company_branch_idtbl_company_branch, tbl_master_idtbl_master, poststatus');
-    //         $this->db->from('tbl_receivable');
-    //         $this->db->where('idtbl_receivable', $recordID);
-    //         $this->db->where('status', 1);
-
-    //         $respond=$this->db->get();
-            
-    //         $this->db->where('tbl_receivable_idtbl_receivable', $recordID);
-    //         $this->db->delete('tbl_receivable_info');
-
-    //         $data = array(
-    //             'amount'=> $invoicepayamount, 
-    //             'narration'=> $narration, 
-    //             'chequedate'=> $chequedate, 
-    //             'chequeno'=> $chequeno,  
-    //             'editstatus' => '0',
-    //             'status'=> '1', 
-    //             'updateuser'=> $userID, 
-    //             'updatedatetime'=> $updatedatetime,
-    //             'tbl_receivable_type_idtbl_receivable_type'=> $receivabletype,
-    //             'tbl_account_idtbl_account'=> $chartaccount,
-    //             'tbl_account_detail_idtbl_account_detail'=> $detailaccount
-    //         );
-    
-    //         $this->db->where('idtbl_receivable', $recordID);
-    //         $this->db->update('tbl_receivable', $data);
-
-    //         if($respond->row(0)->poststatus==0){
-    //             foreach($invoicedata as $rowinvoicedata){
-    //                 $narration=$rowinvoicedata['col_2'].' - '.$rowinvoicedata['col_4'];
-    //                 $datasub = array(
-    //                     'invoiceno'=> $rowinvoicedata['col_4'], 
-    //                     'narration'=> $narration, 
-    //                     'amount'=> $rowinvoicedata['col_5'], 
-    //                     'status'=> '1', 
-    //                     'insertdatetime'=> $updatedatetime, 
-    //                     'tbl_user_idtbl_user'=> $userID,
-    //                     'tbl_receivable_idtbl_receivable'=> $recordID,
-    //                 );
-
-    //                 $this->db->insert('tbl_receivable_info', $datasub);
-    //             }
-
-    //             $this->db->trans_complete();
-    //             if ($this->db->trans_status() === TRUE) {
-    //                 $this->db->trans_commit();
-                    
-    //                 $actionObj=new stdClass();
-    //                 $actionObj->icon='fas fa-save';
-    //                 $actionObj->title='';
-    //                 $actionObj->message='Record Added Successfully';
-    //                 $actionObj->url='';
-    //                 $actionObj->target='_blank';
-    //                 $actionObj->type='success';
-
-    //                 $actionJSON=json_encode($actionObj);
-                    
-    //                 $obj=new stdClass();
-    //                 $obj->status=1;
-    //                 $obj->action=$actionJSON;
-
-    //                 echo json_encode($obj);
-    //             } else {
-    //                 $this->db->trans_rollback();
-
-    //                 $actionObj=new stdClass();
-    //                 $actionObj->icon='fas fa-warning';
-    //                 $actionObj->title='';
-    //                 $actionObj->message='Record Error';
-    //                 $actionObj->url='';
-    //                 $actionObj->target='_blank';
-    //                 $actionObj->type='danger';
-
-    //                 $actionJSON=json_encode($actionObj);
-                    
-    //                 $obj=new stdClass();
-    //                 $obj->status=0;
-    //                 $obj->action=$actionJSON;
-
-    //                 echo json_encode($obj);
-    //             }
-    //         }
-    //         else{
-    //             $this->db->trans_commit();
-
-    //             $actionObj=new stdClass();
-    //             $actionObj->icon='fas fa-warning';
-    //             $actionObj->title='';
-    //             $actionObj->message='Record Error. This record already posted.';
-    //             $actionObj->url='';
-    //             $actionObj->target='_blank';
-    //             $actionObj->type='danger';
-
-    //             $actionJSON=json_encode($actionObj);
-                
-    //             $obj=new stdClass();
-    //             $obj->status=0;
-    //             $obj->action=$actionJSON;
-
-    //             echo json_encode($obj);
-    //         }
-    //     }
-    // }
-    // public function Receivablesettleinsertupdate() {
-    //     try {
-    //         $userID = $_SESSION['userid'];
-    //         $detailaccount = 0;
-    //         $chartaccount = 0;
-
-    //         $company = $this->input->post('company');
-    //         $branch = $this->input->post('branch');
-    //         $recsettdate = $this->input->post('recsettdate');
-    //         $customer = $this->input->post('customer');
-    //         $invoicepayamount = str_replace(',', '', $this->input->post('invoicepayamount'));
-    //         $paidamount = str_replace(',', '', $this->input->post('paidamount'));
-    //         $unappliedamount = str_replace(',', '', $this->input->post('unappliedamount'));
-    //         $invoicedata = json_decode($this->input->post('tableData'));
-    //         $paymentdata = json_decode($this->input->post('tableReceData'));
-    //         $unapplydata = json_decode($this->input->post('tableUnapplyData'));
-            
-    //         $chequecashamount = $paidamount;
-
-    //         $recordOption = $this->input->post('recordOption');
-    //         if (!empty($this->input->post('recordID'))) {
-    //             $recordID = $this->input->post('recordID');
-    //         }
-            
-    //         $this->db->trans_begin();
-
-    //         if ($recordOption == 1) {
-    //             $prefix = receiv_prefix($company, $branch);
-    //             $masterdata = get_account_period($company, $branch);
-    //             $batchno = tr_batch_num($prefix, $branch);
-    //             $masterID = $masterdata->idtbl_master;
-
-    //             $this->db->select('tbl_finacial_year.year');
-    //             $this->db->from('tbl_master');
-    //             $this->db->join('tbl_finacial_year', 'tbl_finacial_year.idtbl_finacial_year = tbl_master.tbl_finacial_year_idtbl_finacial_year', 'left');
-    //             $this->db->where('tbl_master.idtbl_master', $masterID);
-
-    //             $respond = $this->db->get();
-    //             $financialYear = substr($respond->row(0)->year, -2);
-                
-    //             $receiptno = tr_batch_num('REC'.$financialYear, $branch);
-    //             $receiptno = preg_replace('/^(.{5})00/', '$1', $receiptno);
-    //         }
-
-    //         $updatedatetime = date('Y-m-d H:i:s');
-    //         $today = date('Y-m-d');
-
-    //         if ($recordOption == 1) {
-    //             if (!empty($batchno)) {
-    //                 $paymentnettotal = 0;
-                    
-    //                 // Create a working copy of invoice data with remaining amounts
-    //                 $invoicePayments = [];
-    //                 foreach ($invoicedata as $invoice) {
-    //                     $invoicePayments[] = [
-    //                         'invoice' => $invoice,
-    //                         'remaining' => floatval(str_replace(',', '', $invoice->amount))
-    //                     ];
-    //                 }
-                    
-    //                 $i = 1;
-    //                 foreach ($paymentdata as $rowpaymentdata):
-    //                     if ($rowpaymentdata->accounttype == 1) {
-    //                         $chartaccount = $rowpaymentdata->chartofaccount;
-    //                         $detailaccount = 0;
-    //                     } else if ($rowpaymentdata->accounttype == 2) {
-    //                         $detailaccount = $rowpaymentdata->chartofaccount;
-    //                         $chartaccount = 0;
-    //                     }
-
-    //                     $data = array(
-    //                         'recdate' => $recsettdate,
-    //                         'receiptno' => $receiptno,
-    //                         'batchno' => $batchno,
-    //                         'payer' => $customer,
-    //                         'amount' => str_replace(',', '', $rowpaymentdata->amount),
-    //                         'narration' => $rowpaymentdata->narration,
-    //                         'chequedate' => $rowpaymentdata->chequedate,
-    //                         'chequeno' => $rowpaymentdata->chequeno,
-    //                         'postdatedstatus' => $rowpaymentdata->postdatedstatus,
-    //                         'poststatus' => '0',
-    //                         'status' => '1',
-    //                         'insertdatetime' => $updatedatetime,
-    //                         'tbl_user_idtbl_user' => $userID,
-    //                         'tbl_receivable_type_idtbl_receivable_type' => $rowpaymentdata->receivabletypeid,
-    //                         'tbl_company_idtbl_company' => $company,
-    //                         'tbl_company_branch_idtbl_company_branch' => $branch,
-    //                         'tbl_master_idtbl_master' => $masterID,
-    //                         'tbl_account_idtbl_account' => $chartaccount,
-    //                         'tbl_account_detail_idtbl_account_detail' => $detailaccount
-    //                     );
-
-    //                     $this->db->insert('tbl_receivable', $data);
-    //                     $receivableID = $this->db->insert_id();
-
-    //                     // Process invoices for this payment
-    //                     $paymentAmount = floatval(str_replace(',', '', $rowpaymentdata->amount));
-                        
-    //                     foreach ($invoicePayments as &$invoicePayment) {
-    //                         // Skip if this invoice is already fully paid
-    //                         if ($invoicePayment['remaining'] <= 0) {
-    //                             continue;
-    //                         }
-                            
-    //                         $balanceamount = 0;
-    //                         $invoiceRemaining = $invoicePayment['remaining'];
-    //                         $narration = $invoicePayment['invoice']->customer . ' - ' . $invoicePayment['invoice']->invoiceno;
-                            
-    //                         if ($paymentAmount > 0) {
-    //                             if ($paymentAmount >= $invoiceRemaining) {
-    //                                 // Full payment for this invoice
-    //                                 $invoicepayamount = $invoiceRemaining;
-    //                                 $paymentAmount = $paymentAmount - $invoiceRemaining;
-    //                                 $invoicePayment['remaining'] = 0;
-                                    
-    //                                 // Update the original invoice amount for consistency
-    //                                 $invoicePayment['invoice']->amount = '0.00';
-
-    //                                 if(count($paymentdata) == $i && $paymentAmount > 0):
-    //                                     $balanceamount = $paymentAmount;
-    //                                 endif;
-    //                             } else {
-    //                                 // Partial payment
-    //                                 $invoicepayamount = $paymentAmount;
-    //                                 $invoicePayment['remaining'] = $invoiceRemaining - $paymentAmount;
-                                    
-    //                                 // Update the original invoice amount for consistency
-    //                                 $invoicePayment['invoice']->amount = number_format($invoicePayment['remaining'], 2);
-                                    
-    //                                 $paymentAmount = 0;
-    //                             }
-                                
-    //                             // Insert payment record for this invoice
-    //                             $datasub = array(
-    //                                 'invoiceno' => $invoicePayment['invoice']->invid,
-    //                                 'narration' => $narration,
-    //                                 'amount' => $invoicepayamount,
-    //                                 'overpayment' => $balanceamount,
-    //                                 'overpaysetoff' => '0',
-    //                                 'status' => '1',
-    //                                 'insertdatetime' => $updatedatetime,
-    //                                 'tbl_user_idtbl_user' => $userID,
-    //                                 'tbl_receivable_idtbl_receivable' => $receivableID,
-    //                             );
-                                
-    //                             $this->db->insert('tbl_receivable_info', $datasub);
-
-    //                             $receivabledetailID = $this->db->insert_id();
-    //                         }
-                            
-    //                         // Break if payment amount is exhausted
-    //                         if ($paymentAmount <= 0) {
-    //                             break;
-    //                         }
-
-    //                     }
-    //                     $i++;
-
-    //                     $paymentnettotal = $paymentnettotal + str_replace(',', '', $rowpaymentdata->amount);
-    //                 endforeach;
-
-    //                 $paymentnettotal = $paymentnettotal + $unappliedamount;
-
-    //                 if ($paymentnettotal != $paidamount) {
-    //                     throw new Exception('Payment amount not equal payment paid nettotal.');
-    //                 }
-
-    //                 if ($this->db->trans_status() === FALSE) {
-    //                     throw new Exception('Transaction failed');
-    //                 }
-
-    //                 // $this->db->trans_commit();
-
-    //                 // $actionObj = new stdClass();
-    //                 // $actionObj->icon = 'fas fa-save';
-    //                 // $actionObj->title = '';
-    //                 // $actionObj->message = 'Record Added Successfully';
-    //                 // $actionObj->url = '';
-    //                 // $actionObj->target = '_blank';
-    //                 // $actionObj->type = 'success';
-
-    //                 // $actionJSON = json_encode($actionObj);
-                    
-    //                 // $obj = new stdClass();
-    //                 // $obj->status = 1;
-    //                 // $obj->action = $actionJSON;
-
-    //                 // echo json_encode($obj);
-    //             } else {
-    //                 throw new Exception("Batch no defined by system");                 
-    //             }
-    //         } 
-    //     }
-    //     catch (Exception $e) {
-    //         $this->db->trans_rollback();
-            
-    //         error_log("Record Error: " . $e->getMessage());
-            
-    //         $actionObj = new stdClass();
-    //         $actionObj->icon = 'fas fa-exclamation-triangle';
-    //         $actionObj->title = '';
-    //         $actionObj->message = 'Record Error: ' . $e->getMessage();
-    //         $actionObj->url = '';
-    //         $actionObj->target = '_blank';
-    //         $actionObj->type = 'danger';
-
-    //         $obj = new stdClass();
-    //         $obj->status = 0;
-    //         $obj->action = $actionJSON;
-
-    //         echo json_encode($obj);
-    //     }
-    // }
-    
-    // public function Receivablesettleinsertupdate() {
-    //     try {
-    //         $userID = $_SESSION['userid'];
-    //         $detailaccount = 0;
-    //         $chartaccount  = 0;
-
-    //         $company          = $this->input->post('company');
-    //         $branch           = $this->input->post('branch');
-    //         $recsettdate      = $this->input->post('recsettdate');
-    //         $customer         = $this->input->post('customer');
-    //         $invoicepayamount = str_replace(',', '', $this->input->post('invoicepayamount'));
-    //         $paidamount       = str_replace(',', '', $this->input->post('paidamount'));
-    //         $unappliedamount  = str_replace(',', '', $this->input->post('unappliedamount'));
-    //         $creditnotetotal  = str_replace(',', '', $this->input->post('creditnotetotal'));
-    //         $invoicedata      = json_decode($this->input->post('tableData'));
-    //         $paymentdata      = json_decode($this->input->post('tableReceData'));
-    //         $unapplydata      = json_decode($this->input->post('tableUnapplyData'));
-    //         $creditnotedata   = json_decode($this->input->post('tableCreditNoteData')); 
-
-    //         $recordOption = $this->input->post('recordOption');
-    //         if (!empty($this->input->post('recordID'))) {
-    //             $recordID = $this->input->post('recordID');
-    //         }
-
-    //         $this->db->trans_begin();
-
-    //         if ($recordOption == 1) {
-    //             $prefix     = receiv_prefix($company, $branch);
-    //             $masterdata = get_account_period($company, $branch);
-    //             $batchno    = tr_batch_num($prefix, $branch);
-    //             $masterID   = $masterdata->idtbl_master;
-
-    //             $this->db->select('tbl_finacial_year.year');
-    //             $this->db->from('tbl_master');
-    //             $this->db->join('tbl_finacial_year', 'tbl_finacial_year.idtbl_finacial_year = tbl_master.tbl_finacial_year_idtbl_finacial_year', 'left');
-    //             $this->db->where('tbl_master.idtbl_master', $masterID);
-    //             $respond       = $this->db->get();
-    //             $financialYear = substr($respond->row(0)->year, -2);
-
-    //             $receiptno = tr_batch_num('REC' . $financialYear, $branch);
-    //             $receiptno = preg_replace('/^(.{5})00/', '$1', $receiptno);
-    //         }
-
-    //         $updatedatetime = date('Y-m-d H:i:s');
-
-    //         if ($recordOption == 1) {
-    //             if (empty($batchno)) {
-    //                 throw new Exception("Batch no defined by system");
-    //             }
-
-    //             // STEP 1: First, insert all receivable records (payments)
-    //             $receivableIDs = [];
-    //             $paymentnettotal = 0;
-
-    //             //Get Creditor Account
-    //             $this->db->where('tbl_account_allocation.companybank', $company);
-    //             $this->db->where('tbl_account_allocation.branchcompanybank', $branch);
-    //             // $this->db->where('tbl_account.tbl_account_type_idtbl_account_type', 2);
-    //             $this->db->where('tbl_account.specialcate', 35);
-    //             $this->db->where('tbl_account.status', 1);
-    //             $this->db->where('tbl_account_allocation.status', 1);
-    //             $this->db->where('tbl_account_allocation.tbl_account_idtbl_account is NOT NULL', NULL, FALSE);
-    //             $this->db->select('`tbl_account`.`idtbl_account`, `tbl_account`.`accountno`, `tbl_account`.`accountname`');
-    //             $this->db->from('tbl_account');
-    //             $this->db->join('tbl_account_allocation', 'tbl_account_allocation.tbl_account_idtbl_account = tbl_account.idtbl_account', 'left');
-    //             $respondcreditor=$this->db->get();
-
-    //             $this->db->select('tbl_account_detail_idtbl_account_detail');
-    //             $this->db->from('tbl_account_detail_other');
-    //             $this->db->where('tbl_company_idtbl_company', $company);
-    //             $this->db->where('tbl_company_branch_idtbl_company_branch', $branch);
-    //             $this->db->where('otheroptiontype', 2);
-    //             $this->db->where('otheroption', $customer);
-    //             $respondcreditacc = $this->db->get();
-                
-    //             if(!empty($paymentdata)){
-    //                 foreach ($paymentdata as $rowpaymentdata) {
-    //                     if ($rowpaymentdata->accounttype == 1) {
-    //                         $chartaccount  = $rowpaymentdata->chartofaccount;
-    //                         $detailaccount = 0;
-    //                     } elseif ($rowpaymentdata->accounttype == 2) {
-    //                         $detailaccount = $rowpaymentdata->chartofaccount;
-    //                         $chartaccount  = 0;
-    //                     }
-                        
-    //                     $paymentAmount = floatval(str_replace(',', '', $rowpaymentdata->amount));
-                        
-    //                     // Insert tbl_receivable
-    //                     $data = [
-    //                         'recdate'                                   => $recsettdate,
-    //                         'receiptno'                                 => $receiptno,
-    //                         'batchno'                                   => $batchno,
-    //                         'payer'                                     => $customer,
-    //                         'amount'                                    => $paymentAmount,
-    //                         'narration'                                 => $rowpaymentdata->narration,
-    //                         'chequedate'                                => $rowpaymentdata->chequedate,
-    //                         'chequeno'                                  => $rowpaymentdata->chequeno,
-    //                         'postdatedstatus'                           => $rowpaymentdata->postdatedstatus,
-    //                         'poststatus'                                => '0',
-    //                         'status'                                    => '1',
-    //                         'insertdatetime'                            => $updatedatetime,
-    //                         'tbl_user_idtbl_user'                       => $userID,
-    //                         'tbl_receivable_type_idtbl_receivable_type' => $rowpaymentdata->receivabletypeid,
-    //                         'tbl_company_idtbl_company'                 => $company,
-    //                         'tbl_company_branch_idtbl_company_branch'   => $branch,
-    //                         'tbl_master_idtbl_master'                   => $masterID,
-    //                         'tbl_account_idtbl_account'                 => $chartaccount,
-    //                         'tbl_account_detail_idtbl_account_detail'   => $detailaccount,
-    //                     ];
-    //                     $this->db->insert('tbl_receivable', $data);
-    //                     $receivableID = $this->db->insert_id();
-
-    //                     // Debit entry start
-    //                     $dataentrylist[] = [
-    //                         'tratype' => 'D',
-    //                         'amount' => $paymentAmount,
-    //                         'narration' => $rowpaymentdata->narration,
-    //                         'chartaccount' => $chartaccount,
-    //                         'detailaccount' => $detailaccount
-    //                     ];
-    //                     // Debit entry end
-
-    //                     // Credit entry start                       
-    //                     if(empty($respondcreditacc->result())):
-    //                         if(empty($respondcreditor->result())){
-    //                             throw new Exception("You don't have trade debtor account or debtor account");
-    //                         }
-
-    //                         $dataentrylist[] = [
-    //                             'tratype' => 'C',
-    //                             'amount' => $paymentAmount,
-    //                             'narration' => $rowpaymentdata->narration,
-    //                             'chartaccount' => $respondcreditor->row(0)->idtbl_account,
-    //                             'detailaccount' => 0
-    //                         ];
-    //                     else:
-    //                         $dataentrylist[] = [
-    //                             'tratype' => 'C',
-    //                             'amount' => $paymentAmount,
-    //                             'narration' => $rowpaymentdata->narration,
-    //                             'chartaccount' => 0,
-    //                             'detailaccount' => $respondcreditacc->row(0)->tbl_account_detail_idtbl_account_detail
-    //                         ];
-    //                     endif;
-    //                     // Credit entry end
-                        
-    //                     $receivableIDs[] = [
-    //                         'id' => $receivableID,
-    //                         'amount' => $paymentAmount,
-    //                         'data' => $rowpaymentdata
-    //                     ];
-                        
-    //                     $paymentnettotal += $paymentAmount;
-    //                 }
-    //             }
-    //             else{
-    //                 $paymentAmount = floatval(str_replace(',', '', $unappliedamount));
-
-    //                 // Insert tbl_receivable
-    //                 $data = [
-    //                     'recdate'                                   => $recsettdate,
-    //                     'receiptno'                                 => $receiptno,
-    //                     'batchno'                                   => $batchno,
-    //                     'payer'                                     => $customer,
-    //                     'amount'                                    => $paymentAmount,
-    //                     'narration'                                 => 'Unpaid amount from previous overpayment',
-    //                     'postdatedstatus'                           => '0',
-    //                     'poststatus'                                => '1',
-    //                     'status'                                    => '1',
-    //                     'insertdatetime'                            => $updatedatetime,
-    //                     'tbl_user_idtbl_user'                       => $userID,
-    //                     'tbl_receivable_type_idtbl_receivable_type' => '5', // Assuming 5 is the ID for "Unapplied Amount" type
-    //                     'tbl_company_idtbl_company'                 => $company,
-    //                     'tbl_company_branch_idtbl_company_branch'   => $branch,
-    //                     'tbl_master_idtbl_master'                   => $masterID,
-    //                     'tbl_account_idtbl_account'                 => $chartaccount,
-    //                     'tbl_account_detail_idtbl_account_detail'   => $detailaccount,
-    //                 ];
-    //                 $this->db->insert('tbl_receivable', $data);
-    //                 $receivableID = $this->db->insert_id();
-
-    //                 // Debit entry start
-    //                 $dataentrylist[] = [
-    //                     'tratype' => 'D',
-    //                     'amount' => $paymentAmount,
-    //                     'narration' => 'Unpaid amount from previous overpayment',
-    //                     'chartaccount' => $chartaccount,
-    //                     'detailaccount' => $detailaccount
-    //                 ];
-    //                 // Debit entry end
-
-    //                 // Credit entry start
-    //                 if(empty($respondcreditacc->result())):
-    //                     if(empty($respondcreditor->result())){
-    //                         throw new Exception("You don't have trade debtor account or debtor account");
-    //                     }
-
-    //                     $dataentrylist[] = [
-    //                         'tratype' => 'C',
-    //                         'amount' => $paymentAmount,
-    //                         'narration' => 'Unpaid amount from previous overpayment',
-    //                         'chartaccount' => $respondcreditor->row(0)->idtbl_account,
-    //                         'detailaccount' => 0
-    //                     ];
-    //                 else:
-    //                     $dataentrylist[] = [
-    //                         'tratype' => 'C',
-    //                         'amount' => $paymentAmount,
-    //                         'narration' => 'Unpaid amount from previous overpayment',
-    //                         'chartaccount' => 0,
-    //                         'detailaccount' => $respondcreditacc->row(0)->tbl_account_detail_idtbl_account_detail
-    //                     ];
-    //                 endif;
-    //                 // Debit entry end
-                    
-    //                 $receivableIDs[] = [
-    //                     'id' => $receivableID,
-    //                     'amount' => $paymentAmount,
-    //                     'data' => ''
-    //                 ];
-                    
-    //                 $paymentnettotal += $paymentAmount;
-    //             }
-
-    //             foreach($dataentrylist as $rowdataentrylist){
-    //                 $datalist = [
-    //                     'transdate' => $recsettdate, 
-    //                     'batchno' => $batchno, 
-    //                     'tratype' => $rowdataentrylist['tratype'], 
-    //                     'amount' => $rowdataentrylist['amount'], 
-    //                     'narration' => $rowdataentrylist['narration'], 
-    //                     'poststatus' => '0', 
-    //                     'status' => '1', 
-    //                     'insertdatetime' => $updatedatetime, 
-    //                     'tbl_user_idtbl_user' => $userID, 
-    //                     'tbl_company_idtbl_company' => $company, 
-    //                     'tbl_company_branch_idtbl_company_branch' => $branch, 
-    //                     'tbl_master_idtbl_master' => $masterID, 
-    //                     'tbl_receivable_idtbl_receivable' => $receivableID, 
-    //                     'tbl_account_idtbl_account' => $rowdataentrylist['chartaccount'], 
-    //                     'tbl_account_detail_idtbl_account_detail' => $rowdataentrylist['detailaccount']
-    //                 ];
-                    
-    //                 $this->db->insert('tbl_receivable_entry', $datalist);
-    //             }
-
-    //             // Build working invoice list with remaining balances
-    //             $invoicePayments = [];
-    //             foreach ($invoicedata as $invoice) {
-    //                 $invoicePayments[] = [
-    //                     'invoice'   => $invoice,
-    //                     'remaining' => floatval(str_replace(',', '', $invoice->amount)),
-    //                     'invoice_no' => $invoice->invoiceno,
-    //                     'invoice_id' => $invoice->invid,
-    //                     'paid_amount' => 0
-    //                 ];
-    //             }
-                
-    //             $totalUnappliedUsed = 0;
-    //             $totalOverpaymentFromCurrent = 0;
-                
-    //             // STEP 2: Apply unapplied amounts from previous overpayments to current invoices
-    //             // This creates receivable_info records linked to the FIRST receivable record
-    //             // (or you can distribute across multiple receivables based on your logic)
-    //             if (!empty($unapplydata) && !empty($receivableIDs)) {
-    //                 $targetReceivableID = $receivableIDs[0]['id']; // Link to first payment record
-                    
-    //                 foreach ($unapplydata as $unapplied) {
-    //                     $sourceInfoID  = intval($unapplied->receivableinfoid);
-    //                     $unappliedPool = floatval(str_replace(',', '', $unapplied->unappliedamount));
-                        
-    //                     if ($unappliedPool <= 0 || $sourceInfoID <= 0) {
-    //                         continue;
-    //                     }
-                        
-    //                     // Fetch source overpayment row
-    //                     $this->db->select('idtbl_receivable_info, overpayment, overpaysetoff');
-    //                     $this->db->from('tbl_receivable_info');
-    //                     $this->db->where('idtbl_receivable_info', $sourceInfoID);
-    //                     $sourceRow = $this->db->get()->row();
-                        
-    //                     if (!$sourceRow) {
-    //                         throw new Exception("Unapplied record ID {$sourceInfoID} not found.");
-    //                     }
-                        
-    //                     $availableBalance = floatval($sourceRow->overpayment);
-                        
-    //                     if (round($unappliedPool, 2) > round($availableBalance, 2)) {
-    //                         throw new Exception("Unapplied amount ({$unappliedPool}) exceeds available balance ({$availableBalance}) for record ID {$sourceInfoID}.");
-    //                     }
-                        
-    //                     // Apply to invoices
-    //                     $remainingPool = $unappliedPool;
-    //                     $totalAppliedToInvoices = 0;
-    //                     $lastInvoiceProcessed = null;
-    //                     $lastApplyAmount = 0;
-                        
-    //                     foreach ($invoicePayments as $index => &$invoicePayment) {
-    //                         if ($invoicePayment['remaining'] <= 0 || $remainingPool <= 0) {
-    //                             continue;
-    //                         }
-                            
-    //                         // Check if this is the last invoice that will receive this unapplied amount
-    //                         $isLastInvoice = false;
-    //                         $remainingInvoicesAfterThis = 0;
-                            
-    //                         for ($i = $index + 1; $i < count($invoicePayments); $i++) {
-    //                             if ($invoicePayments[$i]['remaining'] > 0) {
-    //                                 $remainingInvoicesAfterThis++;
-    //                             }
-    //                         }
-                            
-    //                         if ($remainingInvoicesAfterThis == 0) {
-    //                             $isLastInvoice = true;
-    //                         }
-                            
-    //                         $applyAmount = min($remainingPool, $invoicePayment['remaining']);
-                            
-    //                         if ($isLastInvoice && $remainingPool > $invoicePayment['remaining']) {
-    //                             // This is the last invoice and we have more unapplied amount than invoice balance
-    //                             // The excess will become a NEW overpayment on this invoice
-    //                             $actualApplyAmount = $invoicePayment['remaining'];
-    //                             $newOverpaymentAmount = $remainingPool - $actualApplyAmount;
-                                
-    //                             // Insert receivable_info for unapplied amount usage with overpayment
-    //                             $this->db->insert('tbl_receivable_info', [
-    //                                 'invoiceno'                       => $invoicePayment['invoice_id'],
-    //                                 'narration'                       => "Unapplied amount used from previous overpayment",
-    //                                 'amount'                          => $actualApplyAmount,
-    //                                 'overpayment'                     => $newOverpaymentAmount,  // New overpayment created
-    //                                 'overpaysetoff'                   => 0,
-    //                                 'setoff_receivable_info_id'       => $sourceInfoID,
-    //                                 'status'                          => '1',
-    //                                 'insertdatetime'                  => $updatedatetime,
-    //                                 'tbl_user_idtbl_user'             => $userID,
-    //                                 'tbl_receivable_idtbl_receivable' => $targetReceivableID,
-    //                             ]);
-                                
-    //                             $invoicePayment['remaining'] = 0;
-    //                             $invoicePayment['paid_amount'] += $actualApplyAmount;
-    //                             $remainingPool = 0;
-    //                             $totalAppliedToInvoices += $actualApplyAmount;
-    //                             $totalUnappliedUsed += $actualApplyAmount;
-                                
-    //                             // Track that we created a new overpayment
-    //                             if ($newOverpaymentAmount > 0) {
-    //                                 $totalOverpaymentFromCurrent += $newOverpaymentAmount;
-    //                             }
-                                
-    //                         } else {
-    //                             // Normal application without creating new overpayment
-    //                             $this->db->insert('tbl_receivable_info', [
-    //                                 'invoiceno'                       => $invoicePayment['invoice_id'],
-    //                                 'narration'                       => "Unapplied amount used from previous overpayment",
-    //                                 'amount'                          => $applyAmount,
-    //                                 'overpayment'                     => 0,
-    //                                 'overpaysetoff'                   => 0,
-    //                                 'setoff_receivable_info_id'       => $sourceInfoID,
-    //                                 'status'                          => '1',
-    //                                 'insertdatetime'                  => $updatedatetime,
-    //                                 'tbl_user_idtbl_user'             => $userID,
-    //                                 'tbl_receivable_idtbl_receivable' => $targetReceivableID,
-    //                             ]);
-                                
-    //                             $invoicePayment['remaining'] -= $applyAmount;
-    //                             $invoicePayment['paid_amount'] += $applyAmount;
-    //                             $remainingPool -= $applyAmount;
-    //                             $totalAppliedToInvoices += $applyAmount;
-    //                             $totalUnappliedUsed += $applyAmount;
-    //                         }
-                            
-    //                         if ($remainingPool <= 0) {
-    //                             break;
-    //                         }
-    //                     }
-    //                     unset($invoicePayment);
-                        
-    //                     // Calculate new balance after applying to invoices
-    //                     $amountConsumed = $unappliedPool - $remainingPool;
-    //                     $newBalance = round($availableBalance - $amountConsumed, 2);
-                        
-    //                     // Update the source overpayment row
-    //                     $updateData = [
-    //                         'overpayment' => $newBalance,
-    //                         'overpaysetoff' => ($newBalance <= 0) ? 1 : 0
-    //                     ];
-                        
-    //                     $this->db->where('idtbl_receivable_info', $sourceInfoID);
-    //                     $this->db->update('tbl_receivable_info', $updateData);
-                        
-    //                     // If there's remaining overpayment that wasn't used (partial usage),
-    //                     // it will stay in the source record for future use
-    //                     if ($newBalance > 0) {
-    //                         error_log("Remaining overpayment of {$newBalance} for record ID {$sourceInfoID}");
-    //                     }
-    //                 }
-    //             }
-                
-    //             // STEP 3: Apply current payments to invoices
-    //             $receivableIndex = 0;
-    //             $totalOverpaymentFromCurrent = 0;
-
-    //             foreach ($receivableIDs as $receivable) {
-    //                 $receivableID = $receivable['id'];
-    //                 $paymentAmount = $receivable['amount'];
-    //                 $remainingPayment = $paymentAmount;
-                    
-    //                 // Apply to invoices that still have remaining balance
-    //                 $invoiceProcessed = false;
-                    
-    //                 foreach ($invoicePayments as $index => &$invoicePayment) {
-    //                     if ($invoicePayment['remaining'] <= 0) {
-    //                         continue;
-    //                     }
-                        
-    //                     if ($remainingPayment <= 0) {
-    //                         break;
-    //                     }
-                        
-    //                     $invoiceRemaining = $invoicePayment['remaining'];
-    //                     $narration = $invoicePayment['invoice_no'];
-                        
-    //                     // Check if this is the last invoice with balance
-    //                     $isLastInvoice = true;
-    //                     foreach ($invoicePayments as $checkIndex => $checkInvoice) {
-    //                         if ($checkIndex > $index && $checkInvoice['remaining'] > 0) {
-    //                             $isLastInvoice = false;
-    //                             break;
-    //                         }
-    //                     }
-                        
-    //                     if ($remainingPayment >= $invoiceRemaining) {
-    //                         // Can cover full invoice
-    //                         if ($isLastInvoice) {
-    //                             // Last invoice - any excess becomes overpayment
-    //                             $overpaymentAmount = $remainingPayment - $invoiceRemaining;
-                                
-    //                             $receivableInfoData = [
-    //                                 'invoiceno'                       => $invoicePayment['invoice_id'],
-    //                                 'narration'                       => $narration,
-    //                                 'amount'                          => $invoiceRemaining,
-    //                                 'overpayment'                     => $overpaymentAmount,
-    //                                 'overpaysetoff'                   => 0,
-    //                                 'setoff_receivable_info_id'       => 0,
-    //                                 'status'                          => '1',
-    //                                 'insertdatetime'                  => $updatedatetime,
-    //                                 'tbl_user_idtbl_user'             => $userID,
-    //                                 'tbl_receivable_idtbl_receivable' => $receivableID,
-    //                             ];
-                                
-    //                             $this->db->insert('tbl_receivable_info', $receivableInfoData);
-                                
-    //                             if ($overpaymentAmount > 0) {
-    //                                 $totalOverpaymentFromCurrent += $overpaymentAmount;
-    //                             }
-                                
-    //                             $invoicePayment['remaining'] = 0;
-    //                             $invoicePayment['paid_amount'] += $invoiceRemaining;
-    //                             $remainingPayment = 0;
-                                
-    //                         } else {
-    //                             // Not last invoice, no overpayment
-    //                             $this->db->insert('tbl_receivable_info', [
-    //                                 'invoiceno'                       => $invoicePayment['invoice_id'],
-    //                                 'narration'                       => $narration,
-    //                                 'amount'                          => $invoiceRemaining,
-    //                                 'overpayment'                     => 0,
-    //                                 'overpaysetoff'                   => 0,
-    //                                 'setoff_receivable_info_id'       => 0,
-    //                                 'status'                          => '1',
-    //                                 'insertdatetime'                  => $updatedatetime,
-    //                                 'tbl_user_idtbl_user'             => $userID,
-    //                                 'tbl_receivable_idtbl_receivable' => $receivableID,
-    //                             ]);
-                                
-    //                             $invoicePayment['remaining'] = 0;
-    //                             $invoicePayment['paid_amount'] += $invoiceRemaining;
-    //                             $remainingPayment -= $invoiceRemaining;
-    //                         }
-                            
-    //                     } else {
-    //                         // Partial payment
-    //                         $this->db->insert('tbl_receivable_info', [
-    //                             'invoiceno'                       => $invoicePayment['invoice_id'],
-    //                             'narration'                       => $narration,
-    //                             'amount'                          => $remainingPayment,
-    //                             'overpayment'                     => 0,
-    //                             'overpaysetoff'                   => 0,
-    //                             'setoff_receivable_info_id'       => 0,
-    //                             'status'                          => '1',
-    //                             'insertdatetime'                  => $updatedatetime,
-    //                             'tbl_user_idtbl_user'             => $userID,
-    //                             'tbl_receivable_idtbl_receivable' => $receivableID,
-    //                         ]);
-                            
-    //                         $invoicePayment['remaining'] -= $remainingPayment;
-    //                         $invoicePayment['paid_amount'] += $remainingPayment;
-    //                         $remainingPayment = 0;
-    //                     }
-    //                 }
-    //                 unset($invoicePayment);
-                    
-    //                 $receivableIndex++;
-    //             }
-                
-    //             // STEP 4: Validation
-    //             if(empty($paymentdata)){$totalUnappliedUsed=0;}
-    //             $grandTotal = round($paymentnettotal + $totalUnappliedUsed, 2);
-    //             $expectedTotal = round($paidamount, 2);
-                
-    //             if ($grandTotal != $expectedTotal) {
-    //                 throw new Exception("Payment total mismatch. Expected: {$expectedTotal}, Got: {$grandTotal}");
-    //             }
-                
-    //             // STEP 5: Check if any invoices are fully paid and update status if needed
-    //             foreach ($invoicePayments as $invoicePayment) {
-    //                 if ($invoicePayment['remaining'] <= 0) {
-    //                     // Optional: Update invoice status in your invoice table
-    //                     // $this->db->where('idtbl_invoice', $invoicePayment['invoice_id']);
-    //                     // $this->db->update('tbl_invoice', ['payment_status' => 'PAID', 'paid_amount' => $invoicePayment['paid_amount']]);
-    //                 }
-    //             }
-                
-    //             if ($this->db->trans_status() === FALSE) {
-    //                 throw new Exception('Transaction failed');
-    //             }
-                
-    //             $this->db->trans_commit();
-                
-    //             $actionObj = new stdClass();
-    //             $actionObj->icon = 'fas fa-save';
-    //             $actionObj->title = '';
-    //             $actionObj->message = 'Record Added Successfully';
-    //             $actionObj->url = '';
-    //             $actionObj->target = '_blank';
-    //             $actionObj->type = 'success';
-                
-    //             $obj = new stdClass();
-    //             $obj->status = 1;
-    //             $obj->action = json_encode($actionObj);
-                
-    //             echo json_encode($obj);
-    //         }
-            
-    //     } catch (Exception $e) {
-    //         $this->db->trans_rollback();
-    //         error_log("Record Error: " . $e->getMessage());
-            
-    //         $actionObj = new stdClass();
-    //         $actionObj->icon = 'fas fa-exclamation-triangle';
-    //         $actionObj->title = '';
-    //         $actionObj->message = 'Record Error: ' . $e->getMessage();
-    //         $actionObj->url = '';
-    //         $actionObj->target = '_blank';
-    //         $actionObj->type = 'danger';
-            
-    //         $obj = new stdClass();
-    //         $obj->status = 0;
-    //         $obj->action = json_encode($actionObj);
-            
-    //         echo json_encode($obj);
-    //     }
-    // }
-    // public function Receivablesettleinsertupdate() {
-    //     try {
-    //         $userID        = $_SESSION['userid'];
-    //         $detailaccount = 0;
-    //         $chartaccount  = 0;
-
-    //         $company          = $this->input->post('company');
-    //         $branch           = $this->input->post('branch');
-    //         $recsettdate      = $this->input->post('recsettdate');
-    //         $customer         = $this->input->post('customer');
-    //         $invoicepayamount = str_replace(',', '', $this->input->post('invoicepayamount'));
-    //         $paidamount       = str_replace(',', '', $this->input->post('paidamount'));
-    //         $unappliedamount  = str_replace(',', '', $this->input->post('unappliedamount'));
-    //         $creditnotetotal  = str_replace(',', '', $this->input->post('creditnotetotal')); // NEW
-    //         $invoicedata      = json_decode($this->input->post('tableData'));
-    //         $paymentdata      = json_decode($this->input->post('tableReceData'));
-    //         $unapplydata      = json_decode($this->input->post('tableUnapplyData'));
-    //         $creditnotedata   = json_decode($this->input->post('tableCreditNoteData'));       // NEW
-
-    //         $recordOption = $this->input->post('recordOption');
-    //         if (!empty($this->input->post('recordID'))) {
-    //             $recordID = $this->input->post('recordID');
-    //         }
-
-    //         $this->db->trans_begin();
-
-    //         if ($recordOption == 1) {
-    //             $masterdata = get_account_period_acco_date($company, $branch, $recsettdate);
-    //             $prefix     = generate_prefix($company, $branch, $recsettdate, 'RE');
-    //             $batchno    = tr_batch_num($prefix, $branch);
-    //             $masterID   = $masterdata->idtbl_master;
-
-    //             $this->db->select('tbl_finacial_year.year');
-    //             $this->db->from('tbl_master');
-    //             $this->db->join('tbl_finacial_year', 'tbl_finacial_year.idtbl_finacial_year = tbl_master.tbl_finacial_year_idtbl_finacial_year', 'left');
-    //             $this->db->where('tbl_master.idtbl_master', $masterID);
-    //             $respond       = $this->db->get();
-    //             $financialYear = substr($respond->row(0)->year, -2);
-
-    //             $receiptno = tr_batch_num('REC' . $financialYear, $branch);
-    //             $receiptno = preg_replace('/^(.{5})00/', '$1', $receiptno);
-    //         }
-
-    //         $updatedatetime = date('Y-m-d H:i:s');
-
-    //         if ($recordOption == 1) {
-    //             if (empty($batchno)) {
-    //                 throw new Exception("Batch no defined by system");
-    //             }
-
-    //             // ═══════════════════════════════════════════════════════
-    //             // Get Creditor (Trade Debtor) Account
-    //             // ═══════════════════════════════════════════════════════
-    //             $this->db->where('tbl_account_allocation.companybank', $company);
-    //             $this->db->where('tbl_account_allocation.branchcompanybank', $branch);
-    //             $this->db->where('tbl_account.specialcate', 35);
-    //             $this->db->where('tbl_account.status', 1);
-    //             $this->db->where('tbl_account_allocation.status', 1);
-    //             $this->db->where('tbl_account_allocation.tbl_account_idtbl_account is NOT NULL', NULL, FALSE);
-    //             $this->db->select('`tbl_account`.`idtbl_account`, `tbl_account`.`accountno`, `tbl_account`.`accountname`');
-    //             $this->db->from('tbl_account');
-    //             $this->db->join('tbl_account_allocation', 'tbl_account_allocation.tbl_account_idtbl_account = tbl_account.idtbl_account', 'left');
-    //             $respondcreditor = $this->db->get();
-
-    //             $this->db->select('tbl_account_detail_idtbl_account_detail');
-    //             $this->db->from('tbl_account_detail_other');
-    //             $this->db->where('tbl_company_idtbl_company', $company);
-    //             $this->db->where('tbl_company_branch_idtbl_company_branch', $branch);
-    //             $this->db->where('otheroptiontype', 2);
-    //             $this->db->where('otheroption', $customer);
-    //             $respondcreditacc = $this->db->get();
-
-
-
-    //             // ─────────────────────────────────────────────────────────
-    //             // STEP 1: Insert receivable payment records
-    //             // ─────────────────────────────────────────────────────────
-    //             $receivableIDs   = [];
-    //             $paymentnettotal = 0;
-    //             $dataentrylist   = [];
-
-    //             if (!empty($paymentdata)) {
-    //                 foreach ($paymentdata as $rowpaymentdata) {
-    //                     if ($rowpaymentdata->accounttype == 1) {
-    //                         $chartaccount  = $rowpaymentdata->chartofaccount;
-    //                         $detailaccount = 0;
-    //                     } elseif ($rowpaymentdata->accounttype == 2) {
-    //                         $detailaccount = $rowpaymentdata->chartofaccount;
-    //                         $chartaccount  = 0;
-    //                     }
-
-    //                     $paymentAmount = floatval(str_replace(',', '', $rowpaymentdata->amount));
-
-    //                     $data = [
-    //                         'recdate'                                   => $recsettdate,
-    //                         'receiptno'                                 => $receiptno,
-    //                         'batchno'                                   => $batchno,
-    //                         'payer'                                     => $customer,
-    //                         'amount'                                    => $paymentAmount,
-    //                         'narration'                                 => $rowpaymentdata->narration,
-    //                         'chequedate'                                => $rowpaymentdata->chequedate,
-    //                         'chequeno'                                  => $rowpaymentdata->chequeno,
-    //                         'postdatedstatus'                           => $rowpaymentdata->postdatedstatus,
-    //                         'poststatus'                                => '0',
-    //                         'status'                                    => '1',
-    //                         'insertdatetime'                            => $updatedatetime,
-    //                         'tbl_user_idtbl_user'                       => $userID,
-    //                         'tbl_receivable_type_idtbl_receivable_type' => $rowpaymentdata->receivabletypeid,
-    //                         'tbl_company_idtbl_company'                 => $company,
-    //                         'tbl_company_branch_idtbl_company_branch'   => $branch,
-    //                         'tbl_master_idtbl_master'                   => $masterID,
-    //                         'tbl_account_idtbl_account'                 => $chartaccount,
-    //                         'tbl_account_detail_idtbl_account_detail'   => $detailaccount,
-    //                     ];
-    //                     $this->db->insert('tbl_receivable', $data);
-    //                     $receivableID = $this->db->insert_id();
-
-    //                     // Debit: Bank/Cash account
-    //                     $dataentrylist[] = [
-    //                         'tratype'       => 'D',
-    //                         'amount'        => $paymentAmount,
-    //                         'narration'     => $rowpaymentdata->narration,
-    //                         'chartaccount'  => $chartaccount,
-    //                         'detailaccount' => $detailaccount
-    //                     ];
-
-    //                     // Credit: Trade Debtor account
-    //                     if (empty($respondcreditacc->result())) {
-    //                         if (empty($respondcreditor->result())) {
-    //                             throw new Exception("You don't have trade debtor account or debtor account");
-    //                         }
-    //                         $dataentrylist[] = [
-    //                             'tratype'       => 'C',
-    //                             'amount'        => $paymentAmount,
-    //                             'narration'     => $rowpaymentdata->narration,
-    //                             'chartaccount'  => $respondcreditor->row(0)->idtbl_account,
-    //                             'detailaccount' => 0
-    //                         ];
-    //                     } else {
-    //                         $dataentrylist[] = [
-    //                             'tratype'       => 'C',
-    //                             'amount'        => $paymentAmount,
-    //                             'narration'     => $rowpaymentdata->narration,
-    //                             'chartaccount'  => 0,
-    //                             'detailaccount' => $respondcreditacc->row(0)->tbl_account_detail_idtbl_account_detail
-    //                         ];
-    //                     }
-
-    //                     $receivableIDs[] = [
-    //                         'id'     => $receivableID,
-    //                         'amount' => $paymentAmount,
-    //                         'data'   => $rowpaymentdata
-    //                     ];
-
-    //                     $paymentnettotal += $paymentAmount;
-    //                 }
-    //             } else {
-    //                 // ── No cash/bank payment — settle via Unapplied / Credit Note / Both ──
-    //                 //
-    //                 // Scenario 1: Credit Note only      (creditnotedata exists, unappliedamount = 0)
-    //                 // Scenario 2: Unapplied only         (unapplydata exists,    creditnotedata empty)
-    //                 // Scenario 3: Credit Note + Unapplied (both exist)
-    //                 //
-    //                 // In all cases we still need ONE tbl_receivable record as a
-    //                 // settlement header (poststatus=1, amount = combined total).
-    //                 // tbl_receivable_entry: no Dr/Cr cash entry — mark only.
-    //                 // ──────────────────────────────────────────────────────────────────────
-
-    //                 $cnOnlyTotal       = floatval(str_replace(',', '', $creditnotetotal));   // gross total of all selected CNs
-    //                 $unappliedOnlyTotal = floatval(str_replace(',', '', $unappliedamount));  // unapplied pool total
-
-    //                 // Combined settlement amount (no real cash involved)
-    //                 $paymentAmount = round($cnOnlyTotal + $unappliedOnlyTotal, 2);
-
-    //                 // Determine narration based on what is being used
-    //                 if ($cnOnlyTotal > 0 && $unappliedOnlyTotal > 0) {
-    //                     $settleNarration = 'Settlement via Credit Note and Unapplied Amount';
-    //                 } elseif ($cnOnlyTotal > 0) {
-    //                     $settleNarration = 'Settlement via Credit Note';
-    //                 } else {
-    //                     $settleNarration = 'Settlement via Unapplied Amount';
-    //                 }
-
-    //                 if ($paymentAmount <= 0) {
-    //                     throw new Exception("No valid settlement amount found (credit note or unapplied amount required).");
-    //                 }
-
-    //                 // Insert one tbl_receivable record as settlement header
-    //                 $this->db->insert('tbl_receivable', [
-    //                     'recdate'                                   => $recsettdate,
-    //                     'receiptno'                                 => $receiptno,
-    //                     'batchno'                                   => $batchno,
-    //                     'payer'                                     => $customer,
-    //                     'amount'                                    => $paymentAmount,
-    //                     'narration'                                 => $settleNarration,
-    //                     'postdatedstatus'                           => '0',
-    //                     'poststatus'                                => '1',   // mark-only, no actual cash posting
-    //                     'status'                                    => '1',
-    //                     'insertdatetime'                            => $updatedatetime,
-    //                     'tbl_user_idtbl_user'                       => $userID,
-    //                     'tbl_receivable_type_idtbl_receivable_type' => '5',   // type 5 = non-cash settlement
-    //                     'tbl_company_idtbl_company'                 => $company,
-    //                     'tbl_company_branch_idtbl_company_branch'   => $branch,
-    //                     'tbl_master_idtbl_master'                   => $masterID,
-    //                     'tbl_account_idtbl_account'                 => 0,
-    //                     'tbl_account_detail_idtbl_account_detail'   => 0,
-    //                 ]);
-    //                 $receivableID = $this->db->insert_id();
-
-    //                 // No Dr/Cr accounting entries needed here:
-    //                 //   - Credit note entries were already posted when CN was created
-    //                 //   - Unapplied amount entries were already posted in original payment
-    //                 // tbl_receivable_entry insert is skipped intentionally for this path.
-
-    //                 $receivableIDs[] = ['id' => $receivableID, 'amount' => $paymentAmount, 'data' => ''];
-    //                 $paymentnettotal += $paymentAmount;
-    //             }
-
-    //             // Insert accounting entries for cash/bank payments only
-    //             // (else path — CN/unapplied only — has no entries, $dataentrylist is empty → loop skips)
-    //             foreach ($dataentrylist as $rowdataentrylist) {
-    //                 $datalist = [
-    //                     'transdate'                                => $recsettdate,
-    //                     'batchno'                                  => $batchno,
-    //                     'tratype'                                  => $rowdataentrylist['tratype'],
-    //                     'amount'                                   => $rowdataentrylist['amount'],
-    //                     'narration'                                => $rowdataentrylist['narration'],
-    //                     'poststatus'                               => '0',
-    //                     'status'                                   => '1',
-    //                     'insertdatetime'                           => $updatedatetime,
-    //                     'tbl_user_idtbl_user'                      => $userID,
-    //                     'tbl_company_idtbl_company'                => $company,
-    //                     'tbl_company_branch_idtbl_company_branch'  => $branch,
-    //                     'tbl_master_idtbl_master'                  => $masterID,
-    //                     'tbl_receivable_idtbl_receivable'          => $receivableID,
-    //                     'tbl_account_idtbl_account'                => $rowdataentrylist['chartaccount'],
-    //                     'tbl_account_detail_idtbl_account_detail'  => $rowdataentrylist['detailaccount']
-    //                 ];
-    //                 $this->db->insert('tbl_receivable_entry', $datalist);
-    //             }
-
-    //             // Build working invoice list
-    //             $invoicePayments = [];
-    //             foreach ($invoicedata as $invoice) {
-    //                 $invoicePayments[] = [
-    //                     'invoice'     => $invoice,
-    //                     'remaining'   => floatval(str_replace(',', '', $invoice->amount)),
-    //                     'invoice_no'  => $invoice->invoiceno,
-    //                     'invoice_id'  => $invoice->invid,
-    //                     'paid_amount' => 0
-    //                 ];
-    //             }
-
-    //             $totalUnappliedUsed = 0;
-    //             $totalCreditNoteUsed = 0;  // NEW
-
-    //             // ═══════════════════════════════════════════════════════════════════════
-    //             // STEP 2: Apply credit notes to invoices (mark only — no accounting entries)
-    //             //
-    //             // $creditnotedata already has subtotal, vat, amount from the UI selection.
-    //             // We use those values directly — no proportional calculation needed.
-    //             //
-    //             // Per credit note:
-    //             //   1. Validate — exists, status=1, claimstatus != 1
-    //             //   2. Apply gross amount to invoice balances → insert tbl_receivable_info
-    //             //   3. Insert tbl_account_creditnote_settle
-    //             //   4. Update tbl_account_creditnote settle totals + claimstatus
-    //             // ═══════════════════════════════════════════════════════════════════════
-    //             if (!empty($creditnotedata) && !empty($receivableIDs)) {
-    //                 $targetReceivableID = $receivableIDs[0]['id'];
-
-    //                 foreach ($creditnotedata as $rowcn) {
-    //                     $creditNoteID  = intval($rowcn->creditnoteid);
-    //                     $cnGrossAmount = floatval(str_replace(',', '', $rowcn->amount));
-    //                     $cnNarration   = 'Credit Note: ' . $rowcn->creditnoteno;
-
-    //                     if ($cnGrossAmount <= 0 || $creditNoteID <= 0) {
-    //                         continue;
-    //                     }
-
-    //                     // ── 1. Validate ───────────────────────────────────────────────
-    //                     $this->db->select('idtbl_account_creditnote, creditnoteno, nettotal,
-    //                                     claimstatus, settleamount');
-    //                     $this->db->from('tbl_account_creditnote');
-    //                     $this->db->where('idtbl_account_creditnote', $creditNoteID);
-    //                     $this->db->where('status', 1);
-    //                     $cnRow = $this->db->get()->row();
-
-    //                     if (!$cnRow) {
-    //                         throw new Exception("Credit Note ID {$creditNoteID} not found or inactive.");
-    //                     }
-    //                     if ($cnRow->claimstatus == 1) {
-    //                         throw new Exception("Credit Note '{$cnRow->creditnoteno}' is already fully claimed.");
-    //                     }
-
-    //                     // ── 2. Apply to invoices + insert tbl_receivable_info ─────────
-    //                     $remainingCN = $cnGrossAmount;  // use directly — no min/proportion needed
-
-    //                     foreach ($invoicePayments as $index => &$invoicePayment) {
-    //                         if ($invoicePayment['remaining'] <= 0 || $remainingCN <= 0) {
-    //                             continue;
-    //                         }
-
-    //                         $invoiceRemaining = $invoicePayment['remaining'];
-
-    //                         // Is this the last invoice with a remaining balance?
-    //                         $isLastInvoice = true;
-    //                         for ($i = $index + 1; $i < count($invoicePayments); $i++) {
-    //                             if ($invoicePayments[$i]['remaining'] > 0) {
-    //                                 $isLastInvoice = false;
-    //                                 break;
-    //                             }
-    //                         }
-
-    //                         if ($remainingCN >= $invoiceRemaining) {
-    //                             if ($isLastInvoice && $remainingCN > $invoiceRemaining) {
-    //                                 // Last invoice, CN has excess → overpayment
-    //                                 $this->db->insert('tbl_receivable_info', [
-    //                                     'invoiceno'                       => $invoicePayment['invoice_id'],
-    //                                     'narration'                       => $cnNarration,
-    //                                     'amount'                          => $invoiceRemaining,
-    //                                     'overpayment'                     => $remainingCN - $invoiceRemaining,
-    //                                     'overpaysetoff'                   => 0,
-    //                                     'setoff_receivable_info_id'       => 0,
-    //                                     'creditnote_id'                   => $creditNoteID,
-    //                                     'status'                          => '1',
-    //                                     'insertdatetime'                  => $updatedatetime,
-    //                                     'tbl_user_idtbl_user'             => $userID,
-    //                                     'tbl_receivable_idtbl_receivable' => $targetReceivableID,
-    //                                 ]);
-    //                                 $invoicePayment['remaining']   = 0;
-    //                                 $invoicePayment['paid_amount'] += $invoiceRemaining;
-    //                                 $remainingCN = 0;
-
-    //                             } else {
-    //                                 // Full settle, no overpayment — or excess moves to next invoice
-    //                                 $this->db->insert('tbl_receivable_info', [
-    //                                     'invoiceno'                       => $invoicePayment['invoice_id'],
-    //                                     'narration'                       => $cnNarration,
-    //                                     'amount'                          => $invoiceRemaining,
-    //                                     'overpayment'                     => 0,
-    //                                     'overpaysetoff'                   => 0,
-    //                                     'setoff_receivable_info_id'       => 0,
-    //                                     'creditnote_id'                   => $creditNoteID,
-    //                                     'status'                          => '1',
-    //                                     'insertdatetime'                  => $updatedatetime,
-    //                                     'tbl_user_idtbl_user'             => $userID,
-    //                                     'tbl_receivable_idtbl_receivable' => $targetReceivableID,
-    //                                 ]);
-    //                                 $invoicePayment['remaining']   = 0;
-    //                                 $invoicePayment['paid_amount'] += $invoiceRemaining;
-    //                                 $remainingCN -= $invoiceRemaining;
-    //                             }
-
-    //                         } else {
-    //                             // CN partially covers this invoice
-    //                             $this->db->insert('tbl_receivable_info', [
-    //                                 'invoiceno'                       => $invoicePayment['invoice_id'],
-    //                                 'narration'                       => $cnNarration,
-    //                                 'amount'                          => $remainingCN,
-    //                                 'overpayment'                     => 0,
-    //                                 'overpaysetoff'                   => 0,
-    //                                 'setoff_receivable_info_id'       => 0,
-    //                                 'creditnote_id'                   => $creditNoteID,
-    //                                 'status'                          => '1',
-    //                                 'insertdatetime'                  => $updatedatetime,
-    //                                 'tbl_user_idtbl_user'             => $userID,
-    //                                 'tbl_receivable_idtbl_receivable' => $targetReceivableID,
-    //                             ]);
-    //                             $invoicePayment['remaining']   -= $remainingCN;
-    //                             $invoicePayment['paid_amount'] += $remainingCN;
-    //                             $remainingCN = 0;
-    //                         }
-
-    //                         if ($remainingCN <= 0) break;
-    //                     }
-    //                     unset($invoicePayment);
-
-    //                     $totalCreditNoteUsed += $cnGrossAmount;
-
-    //                     // ── 3. Insert tbl_account_creditnote_settle ───────────────────
-    //                     $this->db->insert('tbl_account_creditnote_settle', [
-    //                         'date'                                            => $recsettdate,
-    //                         'settlenettotal'                                  => $cnGrossAmount,
-    //                         'status'                                          => '1',
-    //                         'insertdatetime'                                  => $updatedatetime,
-    //                         'updateuser'                                      => $userID,
-    //                         'updatedatetime'                                  => $updatedatetime,
-    //                         'tbl_user_idtbl_user'                             => $userID,
-    //                         'tbl_account_creditnote_idtbl_account_creditnote' => $creditNoteID,
-    //                         'tbl_receivable_idtbl_receivable'                 => $targetReceivableID,
-    //                     ]);
-
-    //                     // ── 4. Update tbl_account_creditnote ─────────────────────────
-    //                     $newSettleGross = round(floatval($cnRow->settleamount) + $cnGrossAmount, 2);
-
-    //                     // claimstatus=1 when fully settled
-    //                     $newClaimStatus = ($newSettleGross >= floatval($cnRow->nettotal)) ? 1 : 0;
-
-    //                     $updateCN = [
-    //                         'settleamount'                    => $newSettleGross,
-    //                         'claimstatus'                     => $newClaimStatus,
-    //                         'updateuser'                      => $userID,
-    //                         'updatedatetime'                  => $updatedatetime,
-    //                         'tbl_receivable_idtbl_receivable' => $targetReceivableID,
-    //                     ];
-
-    //                     if ($newClaimStatus == 1) {
-    //                         $updateCN['claimdate'] = $updatedatetime;
-    //                     }
-
-    //                     $this->db->where('idtbl_account_creditnote', $creditNoteID);
-    //                     $this->db->update('tbl_account_creditnote', $updateCN);
-    //                 }
-    //             }
-    //             // ═══════════════════════════════ END STEP 2 ══════════════════════════
-
-    //             // ─────────────────────────────────────────────────────────────────────
-    //             // STEP 3 (was STEP 2): Apply unapplied amounts from previous overpayments
-    //             // ─────────────────────────────────────────────────────────────────────
-    //             $totalOverpaymentFromCurrent = 0;
-
-    //             if (!empty($unapplydata) && !empty($receivableIDs)) {
-    //                 $targetReceivableID = $receivableIDs[0]['id'];
-
-    //                 foreach ($unapplydata as $unapplied) {
-    //                     $sourceInfoID  = intval($unapplied->receivableinfoid);
-    //                     $unappliedPool = floatval(str_replace(',', '', $unapplied->unappliedamount));
-
-    //                     if ($unappliedPool <= 0 || $sourceInfoID <= 0) continue;
-
-    //                     $this->db->select('idtbl_receivable_info, overpayment, overpaysetoff');
-    //                     $this->db->from('tbl_receivable_info');
-    //                     $this->db->where('idtbl_receivable_info', $sourceInfoID);
-    //                     $sourceRow = $this->db->get()->row();
-
-    //                     if (!$sourceRow) {
-    //                         throw new Exception("Unapplied record ID {$sourceInfoID} not found.");
-    //                     }
-
-    //                     $availableBalance = floatval($sourceRow->overpayment);
-
-    //                     if (round($unappliedPool, 2) > round($availableBalance, 2)) {
-    //                         throw new Exception("Unapplied amount ({$unappliedPool}) exceeds available balance ({$availableBalance}) for record ID {$sourceInfoID}.");
-    //                     }
-
-    //                     $remainingPool = $unappliedPool;
-
-    //                     foreach ($invoicePayments as $index => &$invoicePayment) {
-    //                         if ($invoicePayment['remaining'] <= 0 || $remainingPool <= 0) continue;
-
-    //                         $isLastInvoice = true;
-    //                         for ($i = $index + 1; $i < count($invoicePayments); $i++) {
-    //                             if ($invoicePayments[$i]['remaining'] > 0) { $isLastInvoice = false; break; }
-    //                         }
-
-    //                         $applyAmount = min($remainingPool, $invoicePayment['remaining']);
-
-    //                         if ($isLastInvoice && $remainingPool > $invoicePayment['remaining']) {
-    //                             $actualApplyAmount    = $invoicePayment['remaining'];
-    //                             $newOverpaymentAmount = $remainingPool - $actualApplyAmount;
-
-    //                             $this->db->insert('tbl_receivable_info', [
-    //                                 'invoiceno'                       => $invoicePayment['invoice_id'],
-    //                                 'narration'                       => "Unapplied amount used from previous overpayment",
-    //                                 'amount'                          => $actualApplyAmount,
-    //                                 'overpayment'                     => $newOverpaymentAmount,
-    //                                 'overpaysetoff'                   => 0,
-    //                                 'setoff_receivable_info_id'       => $sourceInfoID,
-    //                                 'creditnote_id'                   => 0,
-    //                                 'status'                          => '1',
-    //                                 'insertdatetime'                  => $updatedatetime,
-    //                                 'tbl_user_idtbl_user'             => $userID,
-    //                                 'tbl_receivable_idtbl_receivable' => $targetReceivableID,
-    //                             ]);
-
-    //                             $invoicePayment['remaining'] = 0;
-    //                             $invoicePayment['paid_amount'] += $actualApplyAmount;
-    //                             $remainingPool = 0;
-    //                             $totalUnappliedUsed += $actualApplyAmount;
-    //                             if ($newOverpaymentAmount > 0) $totalOverpaymentFromCurrent += $newOverpaymentAmount;
-
-    //                         } else {
-    //                             $this->db->insert('tbl_receivable_info', [
-    //                                 'invoiceno'                       => $invoicePayment['invoice_id'],
-    //                                 'narration'                       => "Unapplied amount used from previous overpayment",
-    //                                 'amount'                          => $applyAmount,
-    //                                 'overpayment'                     => 0,
-    //                                 'overpaysetoff'                   => 0,
-    //                                 'setoff_receivable_info_id'       => $sourceInfoID,
-    //                                 'creditnote_id'                   => 0,
-    //                                 'status'                          => '1',
-    //                                 'insertdatetime'                  => $updatedatetime,
-    //                                 'tbl_user_idtbl_user'             => $userID,
-    //                                 'tbl_receivable_idtbl_receivable' => $targetReceivableID,
-    //                             ]);
-
-    //                             $invoicePayment['remaining'] -= $applyAmount;
-    //                             $invoicePayment['paid_amount'] += $applyAmount;
-    //                             $remainingPool -= $applyAmount;
-    //                             $totalUnappliedUsed += $applyAmount;
-    //                         }
-
-    //                         if ($remainingPool <= 0) break;
-    //                     }
-    //                     unset($invoicePayment);
-
-    //                     $amountConsumed = $unappliedPool - $remainingPool;
-    //                     $newBalance     = round($availableBalance - $amountConsumed, 2);
-
-    //                     $this->db->where('idtbl_receivable_info', $sourceInfoID);
-    //                     $this->db->update('tbl_receivable_info', [
-    //                         'overpayment'  => $newBalance,
-    //                         'overpaysetoff' => ($newBalance <= 0) ? 1 : 0
-    //                     ]);
-    //                 }
-    //             }
-
-    //             // ─────────────────────────────────────────────────────────────────────
-    //             // STEP 4 (was STEP 3): Apply current cash/bank payments to invoices
-    //             // ─────────────────────────────────────────────────────────────────────
-    //             if(!empty($paymentdata) && !empty($receivableIDs)) {
-    //                 foreach ($receivableIDs as $receivable) {
-    //                     $receivableID    = $receivable['id'];
-    //                     $paymentAmount   = $receivable['amount'];
-    //                     $remainingPayment = $paymentAmount;
-
-    //                     foreach ($invoicePayments as $index => &$invoicePayment) {
-    //                         if ($invoicePayment['remaining'] <= 0 || $remainingPayment <= 0) continue;
-
-    //                         $invoiceRemaining = $invoicePayment['remaining'];
-    //                         $narration        = $invoicePayment['invoice_no'];
-
-    //                         $isLastInvoice = true;
-    //                         foreach ($invoicePayments as $checkIndex => $checkInvoice) {
-    //                             if ($checkIndex > $index && $checkInvoice['remaining'] > 0) { $isLastInvoice = false; break; }
-    //                         }
-
-    //                         if ($remainingPayment >= $invoiceRemaining) {
-    //                             if ($isLastInvoice) {
-    //                                 $overpaymentAmount = $remainingPayment - $invoiceRemaining;
-    //                                 $this->db->insert('tbl_receivable_info', [
-    //                                     'invoiceno'                       => $invoicePayment['invoice_id'],
-    //                                     'narration'                       => $narration,
-    //                                     'amount'                          => $invoiceRemaining,
-    //                                     'overpayment'                     => $overpaymentAmount,
-    //                                     'overpaysetoff'                   => 0,
-    //                                     'setoff_receivable_info_id'       => 0,
-    //                                     'creditnote_id'                   => 0,
-    //                                     'status'                          => '1',
-    //                                     'insertdatetime'                  => $updatedatetime,
-    //                                     'tbl_user_idtbl_user'             => $userID,
-    //                                     'tbl_receivable_idtbl_receivable' => $receivableID,
-    //                                 ]);
-    //                                 if ($overpaymentAmount > 0) $totalOverpaymentFromCurrent += $overpaymentAmount;
-    //                                 $invoicePayment['remaining'] = 0;
-    //                                 $invoicePayment['paid_amount'] += $invoiceRemaining;
-    //                                 $remainingPayment = 0;
-
-    //                             } else {
-    //                                 $this->db->insert('tbl_receivable_info', [
-    //                                     'invoiceno'                       => $invoicePayment['invoice_id'],
-    //                                     'narration'                       => $narration,
-    //                                     'amount'                          => $invoiceRemaining,
-    //                                     'overpayment'                     => 0,
-    //                                     'overpaysetoff'                   => 0,
-    //                                     'setoff_receivable_info_id'       => 0,
-    //                                     'creditnote_id'                   => 0,
-    //                                     'status'                          => '1',
-    //                                     'insertdatetime'                  => $updatedatetime,
-    //                                     'tbl_user_idtbl_user'             => $userID,
-    //                                     'tbl_receivable_idtbl_receivable' => $receivableID,
-    //                                 ]);
-    //                                 $invoicePayment['remaining'] = 0;
-    //                                 $invoicePayment['paid_amount'] += $invoiceRemaining;
-    //                                 $remainingPayment -= $invoiceRemaining;
-    //                             }
-
-    //                         } else {
-    //                             $this->db->insert('tbl_receivable_info', [
-    //                                 'invoiceno'                       => $invoicePayment['invoice_id'],
-    //                                 'narration'                       => $narration,
-    //                                 'amount'                          => $remainingPayment,
-    //                                 'overpayment'                     => 0,
-    //                                 'overpaysetoff'                   => 0,
-    //                                 'setoff_receivable_info_id'       => 0,
-    //                                 'creditnote_id'                   => 0,
-    //                                 'status'                          => '1',
-    //                                 'insertdatetime'                  => $updatedatetime,
-    //                                 'tbl_user_idtbl_user'             => $userID,
-    //                                 'tbl_receivable_idtbl_receivable' => $receivableID,
-    //                             ]);
-    //                             $invoicePayment['remaining'] -= $remainingPayment;
-    //                             $invoicePayment['paid_amount'] += $remainingPayment;
-    //                             $remainingPayment = 0;
-    //                         }
-    //                     }
-    //                     unset($invoicePayment);
-    //                 }
-    //             }
-
-    //             // ─────────────────────────────────────────────────────────────────────
-    //             // STEP 5: Validation
-    //             //
-    //             // Path A: Cash/bank payment (paymentdata exists)
-    //             //   grandTotal = paymentnettotal + totalUnappliedUsed + totalCreditNoteUsed
-    //             //   expectedTotal = paidamount + creditnotetotal
-    //             //
-    //             // Path B: CN only / Unapplied only / CN+Unapplied (paymentdata empty)
-    //             //   paymentnettotal   = combined header amount (cnOnlyTotal + unappliedOnlyTotal)
-    //             //   totalUnappliedUsed = accumulated in STEP 3 loop
-    //             //   totalCreditNoteUsed = accumulated in STEP 2 loop
-    //             //   expectedTotal     = paidamount(0) + creditnotetotal + unappliedamount
-    //             // ─────────────────────────────────────────────────────────────────────
-    //             if (!empty($paymentdata)) {
-    //                 // Path A — cash payment: unapplied/CN amounts tracked separately
-    //                 $grandTotal    = round($paymentnettotal + $totalUnappliedUsed + $totalCreditNoteUsed, 2);
-    //                 $expectedTotal = round(floatval($paidamount) + floatval($creditnotetotal), 2);
-    //             } else {
-    //                 // Path B — no cash: header amount already equals cn + unapplied combined
-    //                 // totalUnappliedUsed and totalCreditNoteUsed are tracked in their own steps,
-    //                 // so we compare against declared totals directly
-    //                 $grandTotal    = round($totalCreditNoteUsed + $totalUnappliedUsed, 2);
-    //                 $expectedTotal = round(floatval($creditnotetotal) + floatval($unappliedamount), 2);
-    //             }
-
-    //             if ($grandTotal != $expectedTotal) {
-    //                 throw new Exception("Payment total mismatch. Expected: {$expectedTotal}, Got: {$grandTotal}");
-    //             }
-
-    //             if ($this->db->trans_status() === FALSE) {
-    //                 throw new Exception('Transaction failed');
-    //             }
-
-    //             $this->db->trans_commit();
-
-    //             $actionObj          = new stdClass();
-    //             $actionObj->icon    = 'fas fa-save';
-    //             $actionObj->title   = '';
-    //             $actionObj->message = 'Record Added Successfully';
-    //             $actionObj->url     = '';
-    //             $actionObj->target  = '_blank';
-    //             $actionObj->type    = 'success';
-
-    //             $obj         = new stdClass();
-    //             $obj->status = 1;
-    //             $obj->action = json_encode($actionObj);
-
-    //             echo json_encode($obj);
-
-    //         } else {
-    //             // recordOption != 1 — no operation defined, rollback and return error
-    //             $this->db->trans_rollback();
-
-    //             $actionObj          = new stdClass();
-    //             $actionObj->icon    = 'fas fa-exclamation-triangle';
-    //             $actionObj->title   = '';
-    //             $actionObj->message = 'Invalid record option.';
-    //             $actionObj->url     = '';
-    //             $actionObj->target  = '_blank';
-    //             $actionObj->type    = 'danger';
-
-    //             $obj         = new stdClass();
-    //             $obj->status = 0;
-    //             $obj->action = json_encode($actionObj);
-
-    //             echo json_encode($obj);
-    //         }
-
-    //     } catch (Exception $e) {
-    //         $this->db->trans_rollback();
-    //         error_log("Record Error: " . $e->getMessage());
-
-    //         $actionObj          = new stdClass();
-    //         $actionObj->icon    = 'fas fa-exclamation-triangle';
-    //         $actionObj->title   = '';
-    //         $actionObj->message = 'Record Error: ' . $e->getMessage();
-    //         $actionObj->url     = '';
-    //         $actionObj->target  = '_blank';
-    //         $actionObj->type    = 'danger';
-
-    //         $obj         = new stdClass();
-    //         $obj->status = 0;
-    //         $obj->action = json_encode($actionObj);
-
-    //         echo json_encode($obj);
-    //     }
-    // }
-
     public function Receivablesettleinsertupdate() {
         try {
             $userID        = $_SESSION['userid'];
             $detailaccount = 0;
             $chartaccount  = 0;
 
-            $company          = $this->input->post('company');
-            $branch           = $this->input->post('branch');
-            $recsettdate      = $this->input->post('recsettdate');
-            $customer         = $this->input->post('customer');
-            $invoicepayamount = str_replace(',', '', $this->input->post('invoicepayamount'));
-            $paidamount       = str_replace(',', '', $this->input->post('paidamount'));
-            $unappliedamount  = str_replace(',', '', $this->input->post('unappliedamount'));
-            $creditnotetotal  = str_replace(',', '', $this->input->post('creditnotetotal'));
-            $invoicedata      = json_decode($this->input->post('tableData'));
-            $paymentdata      = json_decode($this->input->post('tableReceData'));
-            $unapplydata      = json_decode($this->input->post('tableUnapplyData'));
-            $creditnotedata   = json_decode($this->input->post('tableCreditNoteData'));
-            $recordOption     = $this->input->post('recordOption');
-            $recordID         = !empty($this->input->post('recordID')) ? $this->input->post('recordID') : '';
+            $company                = $this->input->post('company');
+            $branch                 = $this->input->post('branch');
+            $recsettdate            = $this->input->post('recsettdate');
+            $customer               = $this->input->post('customer');
+            $invoicepayamount       = str_replace(',', '', $this->input->post('invoicepayamount'));
+            $paidamount             = str_replace(',', '', $this->input->post('paidamount'));
+            $unappliedamount        = str_replace(',', '', $this->input->post('unappliedamount'));
+            $creditnotetotal        = str_replace(',', '', $this->input->post('creditnotetotal'));
+            $invoicedata            = json_decode($this->input->post('tableData'));
+            $paymentdata            = json_decode($this->input->post('tableReceData'));
+            $unapplydata            = json_decode($this->input->post('tableUnapplyData'));
+            $creditnotedata         = json_decode($this->input->post('tableCreditNoteData'));
+            $voucherdata            = json_decode($this->input->post('tableVoucherData'));
+            $receivablefilter       = $this->input->post('receivablefilter');
+            $customerAccountType    = $this->input->post('customerAccountType');
+            $recordOption           = $this->input->post('recordOption');
+            $recordID               = !empty($this->input->post('recordID')) ? $this->input->post('recordID') : '';
 
             $updatedatetime = date('Y-m-d H:i:s');
 
@@ -1854,14 +187,8 @@ class Receivablesettleinfo extends CI_Model{
             if (empty($masterdata) || empty($masterdata->idtbl_master)) {
                 throw new Exception('Record Error, Account period not found for the given date');
             }
-
-            $prefix   = generate_prefix($company, $branch, $recsettdate, 'RE');
-            $batchno  = tr_batch_num($prefix, $branch);
+            
             $masterID = $masterdata->idtbl_master ? $masterdata->idtbl_master : '';
-
-            if (empty($batchno)) {
-                throw new Exception('Batch no could not be defined by system');
-            }
 
             $this->db->select('tbl_finacial_year.year');
             $this->db->from('tbl_master');
@@ -1891,13 +218,30 @@ class Receivablesettleinfo extends CI_Model{
             $this->db->join('tbl_account_allocation', 'tbl_account_allocation.tbl_account_idtbl_account = tbl_account.idtbl_account', 'left');
             $respondcreditor = $this->db->get();
 
-            $this->db->select('tbl_account_detail_idtbl_account_detail');
-            $this->db->from('tbl_account_detail_other');
-            $this->db->where('tbl_company_idtbl_company', $company);
-            $this->db->where('tbl_company_branch_idtbl_company_branch', $branch);
-            $this->db->where('otheroptiontype', 2);
-            $this->db->where('otheroption', $customer);
-            $respondcreditacc = $this->db->get();
+            if($receivablefilter == 1){
+                $this->db->select('tbl_account_detail_idtbl_account_detail as accountid');
+                $this->db->from('tbl_account_detail_other');
+                $this->db->where('tbl_company_idtbl_company', $company);
+                $this->db->where('tbl_company_branch_idtbl_company_branch', $branch);
+                $this->db->where('otheroptiontype', 2);
+                $this->db->where('otheroption', $customer);
+                $respondcreditacc = $this->db->get();
+            }
+            else if($receivablefilter == 2 || $receivablefilter == 3){
+                if ($customerAccountType == 1) {
+                    $this->db->select('idtbl_account as accountid');
+                    $this->db->from('tbl_account');
+                    $this->db->where('idtbl_account', $customer);
+                    $this->db->where('status', 1);
+                    $respondcreditacc = $this->db->get();
+                } else if ($customerAccountType == 2) {
+                    $this->db->select('idtbl_account_detail as accountid');
+                    $this->db->from('tbl_account_detail');
+                    $this->db->where('idtbl_account_detail', $customer);
+                    $this->db->where('status', 1);
+                    $respondcreditacc = $this->db->get();
+                }
+            }
 
             // ─────────────────────────────────────────────────────────────────────
             // STEP 1: Insert receivable payment records
@@ -1916,19 +260,39 @@ class Receivablesettleinfo extends CI_Model{
                         $chartaccount  = 0;
                     }
 
+                    if($rowpaymentdata->postdatedstatus == 1 && !empty($rowpaymentdata->chequedate)){
+                        $recsettdate = $rowpaymentdata->chequedate;
+
+                        $masterdata = get_account_period_acco_date($company, $branch, $recsettdate);
+
+                        if (empty($masterdata) || empty($masterdata->idtbl_master)) {
+                            throw new Exception('Record Error, Account period not found for the given date in some postdated cheque');
+                        }
+
+                        $masterID = $masterdata->idtbl_master ? $masterdata->idtbl_master : '';
+                    }
+
+                    $prefix   = generate_prefix($company, $branch, $recsettdate, 'RE');
+                    $batchno  = tr_batch_num($prefix, $branch);
+
+                    if (empty($batchno)) {
+                        throw new Exception('Batch no could not be defined by system');
+                    }
+
                     $paymentAmount = floatval(str_replace(',', '', $rowpaymentdata->amount));
 
                     $data = [
                         'recdate'                                   => $recsettdate,
                         'receiptno'                                 => $receiptno,
                         'batchno'                                   => $batchno,
-                        'payer'                                     => $customer,
+                        'payer'                                     => $receivablefilter == 1 ? $customer : '',
                         'amount'                                    => $paymentAmount,
                         'narration'                                 => $rowpaymentdata->narration,
                         'chequedate'                                => $rowpaymentdata->chequedate,
                         'chequeno'                                  => $rowpaymentdata->chequeno,
                         'postdatedstatus'                           => $rowpaymentdata->postdatedstatus,
                         'poststatus'                                => '0',
+                        'recsettlefiltertype'                       => $receivablefilter,
                         'status'                                    => '1',
                         'insertdatetime'                            => $updatedatetime,
                         'tbl_user_idtbl_user'                       => $userID,
@@ -1953,29 +317,50 @@ class Receivablesettleinfo extends CI_Model{
                         'amount'        => $paymentAmount,
                         'narration'     => $rowpaymentdata->narration,
                         'chartaccount'  => $chartaccount,
-                        'detailaccount' => $detailaccount
+                        'detailaccount' => $detailaccount,
+                        'batchno'       => $batchno,
+                        'recdate'       => $recsettdate,
                     ];
 
                     // Credit: Trade Debtor account
-                    if (empty($respondcreditacc->result())) {
-                        if (empty($respondcreditor->result())) {
-                            throw new Exception("You don't have trade debtor account or debtor account");
+                    if ($receivablefilter == 3) {
+                        foreach($voucherdata as $rowvoucherdata){
+                            $dataentrylist[] = [
+                                'tratype'       => 'C',
+                                'amount'        => str_replace(',', '', $rowvoucherdata->amount),
+                                'narration'     => $rowvoucherdata->desc,
+                                'chartaccount'  => $rowvoucherdata->accounttype == 1 ? $rowvoucherdata->accountid : 0,
+                                'detailaccount' => $rowvoucherdata->accounttype == 2 ? $rowvoucherdata->accountid : 0,
+                                'batchno'       => $batchno,
+                                'recdate'       => $recsettdate,
+                            ];
                         }
-                        $dataentrylist[] = [
-                            'tratype'       => 'C',
-                            'amount'        => $paymentAmount,
-                            'narration'     => $rowpaymentdata->narration,
-                            'chartaccount'  => $respondcreditor->row(0)->idtbl_account,
-                            'detailaccount' => 0
-                        ];
-                    } else {
-                        $dataentrylist[] = [
-                            'tratype'       => 'C',
-                            'amount'        => $paymentAmount,
-                            'narration'     => $rowpaymentdata->narration,
-                            'chartaccount'  => 0,
-                            'detailaccount' => $respondcreditacc->row(0)->tbl_account_detail_idtbl_account_detail
-                        ];
+                    }
+                    else{
+                        if (empty($respondcreditacc->result())) {
+                            if (empty($respondcreditor->result())) {
+                                throw new Exception("You don't have trade debtor account or debtor account");
+                            }
+                            $dataentrylist[] = [
+                                'tratype'       => 'C',
+                                'amount'        => $paymentAmount,
+                                'narration'     => $rowpaymentdata->narration,
+                                'chartaccount'  => $respondcreditor->row(0)->idtbl_account,
+                                'detailaccount' => 0,
+                                'batchno'       => $batchno,
+                                'recdate'       => $recsettdate,
+                            ];
+                        } else {
+                            $dataentrylist[] = [
+                                'tratype'       => 'C',
+                                'amount'        => $paymentAmount,
+                                'narration'     => $rowpaymentdata->narration,
+                                'chartaccount'  => 0,
+                                'detailaccount' => $respondcreditacc->row(0)->accountid,
+                                'batchno'       => $batchno,
+                                'recdate'       => $recsettdate,
+                            ];
+                        }
                     }
 
                     $receivableIDs[] = [
@@ -1988,6 +373,12 @@ class Receivablesettleinfo extends CI_Model{
                 }
 
             } else {
+                $prefix   = generate_prefix($company, $branch, $recsettdate, 'RE');
+                $batchno  = tr_batch_num($prefix, $branch);
+
+                if (empty($batchno)) {
+                    throw new Exception('Batch no could not be defined by system');
+                }
                 // ── No cash/bank payment — settle via Unapplied / Credit Note / Both ──
                 $cnOnlyTotal        = floatval(str_replace(',', '', $creditnotetotal));
                 $unappliedOnlyTotal = floatval(str_replace(',', '', $unappliedamount));
@@ -2014,6 +405,7 @@ class Receivablesettleinfo extends CI_Model{
                     'narration'                                 => $settleNarration,
                     'postdatedstatus'                           => '0',
                     'poststatus'                                => '1',
+                    'recsettlefiltertype'                       => $receivablefilter,
                     'status'                                    => '1',
                     'insertdatetime'                            => $updatedatetime,
                     'tbl_user_idtbl_user'                       => $userID,
@@ -2034,7 +426,7 @@ class Receivablesettleinfo extends CI_Model{
                 $receivableIDs[] = ['id' => $receivableID, 'amount' => $paymentAmount, 'data' => ''];
                 $paymentnettotal += $paymentAmount;
             }
-
+            
             // // ── Insert accounting entry lines ─────────────────────────────────────
             // foreach ($dataentrylist as $rowdataentrylist) {
             //     $datalist = [
@@ -2072,8 +464,8 @@ class Receivablesettleinfo extends CI_Model{
                     $rowdataentrylist = $dataentrylist[$entryIndex];
 
                     $datalist = [
-                        'transdate'                               => $recsettdate,
-                        'batchno'                                 => $batchno,
+                        'transdate'                               => $rowdataentrylist['recdate'],
+                        'batchno'                                 => $rowdataentrylist['batchno'],
                         'tratype'                                 => $rowdataentrylist['tratype'],
                         'amount'                                  => $rowdataentrylist['amount'],
                         'narration'                               => $rowdataentrylist['narration'],
@@ -2102,6 +494,7 @@ class Receivablesettleinfo extends CI_Model{
                     'remaining'   => floatval(str_replace(',', '', $invoice->amount)),
                     'invoice_no'  => $invoice->invoiceno,
                     'invoice_id'  => $invoice->invid,
+                    'journal_id'  => ($receivablefilter == 2 && !empty($invoice->cusid)) ? intval($invoice->cusid) : 0,
                     'paid_amount' => 0
                 ];
             }
@@ -2387,6 +780,7 @@ class Receivablesettleinfo extends CI_Model{
                                     'insertdatetime'                  => $updatedatetime,
                                     'tbl_user_idtbl_user'             => $userID,
                                     'tbl_receivable_idtbl_receivable' => $receivableID,
+                                    'tbl_account_transaction_manual_idtbl_account_transaction_manual' => $invoicePayment['journal_id'],
                                 ]);
                                 if ($overpaymentAmount > 0) {
                                     $totalOverpaymentFromCurrent += $overpaymentAmount;
@@ -2407,6 +801,7 @@ class Receivablesettleinfo extends CI_Model{
                                     'insertdatetime'                  => $updatedatetime,
                                     'tbl_user_idtbl_user'             => $userID,
                                     'tbl_receivable_idtbl_receivable' => $receivableID,
+                                    'tbl_account_transaction_manual_idtbl_account_transaction_manual' => $invoicePayment['journal_id'],
                                 ]);
                                 $invoicePayment['remaining']    = 0;
                                 $invoicePayment['paid_amount'] += $invoiceRemaining;
@@ -2425,6 +820,7 @@ class Receivablesettleinfo extends CI_Model{
                                 'insertdatetime'                  => $updatedatetime,
                                 'tbl_user_idtbl_user'             => $userID,
                                 'tbl_receivable_idtbl_receivable' => $receivableID,
+                                'tbl_account_transaction_manual_idtbl_account_transaction_manual' => $invoicePayment['journal_id'],
                             ]);
                             $invoicePayment['remaining']    -= $remainingPayment;
                             $invoicePayment['paid_amount']  += $remainingPayment;
@@ -2432,6 +828,22 @@ class Receivablesettleinfo extends CI_Model{
                         }
                     }
                     unset($invoicePayment);
+                }
+            }
+
+            // ─────────────────────────────────────────────────────────────────────
+            // STEP 4.5: Update journal settle status for Receivable Journal filter
+            // ─────────────────────────────────────────────────────────────────────
+            if ($receivablefilter == 2) {
+                foreach ($invoicePayments as $invoicePayment) {
+                    if (!empty($invoicePayment['journal_id']) && $invoicePayment['remaining'] <= 0) {
+                        $this->db->where('idtbl_account_transaction_manual', $invoicePayment['journal_id']);
+                        $this->db->update('tbl_account_transaction_manual', [
+                            'recesettle'     => '1',
+                            'updateuser'     => $userID,
+                            'updatedatetime' => $updatedatetime,
+                        ]);
+                    }
                 }
             }
 
@@ -2585,7 +997,7 @@ class Receivablesettleinfo extends CI_Model{
             </div>
             <div class="col">
                 <label class="small font-weight-bold my-0">Supplier: </label>
-                <label class="small my-0">'.$respond->row(0)->customer.'</label><br>
+                <label class="small my-0">' . ($respond->row(0)->recsettlefiltertype == 2 ? 'Journal receivable' : ($respond->row(0)->recsettlefiltertype == 3 ? 'Voucher receivable' : $respond->row(0)->customer)) .'</label><br>
                 <label class="small font-weight-bold my-0">Cheque Date: </label>
                 <label class="small my-0">'.$chequedate.'</label><br>
                 <label class="small font-weight-bold my-0">Cheque No: </label>
@@ -2655,7 +1067,7 @@ class Receivablesettleinfo extends CI_Model{
                     foreach($respondinvoiceinfo->result() as $rowdatainfo){
                         $html.='
                         <tr>
-                            <td>'.$respond->row(0)->customer.'</td>
+                            <td>'.($respond->row(0)->recsettlefiltertype == 2 ? 'Journal receivable' : $respond->row(0)->customer).'</td>
                             <td>'.$rowdatainfo->invoiceno.'</td>
                             <td>'.$rowdatainfo->narration.'</td>
                             <td class="text-right">'.number_format($rowdatainfo->amount, 2).'</td>
@@ -2679,374 +1091,13 @@ class Receivablesettleinfo extends CI_Model{
 
         echo json_encode($obj);
     }
-    // public function Receivablesettleposting(){
-    //     $recordID=$this->input->post('recordID');
-    //     $updatedatetime=date('Y-m-d H:i:s');
-    //     $userID=$_SESSION['userid'];
-
-    //     $i=0;
-
-    //     $this->db->select('recdate, batchno, amount, poststatus, status, editstatus, postviewtime, updatedatetime, tbl_company_idtbl_company, tbl_company_branch_idtbl_company_branch, tbl_master_idtbl_master, payer, tbl_account_idtbl_account, tbl_account_detail_idtbl_account_detail, narration, postdatedstatus, chequedate');
-    //     $this->db->from('tbl_receivable');
-    //     $this->db->where('idtbl_receivable', $recordID);
-    //     $this->db->where('status', 1);
-
-    //     $respond=$this->db->get();
-
-    //     if($respond->row(0)->postdatedstatus==1 && $respond->row(0)->chequedate>date('Y-m-d')){
-    //         $actionObj=new stdClass();
-    //         $actionObj->icon='fas fa-warning';
-    //         $actionObj->title='';
-    //         $actionObj->message='Record Error, You cannot post a post-dated receivable.';
-    //         $actionObj->url='';
-    //         $actionObj->target='_blank';
-    //         $actionObj->type='danger';
-
-    //         $actionJSON=json_encode($actionObj);
-            
-    //         $obj=new stdClass();
-    //         $obj->status=0;
-    //         $obj->action=$actionJSON;
-
-    //         echo json_encode($obj);
-    //     }
-    //     else{
-    //         if($respond->row(0)->poststatus==0 && $respond->row(0)->status==1 && $respond->row(0)->editstatus==0){
-    //             if($respond->row(0)->postviewtime>$respond->row(0)->updatedatetime){
-    //                 $this->db->trans_begin();
-                    
-    //                 $data = array(
-    //                     'depositstatus'=> '1',
-    //                     'poststatus'=> '1',
-    //                     'postuser'=> $userID,
-    //                     'postviewtime'=> NULL
-    //                 );
-            
-    //                 $this->db->where('idtbl_receivable', $recordID);
-    //                 $this->db->update('tbl_receivable', $data);
-
-    //                 $i=1;
-    //                 //Creditor account Transaction
-    //                 $prefix=generate_prefix($respond->row(0)->tbl_company_idtbl_company, $respond->row(0)->tbl_company_branch_idtbl_company_branch, $respond->row(0)->recdate, 'AT');
-    //                 $batchno=tr_batch_num($prefix, $respond->row(0)->tbl_company_branch_idtbl_company_branch);
-
-    //                 $this->db->select('`idtbl_receivable_entry`, `transdate`, `batchno`, `tratype`, `amount`, `narration`, `tbl_master_idtbl_master`, `tbl_company_idtbl_company`, `tbl_company_branch_idtbl_company_branch`, `tbl_account_idtbl_account`, `tbl_account_detail_idtbl_account_detail`');
-    //                 $this->db->from('tbl_receivable_entry');
-    //                 $this->db->where('tbl_receivable_idtbl_receivable', $recordID);
-    //                 $this->db->where('status', 1);
-
-    //                 $responddetail=$this->db->get();
-
-    //                 foreach($responddetail->result() AS $rowdetail){
-    //                     $i++;
-
-    //                     $receivedetailID=$rowdetail->idtbl_receivable_entry;
-    //                     $tradate=$rowdetail->transdate;
-    //                     $segbatchno=$rowdetail->batchno;
-    //                     $detailaccount=$rowdetail->tbl_account_detail_idtbl_account_detail;
-    //                     $chartaccount=$rowdetail->tbl_account_idtbl_account;
-    //                     $company=$rowdetail->tbl_company_idtbl_company;
-    //                     $branch=$rowdetail->tbl_company_branch_idtbl_company_branch;
-    //                     $masterID=$rowdetail->tbl_master_idtbl_master;
-    //                     $amount=$rowdetail->amount;
-    //                     $narration=$rowdetail->narration;
-    //                     $tratype=$rowdetail->tratype;
-                        
-    //                     if(!empty($detailaccount)){
-    //                         $chartofaccountinfo=get_chart_account_acco_child_account($company, $branch, $detailaccount);
-    //                         $chartofaccountID=$chartofaccountinfo->row(0)->idtbl_account;
-    //                     }
-    //                     else{
-    //                         $chartofaccountID=$chartaccount;
-    //                     }
-
-    //                     $data = array(
-    //                         'tradate'=> $tradate, 
-    //                         'batchno'=> $batchno, 
-    //                         'trabatchotherno'=> $segbatchno, 
-    //                         'tratype'=> 'R', 
-    //                         'seqno'=> $i, 
-    //                         'crdr'=> $tratype, 
-    //                         'accamount'=> $amount, 
-    //                         'narration'=> $narration, 
-    //                         'totamount'=> $amount, 
-    //                         'status'=> '1', 
-    //                         'insertdatetime'=> $updatedatetime, 
-    //                         'tbl_user_idtbl_user'=> $userID,
-    //                         'tbl_account_idtbl_account'=> $chartofaccountID,
-    //                         'tbl_master_idtbl_master'=> $masterID,
-    //                         'tbl_company_idtbl_company'=> $company,
-    //                         'tbl_company_branch_idtbl_company_branch'=> $branch
-    //                     );
-        
-    //                     $this->db->insert('tbl_account_transaction', $data);                    
-
-    //                     $datafull = array(
-    //                         'tradate'=> $tradate, 
-    //                         'batchno'=> $batchno, 
-    //                         'tratype'=> 'R', 
-    //                         'crdr'=> $tratype, 
-    //                         'accamount'=> $amount, 
-    //                         'narration'=> $narration, 
-    //                         'totamount'=> $amount, 
-    //                         'status'=> '1', 
-    //                         'insertdatetime'=> $updatedatetime, 
-    //                         'tbl_user_idtbl_user'=> $userID,
-    //                         'tbl_account_idtbl_account'=> $chartofaccountID,
-    //                         'tbl_master_idtbl_master'=> $masterID,
-    //                         'tbl_company_idtbl_company'=> $company,
-    //                         'tbl_company_branch_idtbl_company_branch'=> $branch
-    //                     );
-        
-    //                     $this->db->insert('tbl_account_transaction_full', $datafull);
-
-    //                     //Update POST Status Detail
-    //                     $datadetail = array(
-    //                         'poststatus'=> '1',
-    //                         'postuser'=> $userID
-    //                     );
-                
-    //                     $this->db->where('idtbl_receivable_entry', $receivedetailID);
-    //                     $this->db->update('tbl_receivable_entry', $datadetail);
-    //                 }
-
-
-
-
-
-
-
-
-
-
-
-    //                 // //Get Creditor Account
-    //                 // $this->db->where('tbl_account_allocation.companybank', $respond->row(0)->tbl_company_idtbl_company);
-    //                 // $this->db->where('tbl_account_allocation.branchcompanybank', $respond->row(0)->tbl_company_branch_idtbl_company_branch);
-    //                 // // $this->db->where('tbl_account.tbl_account_type_idtbl_account_type', 2);
-    //                 // $this->db->where('tbl_account.specialcate', 35);
-    //                 // $this->db->where('tbl_account.status', 1);
-    //                 // $this->db->where('tbl_account_allocation.status', 1);
-    //                 // $this->db->where('tbl_account_allocation.tbl_account_idtbl_account is NOT NULL', NULL, FALSE);
-    //                 // $this->db->select('`tbl_account`.`idtbl_account`, `tbl_account`.`accountno`, `tbl_account`.`accountname`');
-    //                 // $this->db->from('tbl_account');
-    //                 // $this->db->join('tbl_account_allocation', 'tbl_account_allocation.tbl_account_idtbl_account = tbl_account.idtbl_account', 'left');
-
-    //                 // $respondcreditor=$this->db->get();
-
-    //                 // $datacredit = array(
-    //                 //     'tradate'=> $respond->row(0)->recdate, 
-    //                 //     'batchno'=> $batchno, 
-    //                 //     'trabatchotherno'=> $respond->row(0)->batchno, 
-    //                 //     'tratype'=> 'R', 
-    //                 //     'seqno'=> $i, 
-    //                 //     'crdr'=> 'C', 
-    //                 //     'accamount'=> $respond->row(0)->amount, 
-    //                 //     'narration'=> $respond->row(0)->narration, 
-    //                 //     'totamount'=> $respond->row(0)->amount, 
-    //                 //     'status'=> '1', 
-    //                 //     'insertdatetime'=> $updatedatetime, 
-    //                 //     'tbl_user_idtbl_user'=> $userID,
-    //                 //     'tbl_account_idtbl_account'=> $respondcreditor->row(0)->idtbl_account,
-    //                 //     'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
-    //                 //     'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
-    //                 //     'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
-    //                 // );
-    //                 // $this->db->insert('tbl_account_transaction', $datacredit);
-            
-    //                 // $datacreditfull = array(
-    //                 //     'tradate'=> $respond->row(0)->recdate, 
-    //                 //     'batchno'=> $batchno, 
-    //                 //     'tratype'=> 'R', 
-    //                 //     'crdr'=> 'C', 
-    //                 //     'accamount'=> $respond->row(0)->amount, 
-    //                 //     'narration'=> $respond->row(0)->narration, 
-    //                 //     'totamount'=> $respond->row(0)->amount, 
-    //                 //     'status'=> '1', 
-    //                 //     'insertdatetime'=> $updatedatetime, 
-    //                 //     'tbl_user_idtbl_user'=> $userID,
-    //                 //     'tbl_account_idtbl_account'=> $respondcreditor->row(0)->idtbl_account,
-    //                 //     'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
-    //                 //     'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
-    //                 //     'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
-    //                 // );
-    //                 // $this->db->insert('tbl_account_transaction_full', $datacreditfull);
-
-    //                 // //Debit account Transaction
-
-    //                 // if(!empty($respond->row(0)->tbl_account_detail_idtbl_account_detail)){
-    //                 //     $chartofaccountinfo=get_chart_account_acco_child_account($respond->row(0)->tbl_company_idtbl_company, $respond->row(0)->tbl_company_branch_idtbl_company_branch, $respond->row(0)->tbl_account_detail_idtbl_account_detail);
-    //                 //     $chartofaccountID=$chartofaccountinfo->row(0)->idtbl_account;
-    //                 // }
-    //                 // else{
-    //                 //     $chartofaccountID=$respond->row(0)->tbl_account_idtbl_account;
-    //                 // }
-
-    //                 // $i++;
-    //                 // $data = array(
-    //                 //     'tradate'=> $respond->row(0)->recdate, 
-    //                 //     'batchno'=> $batchno, 
-    //                 //     'trabatchotherno'=> $respond->row(0)->batchno, 
-    //                 //     'tratype'=> 'R', 
-    //                 //     'seqno'=> $i, 
-    //                 //     'crdr'=> 'D', 
-    //                 //     'accamount'=> $respond->row(0)->amount, 
-    //                 //     'narration'=> $respond->row(0)->narration, 
-    //                 //     'totamount'=> $respond->row(0)->amount,
-    //                 //     'status'=> '1', 
-    //                 //     'insertdatetime'=> $updatedatetime, 
-    //                 //     'tbl_user_idtbl_user'=> $userID,
-    //                 //     'tbl_account_idtbl_account'=> $chartofaccountID,
-    //                 //     'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
-    //                 //     'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
-    //                 //     'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
-    //                 // );
-
-    //                 // $this->db->insert('tbl_account_transaction', $data);
-
-    //                 // $datafull = array(
-    //                 //     'tradate'=> $respond->row(0)->recdate, 
-    //                 //     'batchno'=> $batchno, 
-    //                 //     'tratype'=> 'R', 
-    //                 //     'crdr'=> 'D', 
-    //                 //     'accamount'=> $respond->row(0)->amount, 
-    //                 //     'narration'=> $respond->row(0)->narration, 
-    //                 //     'totamount'=> $respond->row(0)->amount,
-    //                 //     'status'=> '1', 
-    //                 //     'insertdatetime'=> $updatedatetime, 
-    //                 //     'tbl_user_idtbl_user'=> $userID,
-    //                 //     'tbl_account_idtbl_account'=> $respond->row(0)->tbl_account_idtbl_account,
-    //                 //     'tbl_master_idtbl_master'=> $respond->row(0)->tbl_master_idtbl_master,
-    //                 //     'tbl_company_idtbl_company'=> $respond->row(0)->tbl_company_idtbl_company,
-    //                 //     'tbl_company_branch_idtbl_company_branch'=> $respond->row(0)->tbl_company_branch_idtbl_company_branch
-    //                 // );
-
-    //                 // $this->db->insert('tbl_account_transaction_full', $datafull);
-
-
-
-
-
-
-
-                    
-
-    //                 $this->db->trans_complete();
-
-    //                 if ($this->db->trans_status() === TRUE) {
-    //                     $this->db->trans_commit();
-                        
-    //                     $actionObj=new stdClass();
-    //                     $actionObj->icon='fas fa-save';
-    //                     $actionObj->title='';
-    //                     $actionObj->message='Record Added Successfully';
-    //                     $actionObj->url='';
-    //                     $actionObj->target='_blank';
-    //                     $actionObj->type='success';
-
-    //                     $actionJSON=json_encode($actionObj);
-                        
-    //                     $obj=new stdClass();
-    //                     $obj->status=1;
-    //                     $obj->action=$actionJSON;
-
-    //                     echo json_encode($obj);
-    //                 } else {
-    //                     $this->db->trans_rollback();
-
-    //                     $actionObj=new stdClass();
-    //                     $actionObj->icon='fas fa-warning';
-    //                     $actionObj->title='';
-    //                     $actionObj->message='Record Error';
-    //                     $actionObj->url='';
-    //                     $actionObj->target='_blank';
-    //                     $actionObj->type='danger';
-
-    //                     $actionJSON=json_encode($actionObj);
-                        
-    //                     $obj=new stdClass();
-    //                     $obj->status=0;
-    //                     $obj->action=$actionJSON;
-
-    //                     echo json_encode($obj);
-    //                 }
-    //             }
-    //             else{
-    //                 $actionObj=new stdClass();
-    //                 $actionObj->icon='fas fa-warning';
-    //                 $actionObj->title='';
-    //                 $actionObj->message='Record Error, Please check this record for information. Because this record was edited before you posted.';
-    //                 $actionObj->url='';
-    //                 $actionObj->target='_blank';
-    //                 $actionObj->type='danger';
-
-    //                 $actionJSON=json_encode($actionObj);
-                    
-    //                 $obj=new stdClass();
-    //                 $obj->status=0;
-    //                 $obj->action=$actionJSON;
-
-    //                 echo json_encode($obj);
-    //             }
-    //         }
-    //         else if($respond->row(0)->status==2){
-    //             $actionObj=new stdClass();
-    //             $actionObj->icon='fas fa-warning';
-    //             $actionObj->title='';
-    //             $actionObj->message='Record Error, Record Deactivated. Kindly review the status of the record.';
-    //             $actionObj->url='';
-    //             $actionObj->target='_blank';
-    //             $actionObj->type='warning';
-
-    //             $actionJSON=json_encode($actionObj);
-                
-    //             $obj=new stdClass();
-    //             $obj->status=0;
-    //             $obj->action=$actionJSON;
-
-    //             echo json_encode($obj);
-    //         }
-    //         else if($respond->row(0)->editstatus==1){
-    //             $actionObj=new stdClass();
-    //             $actionObj->icon='fas fa-warning';
-    //             $actionObj->title='';
-    //             $actionObj->message='Record Error, Record in editable mode. You cannot change anything about the record.';
-    //             $actionObj->url='';
-    //             $actionObj->target='_blank';
-    //             $actionObj->type='danger';
-
-    //             $actionJSON=json_encode($actionObj);
-                
-    //             $obj=new stdClass();
-    //             $obj->status=0;
-    //             $obj->action=$actionJSON;
-
-    //             echo json_encode($obj);
-    //         }
-    //         else if($respond->row(0)->poststatus==1){
-    //             $actionObj=new stdClass();
-    //             $actionObj->icon='fas fa-warning';
-    //             $actionObj->title='';
-    //             $actionObj->message='Record Error, Record already posted.';
-    //             $actionObj->url='';
-    //             $actionObj->target='_blank';
-    //             $actionObj->type='danger';
-
-    //             $actionJSON=json_encode($actionObj);
-                
-    //             $obj=new stdClass();
-    //             $obj->status=0;
-    //             $obj->action=$actionJSON;
-
-    //             echo json_encode($obj);
-    //         }
-    //     }
-    // }
     public function Receivablesettleposting(){
         try {
             $recordID       = $this->input->post('recordID');
             $updatedatetime = date('Y-m-d H:i:s');
             $userID         = $_SESSION['userid'];
+            $companyid      = $_SESSION['companyid'];
+		    $branchid       = $_SESSION['branchid'];
             $i              = 0;
     
             if(empty($recordID)){
@@ -3095,17 +1146,6 @@ class Receivablesettleinfo extends CI_Model{
             // ── Begin Transaction ─────────────────────────────────────────────
             $this->db->trans_begin();
     
-            // Update main receivable post status
-            $data = array(
-                'depositstatus' => '1',
-                'poststatus'    => '1',
-                'postuser'      => $userID,
-                'postviewtime'  => NULL
-            );
-    
-            $this->db->where('idtbl_receivable', $recordID);
-            $this->db->update('tbl_receivable', $data);
-    
             $i = 1;
 
             if($record->postdatedstatus == 1 && $record->chequedate <= date('Y-m-d')){
@@ -3118,10 +1158,28 @@ class Receivablesettleinfo extends CI_Model{
             // Generate batch number for account transaction
             $prefix  = generate_prefix($record->tbl_company_idtbl_company, $record->tbl_company_branch_idtbl_company_branch, $recdate, 'AT');
             $batchno = tr_batch_num($prefix, $record->tbl_company_branch_idtbl_company_branch);
+            $masterdata = get_account_period_acco_date($companyid, $branchid, $recdate);
+
+            if (empty($masterdata) || empty($masterdata->idtbl_master)) {
+                throw new Exception('Record Error, Account period not found for the given date');
+            }
+
+            $masterID = $masterdata->idtbl_master ? $masterdata->idtbl_master : '';
     
             if(empty($batchno)){
                 throw new Exception('Record Error, Batch no could not be defined by system');
             }
+
+            // Update main receivable post status
+            $data = array(
+                'depositstatus' => '1',
+                'poststatus'    => '1',
+                'postuser'      => $userID,
+                'postviewtime'  => NULL
+            );
+    
+            $this->db->where('idtbl_receivable', $recordID);
+            $this->db->update('tbl_receivable', $data);
     
             // ── Fetch receivable entry lines ──────────────────────────────────
             $this->db->select('`idtbl_receivable_entry`, `transdate`, `batchno`, `tratype`, `amount`, `narration`, `tbl_master_idtbl_master`, `tbl_company_idtbl_company`, `tbl_company_branch_idtbl_company_branch`, `tbl_account_idtbl_account`, `tbl_account_detail_idtbl_account_detail`');
@@ -3146,7 +1204,7 @@ class Receivablesettleinfo extends CI_Model{
                 $chartaccount    = $rowdetail->tbl_account_idtbl_account;
                 $company         = $rowdetail->tbl_company_idtbl_company;
                 $branch          = $rowdetail->tbl_company_branch_idtbl_company_branch;
-                $masterID        = $rowdetail->tbl_master_idtbl_master;
+                $masterID        = $masterID; // Use the masterID determined earlier
                 $amount          = $rowdetail->amount;
                 $narration       = $rowdetail->narration;
                 $tratype         = $rowdetail->tratype;
@@ -3203,6 +1261,8 @@ class Receivablesettleinfo extends CI_Model{
                 );
     
                 $this->db->insert('tbl_account_transaction_full', $datafull);
+
+
     
                 // Update post status on entry line
                 $datadetail = array(
@@ -3232,174 +1292,6 @@ class Receivablesettleinfo extends CI_Model{
             $this->_jsonResponse(0, 'fas fa-warning', $e->getMessage(), 'danger');
         }
     }
-    // public function Receivablesettlestatus($x, $y){
-    //     $this->db->trans_begin();
-
-    //     $userID=$_SESSION['userid'];
-    //     $recordID=$x;
-    //     $type=$y;
-    //     $updatedatetime=date('Y-m-d H:i:s');
-
-    //     if($type==1){
-    //         $data = array(
-    //             'status' => '1',
-    //             'updateuser'=> $userID, 
-    //             'updatedatetime'=> $updatedatetime
-    //         );
-
-    //         $this->db->where('idtbl_receivable', $recordID);
-    //         $this->db->update('tbl_receivable', $data);
-
-    //         $datapay = array(
-    //             'status' => '1',
-    //             'updateuser'=> $userID, 
-    //             'updatedatetime'=> $updatedatetime
-    //         );
-
-    //         $this->db->where('tbl_receivable_idtbl_receivable', $recordID);
-    //         $this->db->update('tbl_receivable_info', $datapay);
-
-    //         $this->db->trans_complete();
-
-    //         if ($this->db->trans_status() === TRUE) {
-    //             $this->db->trans_commit();
-                
-    //             $actionObj=new stdClass();
-    //             $actionObj->icon='fas fa-check';
-    //             $actionObj->title='';
-    //             $actionObj->message='Record Activate Successfully';
-    //             $actionObj->url='';
-    //             $actionObj->target='_blank';
-    //             $actionObj->type='success';
-
-    //             $actionJSON=json_encode($actionObj);
-                
-    //             $this->session->set_flashdata('msg', $actionJSON);
-    //             redirect('Receivablesettle');                
-    //         } else {
-    //             $this->db->trans_rollback();
-
-    //             $actionObj=new stdClass();
-    //             $actionObj->icon='fas fa-warning';
-    //             $actionObj->title='';
-    //             $actionObj->message='Record Error';
-    //             $actionObj->url='';
-    //             $actionObj->target='_blank';
-    //             $actionObj->type='danger';
-
-    //             $actionJSON=json_encode($actionObj);
-                
-    //             $this->session->set_flashdata('msg', $actionJSON);
-    //             redirect('Receivablesettle');
-    //         }
-    //     }
-    //     else if($type==2){
-    //         $data = array(
-    //             'status' => '2',
-    //             'updateuser'=> $userID, 
-    //             'updatedatetime'=> $updatedatetime
-    //         );
-
-    //         $this->db->where('idtbl_receivable', $recordID);
-    //         $this->db->update('tbl_receivable', $data);
-
-    //         $datapay = array(
-    //             'status' => '2',
-    //             'updateuser'=> $userID, 
-    //             'updatedatetime'=> $updatedatetime
-    //         );
-
-    //         $this->db->where('tbl_receivable_idtbl_receivable', $recordID);
-    //         $this->db->update('tbl_receivable_info', $datapay);
-
-    //         $this->db->trans_complete();
-
-    //         if ($this->db->trans_status() === TRUE) {
-    //             $this->db->trans_commit();
-                
-    //             $actionObj=new stdClass();
-    //             $actionObj->icon='fas fa-times';
-    //             $actionObj->title='';
-    //             $actionObj->message='Record Deactivate Successfully';
-    //             $actionObj->url='';
-    //             $actionObj->target='_blank';
-    //             $actionObj->type='warning';
-
-    //             $actionJSON=json_encode($actionObj);
-                
-    //             $this->session->set_flashdata('msg', $actionJSON);
-    //             redirect('Receivablesettle');                
-    //         } else {
-    //             $this->db->trans_rollback();
-
-    //             $actionObj=new stdClass();
-    //             $actionObj->icon='fas fa-warning';
-    //             $actionObj->title='';
-    //             $actionObj->message='Record Error';
-    //             $actionObj->url='';
-    //             $actionObj->target='_blank';
-    //             $actionObj->type='danger';
-
-    //             $actionJSON=json_encode($actionObj);
-                
-    //             $this->session->set_flashdata('msg', $actionJSON);
-    //             redirect('Receivablesettle');
-    //         }
-    //     }
-    //     else if($type==3){
-    //         $data = array(
-    //             'status' => '3',
-    //             'updateuser'=> $userID, 
-    //             'updatedatetime'=> $updatedatetime
-    //         );
-
-    //         $this->db->where('idtbl_receivable', $recordID);
-    //         $this->db->update('tbl_receivable', $data);
-
-    //         $datapay = array(
-    //             'status' => '3',
-    //             'updateuser'=> $userID, 
-    //             'updatedatetime'=> $updatedatetime
-    //         );
-
-    //         $this->db->where('tbl_receivable_idtbl_receivable', $recordID);
-    //         $this->db->update('tbl_receivable_info', $datapay);
-
-    //         $this->db->trans_complete();
-
-    //         if ($this->db->trans_status() === TRUE) {
-    //             $this->db->trans_commit();
-                
-    //             $actionObj=new stdClass();
-    //             $actionObj->icon='fas fa-trash-alt';
-    //             $actionObj->title='';
-    //             $actionObj->message='Record Remove Successfully';
-    //             $actionObj->url='';
-    //             $actionObj->target='_blank';
-    //             $actionObj->type='danger';
-
-    //             $actionJSON=json_encode($actionObj);
-                
-    //             $this->session->set_flashdata('msg', $actionJSON);
-    //             redirect('Receivablesettle');                
-    //         } else {
-    //             $this->db->trans_rollback();
-
-    //             $actionObj=new stdClass();
-    //             $actionObj->icon='fas fa-warning';
-    //             $actionObj->title='';
-    //             $actionObj->message='Record Error';
-    //             $actionObj->url='';
-    //             $actionObj->target='_blank';
-    //             $actionObj->type='danger';
-
-    //             $actionJSON=json_encode($actionObj);
-                
-    //             $this->session->set_flashdata('msg', $actionJSON);
-    //             redirect('Receivablesettle');
-    //         }
-    //     }
-    // }
     public function Receivablesettlestatus($x, $y){
         $userID         = $_SESSION['userid'];
         $recordID       = $x;

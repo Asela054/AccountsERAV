@@ -236,6 +236,7 @@ include "include/topnavbar.php";
                                                         <th>Supplier | Account no</th>
                                                         <th class="d-none">Invoice ID</th>
                                                         <th>Bill / Invoice No</th>
+                                                        <th>Supplier Invoice No</th>
                                                         <th class="text-right">Total</th>
                                                         <th class="text-right">Balance Amount</th>
                                                     </tr>
@@ -423,8 +424,10 @@ include "include/topnavbar.php";
                 $('#chequepayee').prop('readonly', false);
                 $('#chequepayee').prop('required', true);
                 $('#chequedate').prop('required', true);
-                // var payeetext = $('#supplier option:selected').text();
-                // $('#chequepayee').val(payeetext);
+                if($('#payablefilter').val() < 3){
+                    var payeetext = $('#supplier option:selected').text();
+                    $('#chequepayee').val(payeetext);
+                }
             }
             else{
                 $('#checkpostdated').prop('checked', false);
@@ -897,8 +900,9 @@ include "include/topnavbar.php";
                 $('#btnfullinvoicepayment').prop('disabled', true).html('<i class="fas fa-circle-notch fa-spin mr-2"></i> Complete');
                 var tablelist = $("#tableinvoicepayment tbody input[type=checkbox]:checked");
                 var payablefilter = $('#payablefilter').val();
-
-                if (payablefilter == 3 && $('#invoicepayamount').val() > 0 || tablelist.length > 0) {
+                var invoicePayAmount = parseFloat($('#invoicepayamount').val().replace(/,/g, '')) || 0;
+                
+                if (payablefilter == 3 && invoicePayAmount > 0 || tablelist.length > 0) {
                     $('#supplier').attr('disabled', false);
                     jsonObj = [];
                     tablelist.each(function() {
@@ -908,7 +912,7 @@ include "include/topnavbar.php";
                         item["supplier"] = row.find('td:eq(2)').text();
                         item["invid"] = row.find('td:eq(3)').text();
                         item["invoiceno"] = row.find('td:eq(4)').text();
-                        item["amount"] = row.find('td:eq(6)').text();
+                        item["amount"] = row.find('td:eq(7)').text();
                         jsonObj.push(item);
                     });
                     var myJSON = JSON.stringify(jsonObj);
@@ -1418,7 +1422,7 @@ include "include/topnavbar.php";
             tablelist.each(function() {
                 item = {}
                 var row = $(this).closest("tr");
-                sum += parseFloat(intVal(row.find('td:eq(6)').text()));
+                sum += parseFloat(intVal(row.find('td:eq(7)').text()));
             });
         }
 

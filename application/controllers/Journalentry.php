@@ -68,4 +68,11 @@ class Journalentry extends CI_Controller {
         $recordID = $this->input->post('recordID');
         $this->Journalentryinfo->Journalentryreverse($recordID);
     }
+    public function Getaccountlist(){
+        $searchTerm=$this->input->post('searchTerm');
+        $company=$this->input->post('companyid');
+        $branch=$this->input->post('branchid');
+        
+        $result=get_accounts_list($searchTerm, $company, $branch);
+    }
 }
